@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Alert } from 'react-native';
 import MapScreen from './screens/MapScreen';
 import PastJourneysScreen from './screens/PastJourneysScreen';
 import DiscoveriesScreen from './screens/DiscoveriesScreen';
@@ -15,7 +15,22 @@ import { Colors, Spacing, Typography } from './styles/theme';
 const Drawer = createDrawerNavigator();
 
 function AppContent() {
-  const { user, loading } = useUser();
+  const { user, loading, error } = useUser();
+
+  // Show error if Firebase is not properly configured
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Configuration Error</Text>
+        <Text style={styles.errorText}>
+          {error}
+        </Text>
+        <Text style={styles.errorSubtext}>
+          Please check your environment variables and rebuild the app.
+        </Text>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
@@ -116,5 +131,31 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     ...Typography.body,
     color: Colors.text,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    padding: Spacing.lg,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#d32f2f',
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  errorText: {
+    ...Typography.body,
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  errorSubtext: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    fontSize: 14,
   },
 });
