@@ -18,7 +18,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.liamclarke.herospath",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your journey and nearby places.",
+        "NSLocationAlwaysUsageDescription": "This app uses your location to track your journey even when the app is in the background.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track your journey and show nearby places."
       }
     },
     "android": {
@@ -27,7 +30,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.liamclarke.herospath"
+      "package": "com.liamclarke.herospath",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "FOREGROUND_SERVICE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -11,14 +11,19 @@ import { useNavigation } from '@react-navigation/native';
 
 import { 
   GOOGLE_WEB_CLIENT_ID, 
-  GOOGLE_IOS_REVERSED_CLIENT_ID, 
+  GOOGLE_IOS_CLIENT_ID, 
   GOOGLE_ANDROID_CLIENT_ID 
 } from "../config";
+
+// Add: Log all Google client IDs at startup
+console.log('GOOGLE_WEB_CLIENT_ID:', GOOGLE_WEB_CLIENT_ID);
+console.log('GOOGLE_IOS_CLIENT_ID:', GOOGLE_IOS_CLIENT_ID);
+console.log('GOOGLE_ANDROID_CLIENT_ID:', GOOGLE_ANDROID_CLIENT_ID);
 
 // Use platform-specific client IDs
 const getClientId = () => {
   if (Platform.OS === 'ios') {
-    return GOOGLE_IOS_REVERSED_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
+    return GOOGLE_IOS_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
   } else if (Platform.OS === 'android') {
     return GOOGLE_ANDROID_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
   } else {
@@ -44,20 +49,20 @@ export default function SignInScreen() {
   const [request, response, promptAsync] = Google.useAuthRequest(
     {
       expoClientId: GOOGLE_WEB_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
       androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-      iosClientId: GOOGLE_IOS_REVERSED_CLIENT_ID,
       scopes: ['profile', 'email', 'openid'],
-      redirectUri: AuthSession.makeRedirectUri({
-        scheme: 'com.liamclarke.herospath',
-        path: 'oauthredirect'
-      }),
-    },
-    discovery
+    }
   );
+
+  // Add: Log the request object
+  useEffect(() => {
+    console.log('Google Auth Request object:', request);
+  }, [request]);
 
   useEffect(() => {
     const signInWithGoogle = async () => {
-      console.log('Auth response:', response);
+      console.log('Google AuthSession response:', response);
       
       if (response?.type === 'success') {
         setLoading(true);
@@ -115,6 +120,8 @@ export default function SignInScreen() {
       } else if (response?.type === 'error') {
         console.error('Google auth error:', response.error);
         Alert.alert('Google Auth Error', response.error?.message || 'Unknown error occurred');
+      } else {
+        console.log('Google AuthSession response type:', response?.type);
       }
     };
     signInWithGoogle();
@@ -122,20 +129,14 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     console.log('Sign in button pressed');
-    console.log('Request object:', request);
-    console.log('Redirect URI:', AuthSession.makeRedirectUri({
-      scheme: 'com.liamclarke.herospath',
-      path: 'oauthredirect'
-    }));
-    
     try {
-      const result = await promptAsync({ 
-        useProxy: true,
+      const result = await promptAsync({
+        useProxy: true, // <--- This is the key!
         webBrowserRedirectMode: 'browser'
       });
-      console.log('Prompt result:', result);
+      console.log('Google promptAsync result:', result);
     } catch (error) {
-      console.error('Prompt error:', error);
+      console.error('Google promptAsync error:', error);
     }
   };
 
