@@ -24,7 +24,7 @@ function coordsToBoundingCircle(coords) {
 
   // half the diagonal, clamped [50m, 50km]
   const radius = Math.min(
-    Math.max(Math.ceil(Math.hypot(latMeters, lngMeters) / 2), 50),
+    Math.max(Math.ceil(Math.hypot(latMeters, lngMeters) / 2), 25),
     50_000
   );
 

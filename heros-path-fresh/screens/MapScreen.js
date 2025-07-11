@@ -17,6 +17,8 @@ import { snapToRoads } from '../services/DiscoveriesService';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 // import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from '@env';
 import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from "../config";
+// Add import for vector icons
+import { MaterialIcons } from '@expo/vector-icons';
 
 const ROUTES_STORAGE_KEY = '@saved_routes';
 const SPRITES = {
@@ -80,13 +82,23 @@ export default function MapScreen({ navigation, route }) {
      }
    }, [route.params?.routeToDisplay, navigation]);
 
+  // Fetch user location on mount
   useEffect(() => {
-    Location.requestForegroundPermissionsAsync().then(({ status }) => {
+    let isMounted = true;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission required', 'Location access is needed.');
+        return;
       }
-    });
-    return () => locationSubscriber.current?.remove();
+      try {
+        const { coords } = await Location.getCurrentPositionAsync();
+        if (isMounted) setCurrentPosition(coords);
+      } catch {
+        Alert.alert('Error', 'Unable to fetch location.');
+      }
+    })();
+    return () => { isMounted = false; };
   }, []);
 
   const locateMe = async () => {
@@ -172,31 +184,40 @@ export default function MapScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <MapView ref={mapRef} style={styles.map} initialRegion={{ latitude: 35.6895, longitude: 139.6917, latitudeDelta: 0.05, longitudeDelta: 0.05 }}>
-        {renderSavedRoutes()}
-
-        {/* ─── show snapped preview if ready, else raw */}
-        {(previewRoadCoords.length > 0 || previewRoute) && (
-          <Polyline
-            coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
-            strokeColor="purple"
-            strokeWidth={4}
-          />
-        )}
-
-        {pathToRender.length > 0 && <Polyline coordinates={pathToRender} strokeColor="rgba(0,122,255,0.8)" strokeWidth={6} />}
-
-        {currentPosition && (
+      {currentPosition ? (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={{
+            latitude: currentPosition.latitude,
+            longitude: currentPosition.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }}
+        >
+          {renderSavedRoutes()}
+          {/* ─── show snapped preview if ready, else raw */}
+          {(previewRoadCoords.length > 0 || previewRoute) && (
+            <Polyline
+              coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
+              strokeColor="purple"
+              strokeWidth={4}
+            />
+          )}
+          {pathToRender.length > 0 && <Polyline coordinates={pathToRender} strokeColor="rgba(0,122,255,0.8)" strokeWidth={6} />}
           <Marker coordinate={currentPosition} anchor={{ x: 0.5, y: 0.9 }}>
             <Image source={spriteSource} style={styles.sprite} />
           </Marker>
-        )}
-      </MapView>
-
+        </MapView>
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text>Loading your location…</Text>
+        </View>
+      )}
+      {/* Locate button: bottom right, standard icon */}
       <TouchableOpacity style={styles.locateButton} onPress={locateMe}>
-        <Text style={styles.locateText}>📍</Text>
+        <MaterialIcons name="my-location" size={28} color={Colors.primary} />
       </TouchableOpacity>
-
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
           style={[styles.trackButton, tracking ? styles.trackButtonActive : styles.trackButtonInactive]}
@@ -217,12 +238,13 @@ const styles = StyleSheet.create({
   sprite: { width: 16, height: 32 },
   locateButton: {
     position: 'absolute',
-    top: 50,
+    bottom: 100,
     right: 20,
     backgroundColor: Colors.background,
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius * 2,
     elevation: 4,
+    zIndex: 10,
   },
   locateText: { fontSize: 20 },
   trackButtonContainer: { position: 'absolute', bottom: 100, alignSelf: 'center' },
