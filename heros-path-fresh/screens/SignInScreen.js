@@ -41,13 +41,15 @@ export default function SignInScreen() {
   
   const [request, response, promptAsync] = Google.useAuthRequest(
     {
+      // Use platform-specific client IDs
       expoClientId: GOOGLE_WEB_CLIENT_ID,
       androidClientId: GOOGLE_ANDROID_CLIENT_ID,
       iosClientId: GOOGLE_IOS_REVERSED_CLIENT_ID,
       scopes: ['profile', 'email', 'openid'],
+      // Use Expo's OAuth proxy instead of custom scheme
       redirectUri: AuthSession.makeRedirectUri({
-        scheme: 'com.liamclarke.herospath',
-        path: 'oauthredirect'
+        useProxy: true,
+        projectNameForProxy: '@liamclarke-dev/heros-path-fresh'
       }),
     },
     discovery
@@ -122,14 +124,13 @@ export default function SignInScreen() {
     console.log('Sign in button pressed');
     console.log('Request object:', request);
     console.log('Redirect URI:', AuthSession.makeRedirectUri({
-      scheme: 'com.liamclarke.herospath',
-      path: 'oauthredirect'
+      useProxy: true,
+      projectNameForProxy: '@liamclarke-dev/heros-path-fresh'
     }));
     
     try {
       const result = await promptAsync({ 
-        useProxy: true,
-        webBrowserRedirectMode: 'browser'
+        useProxy: true
       });
       console.log('Prompt result:', result);
     } catch (error) {
