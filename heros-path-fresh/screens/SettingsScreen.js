@@ -207,26 +207,26 @@ export default function SettingsScreen() {
         <View style={styles.preferenceItem}>
           <Text style={styles.preferenceLabel}>Language</Text>
           <View style={styles.languageOptions}>
-            {LANGUAGES.map(({code, label}) => (
-              <TouchableOpacity
-                key={code}
-                style={[
+      {LANGUAGES.map(({code, label}) => (
+        <TouchableOpacity
+          key={code}
+          style={[
                   styles.languageOption,
                   language === code && styles.languageOptionActive
-                ]}
-                onPress={() => selectLanguage(code)}
-              >
-                <Text
-                  style={[
+          ]}
+          onPress={() => selectLanguage(code)}
+        >
+          <Text
+            style={[
                     styles.languageOptionText,
                     language === code && styles.languageOptionTextActive
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+            ]}
+          >
+            {label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
         </View>
       </View>
 
