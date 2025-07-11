@@ -2,7 +2,9 @@
 import { initializeApp } from "firebase/app";
 import {
   initializeAuth,
-  getReactNativePersistence
+  getReactNativePersistence,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -128,4 +130,14 @@ if (missingValues.length > 0) {
   db = getFirestore(app);
 }
 
-export { auth, db };
+// Sign up with email and password
+async function signUpWithEmail(email, password) {
+  return createUserWithEmailAndPassword(auth, email, password);
+}
+
+// Sign in with email and password
+async function signInWithEmail(email, password) {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+
+export { auth, db, signUpWithEmail, signInWithEmail };

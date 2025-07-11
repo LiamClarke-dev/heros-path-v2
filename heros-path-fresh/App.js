@@ -53,73 +53,73 @@ function AppContent() {
     );
   }
 
-  if (!user) {
-    return <AuthStackScreen />;
-  }
-
   return (
     <NavigationContainer>
-      <Drawer.Navigator 
-        initialRouteName="Map"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: Colors.primary,
-          },
-          headerTintColor: Colors.background,
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      >
-        <Drawer.Screen 
-          name="Map" 
-          component={MapScreen}
-          options={{
-            title: 'Hero\'s Path',
-            drawerLabel: 'Map',
+      {user ? (
+        <Drawer.Navigator 
+          initialRouteName="Map"
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: Colors.primary,
+            },
+            headerTintColor: Colors.background,
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
           }}
-        />
-        <Drawer.Screen 
-          name="PastJourneys" 
-          component={PastJourneysScreen}
-          options={{
-            title: 'Past Journeys',
-            drawerLabel: 'Past Journeys',
-          }}
-        />
-        <Drawer.Screen 
-          name="Discoveries" 
-          component={DiscoveriesScreen}
-          options={{
-            title: 'Discoveries',
-            drawerLabel: 'Discoveries',
-          }}
-        />
-        <Drawer.Screen 
-          name="SavedPlaces" 
-          component={SavedPlacesScreen}
-          options={{
-            title: 'Saved Places',
-            drawerLabel: 'Saved Places',
-          }}
-        />
-        <Drawer.Screen 
-          name="Social" 
-          component={SocialScreen}
-          options={{
-            title: 'Social',
-            drawerLabel: 'Social',
-          }}
-        />
-        <Drawer.Screen 
-          name="Settings" 
-          component={SettingsScreen}
-          options={{
-            title: 'Settings',
-            drawerLabel: 'Settings',
-          }}
-        />
-      </Drawer.Navigator>
+        >
+          <Drawer.Screen 
+            name="Map" 
+            component={MapScreen}
+            options={{
+              title: 'Hero\'s Path',
+              drawerLabel: 'Map',
+            }}
+          />
+          <Drawer.Screen 
+            name="PastJourneys" 
+            component={PastJourneysScreen}
+            options={{
+              title: 'Past Journeys',
+              drawerLabel: 'Past Journeys',
+            }}
+          />
+          <Drawer.Screen 
+            name="Discoveries" 
+            component={DiscoveriesScreen}
+            options={{
+              title: 'Discoveries',
+              drawerLabel: 'Discoveries',
+            }}
+          />
+          <Drawer.Screen 
+            name="SavedPlaces" 
+            component={SavedPlacesScreen}
+            options={{
+              title: 'Saved Places',
+              drawerLabel: 'Saved Places',
+            }}
+          />
+          <Drawer.Screen 
+            name="Social" 
+            component={SocialScreen}
+            options={{
+              title: 'Social',
+              drawerLabel: 'Social',
+            }}
+          />
+          <Drawer.Screen 
+            name="Settings" 
+            component={SettingsScreen}
+            options={{
+              title: 'Settings',
+              drawerLabel: 'Settings',
+            }}
+          />
+        </Drawer.Navigator>
+      ) : (
+        <AuthStackScreen />
+      )}
     </NavigationContainer>
   );
 }
