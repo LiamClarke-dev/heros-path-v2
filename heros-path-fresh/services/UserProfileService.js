@@ -54,13 +54,11 @@ class UserProfileService {
   async updateProfile(userId, updates) {
     try {
       const userRef = doc(db, 'users', userId);
-      
       const updateData = {
         ...updates,
         updatedAt: serverTimestamp(),
       };
-
-      await updateDoc(userRef, updateData);
+      await setDoc(userRef, updateData, { merge: true });
       return { success: true };
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -144,20 +142,17 @@ class UserProfileService {
     try {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
-      
       let friends = [];
       if (userSnap.exists() && userSnap.data().friends) {
         friends = userSnap.data().friends;
       }
-      
       if (!friends.includes(friendId)) {
         friends.push(friendId);
-        await updateDoc(userRef, {
+        await setDoc(userRef, {
           friends,
           updatedAt: serverTimestamp()
-        });
+        }, { merge: true });
       }
-      
       return { success: true };
     } catch (error) {
       console.error('Error adding friend:', error);
@@ -170,17 +165,14 @@ class UserProfileService {
     try {
       const userRef = doc(db, 'users', userId);
       const userSnap = await getDoc(userRef);
-      
       if (userSnap.exists() && userSnap.data().friends) {
         let friends = userSnap.data().friends;
         friends = friends.filter(id => id !== friendId);
-        
-        await updateDoc(userRef, {
+        await setDoc(userRef, {
           friends,
           updatedAt: serverTimestamp()
-        });
+        }, { merge: true });
       }
-      
       return { success: true };
     } catch (error) {
       console.error('Error removing friend:', error);

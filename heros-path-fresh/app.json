@@ -18,7 +18,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.liamclarke.herospath",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "NSLocationWhenInUseUsageDescription": "Hero's Path needs your location to show your journey and nearby discoveries.",
+        "NSLocationAlwaysUsageDescription": "Hero's Path needs your location to track your journey even when the app is in the background.",
+        "NSUserTrackingUsageDescription": "Hero's Path uses your data to improve your experience.",
+        "NSUserNotificationUsageDescription": "Hero's Path uses notifications to alert you about discoveries and journey updates."
       }
     },
     "android": {
@@ -27,7 +30,14 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.liamclarke.herospath"
+      "package": "com.liamclarke.herospath",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "INTERNET",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
