@@ -7,6 +7,7 @@ import { auth } from '../firebase';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { useUser } from '../contexts/UserContext';
 import { Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import { 
   GOOGLE_WEB_CLIENT_ID, 
@@ -38,6 +39,7 @@ const discovery = {
 export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const { createOrUpdateProfile } = useUser();
+  const navigation = useNavigation();
   
   const [request, response, promptAsync] = Google.useAuthRequest(
     {
@@ -154,6 +156,12 @@ export default function SignInScreen() {
             title="Sign in with Google"
             onPress={handleSignIn}
             color="#007AFF"
+          />
+          <View style={{ height: 16 }} />
+          <Button
+            title="Sign in with Email"
+            onPress={() => navigation.navigate('EmailAuth')}
+            color="#888"
           />
         </View>
       )}

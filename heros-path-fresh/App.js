@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View, Text, StyleSheet, Alert } from 'react-native';
 import MapScreen from './screens/MapScreen';
 import PastJourneysScreen from './screens/PastJourneysScreen';
@@ -9,10 +10,21 @@ import SavedPlacesScreen from './screens/SavedPlacesScreen';
 import SocialScreen from './screens/SocialScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SignInScreen from './screens/SignInScreen';
+import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { Colors, Spacing, Typography } from './styles/theme';
 
 const Drawer = createDrawerNavigator();
+const AuthStack = createStackNavigator();
+
+function AuthStackScreen() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="SignIn" component={SignInScreen} />
+      <AuthStack.Screen name="EmailAuth" component={EmailAuthScreen} />
+    </AuthStack.Navigator>
+  );
+}
 
 function AppContent() {
   const { user, loading, error } = useUser();
@@ -42,7 +54,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return <SignInScreen />;
+    return <AuthStackScreen />;
   }
 
   return (

@@ -54,13 +54,11 @@ class UserProfileService {
   async updateProfile(userId, updates) {
     try {
       const userRef = doc(db, 'users', userId);
-      
       const updateData = {
         ...updates,
         updatedAt: serverTimestamp(),
       };
-
-      await updateDoc(userRef, updateData);
+      await setDoc(userRef, updateData, { merge: true });
       return { success: true };
     } catch (error) {
       console.error('Error updating profile:', error);
