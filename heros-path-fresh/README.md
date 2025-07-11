@@ -79,7 +79,7 @@ git branch -d feature/user-profiles
 
 ```
 heros-path-fresh/
-├── App.js                   # Root drawer navigator + gesture-handler setup
+├── App.js                   # Root navigation (drawer + auth stack)
 ├── index.js                 # Entry point
 ├── app.json                 # Expo config with environment variable mapping
 ├── eas.json                 # EAS build configuration
@@ -88,7 +88,6 @@ heros-path-fresh/
 ├── config.js                # Environment variables configuration
 ├── firebase.js              # Firebase initialization
 ├── GoogleService-Info.plist # iOS Firebase configuration
-├── setup-env-vars.bat       # Environment variable setup script
 ├── .gitignore
 ├── screens/
 │   ├── MapScreen.js
@@ -97,7 +96,8 @@ heros-path-fresh/
 │   ├── SavedPlacesScreen.js
 │   ├── SocialScreen.js
 │   ├── SettingsScreen.js
-│   └── SignInScreen.js
+│   ├── SignInScreen.js
+│   └── EmailAuthScreen.js   # Email/password sign in/up
 ├── contexts/
 │   ├── UserContext.js       # User authentication and profile management
 │   └── ExplorationContext.js # Exploration state management
@@ -136,11 +136,14 @@ heros-path-fresh/
 * **Storage:** Environment variables stored in EAS and injected at build time
 * **Configuration:** `app.json` contains environment variable mapping
 * **Local Development:** `.env` file for local development (not committed to Git)
+* **EAS Dashboard:** Set environment variables for each profile at https://expo.dev/accounts/[your-account]/projects/[your-project]/environment-variables
 
 ### Build Commands
 ```bash
 # Development build
-eas build --platform ios --profile development
+eas build --platform ios --profile development --branch feature/email-auth
+# or for Android
+eas build --platform android --profile development --branch feature/email-auth
 
 # Start development server
 npx expo start --dev-client
@@ -148,6 +151,63 @@ npx expo start --dev-client
 # Clear cache and restart
 npx expo start -c
 ```
+
+## Authentication
+
+### Google OAuth
+- Google sign-in is available via the main sign-in screen.
+- Make sure Google Cloud Console OAuth credentials and redirect URIs are set up as described in the project wiki.
+
+### Email/Password Authentication
+- Users can sign up or sign in with email/password via the "Sign in with Email" button on the sign-in screen.
+- The `EmailAuthScreen.js` handles both sign up and sign in.
+- All authentication is managed via Firebase Auth.
+
+## Firestore Database Setup
+
+### Enabling Firestore
+1. Go to the Firebase Console and select your project.
+2. Click "Firestore Database" in the sidebar.
+3. Click "Create database" and choose test mode (for development) or production mode (for production).
+4. Choose a region and click "Enable".
+
+### Collections to Scaffold
+- `users` (created automatically by the app)
+- `journeys` (create manually for testing, or let the app create)
+- `savedPlaces` (create manually for testing, or let the app create)
+- `discoveries` (optional, for discovery features)
+
+### Example Document Structure
+- See `services/UserProfileService.js` for user profile fields.
+- Journeys and saved places should include a `userId` field to associate with the user.
+
+### Firestore Security Rules (Recommended)
+```
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /journeys/{journeyId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    match /savedPlaces/{savedPlaceId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    match /discoveries/{discoveryId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+  }
+}
+```
+
+## Secrets & Security
+- **Never commit secrets or API keys to GitHub.**
+- If a secret is accidentally committed, use [BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) to scrub it from history.
+- `.env` is in `.gitignore` and should never be tracked by git.
 
 ## Current Status
 
@@ -166,13 +226,15 @@ npx expo start -c
 * Painted-streets overlay
 * Firebase authentication setup
 * Google OAuth integration (configuration complete)
+* Email/password authentication (sign up & sign in)
+* User profile creation and editing
 
 ### 🔄 In Progress
-* Environment variable injection in development builds
-* Google OAuth flow testing
+* Firestore collection scaffolding and security rules
+* Testing email/password and Google OAuth flows
+* User profile management (avatar upload, privacy settings)
 
 ### 📋 Backlog
-* User profile management
 * Social feed, friends, privacy controls
 * Settings toggles (categories, ratings, goals)
 * Unexplored-first route suggestions
@@ -181,7 +243,6 @@ npx expo start -c
 ## Next Features Roadmap
 
 ### 1. User Profile Management
-* User profile creation and editing
 * Avatar upload and management
 * Profile privacy settings
 
