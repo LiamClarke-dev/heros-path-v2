@@ -29,24 +29,45 @@ export const UserProvider = ({ children }) => {
       // Check if auth is properly initialized
       if (auth && typeof auth.onAuthStateChanged === 'function') {
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
           setUser(firebaseUser);
-          
           if (firebaseUser) {
             // Load user profile from Firestore
+            const result = await UserProfileService.getUserProfile(firebaseUser.uid);
+            if (!result.success || !result.profile) {
+              // Create default profile for new user
+              await UserProfileService.createOrUpdateProfile(firebaseUser.uid, {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName || 'Hero Explorer',
+                photoURL: firebaseUser.photoURL,
+                emailVerified: firebaseUser.emailVerified,
+                lastSignInAt: new Date().toISOString(),
+                isNewUser: true,
+                bio: '',
+                location: '',
+                preferences: {
+                  notifications: true,
+                  privacy: 'public',
+                  units: 'metric'
+                },
+                stats: {
+                  totalWalks: 0,
+                  totalDistance: 0,
+                  totalTime: 0,
+                  discoveries: 0
+                }
+              });
+            }
             await loadUserProfile(firebaseUser.uid);
           } else {
             setUserProfile(null);
           }
-          
           setLoading(false);
         });
       } else {
-        console.warn('Firebase Auth not properly initialized, skipping auth state listener');
         setLoading(false);
       }
     } catch (error) {
-      console.error('Error setting up auth state listener:', error);
       setError(error.message);
       setLoading(false);
     }

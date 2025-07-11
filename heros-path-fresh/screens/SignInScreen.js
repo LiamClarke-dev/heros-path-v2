@@ -62,53 +62,12 @@ export default function SignInScreen() {
 
   useEffect(() => {
     const signInWithGoogle = async () => {
-      console.log('Google AuthSession response:', response);
-      
       if (response?.type === 'success') {
         setLoading(true);
         try {
-          console.log('Starting Google sign-in process...');
           const { authentication } = response;
-          console.log('Authentication object:', authentication);
-          
           const credential = GoogleAuthProvider.credential(null, authentication.accessToken);
-          console.log('Created credential, signing in with Firebase...');
-          
           const userCredential = await signInWithCredential(auth, credential);
-          console.log('Firebase sign-in successful:', userCredential.user);
-          
-          // Create or update user profile in Firestore
-          const user = userCredential.user;
-          const profileData = {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName || 'Hero Explorer',
-            photoURL: user.photoURL,
-            emailVerified: user.emailVerified,
-            lastSignInAt: new Date().toISOString(),
-            isNewUser: userCredential._tokenResponse?.isNewUser || false,
-            // Default profile settings
-            bio: '',
-            location: '',
-            preferences: {
-              notifications: true,
-              privacy: 'public',
-              units: 'metric'
-            },
-            stats: {
-              totalWalks: 0,
-              totalDistance: 0,
-              totalTime: 0,
-              discoveries: 0
-            }
-          };
-
-          console.log('Creating/updating profile with data:', profileData);
-          await createOrUpdateProfile(profileData);
-          console.log('Profile created/updated successfully');
-          
-          // Profile created successfully - user will be automatically navigated by App.js
-          Alert.alert('🎉 Welcome!', 'Your profile has been created successfully!');
         } catch (error) {
           console.error('Sign-in error details:', error);
           console.error('Error code:', error.code);
@@ -120,21 +79,17 @@ export default function SignInScreen() {
       } else if (response?.type === 'error') {
         console.error('Google auth error:', response.error);
         Alert.alert('Google Auth Error', response.error?.message || 'Unknown error occurred');
-      } else {
-        console.log('Google AuthSession response type:', response?.type);
       }
     };
     signInWithGoogle();
   }, [response, createOrUpdateProfile]);
 
   const handleSignIn = async () => {
-    console.log('Sign in button pressed');
     try {
       const result = await promptAsync({
         useProxy: true, // <--- This is the key!
         webBrowserRedirectMode: 'browser'
       });
-      console.log('Google promptAsync result:', result);
     } catch (error) {
       console.error('Google promptAsync error:', error);
     }
