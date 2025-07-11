@@ -4,14 +4,26 @@
 
 import Constants from 'expo-constants';
 
+// Debug: Log what's available in Constants
+console.log('=== DEBUGGING ENVIRONMENT VARIABLES ===');
+console.log('Constants.expoConfig:', Constants.expoConfig);
+console.log('Constants.expoConfig?.extra:', Constants.expoConfig?.extra);
+console.log('process.env keys:', Object.keys(process.env).filter(key => key.includes('GOOGLE') || key.includes('FIREBASE')));
+
 // Get environment variables from EAS build or fallback to process.env for local development
 const getEnvVar = (key) => {
   // Try EAS-injected environment variables first
   if (Constants.expoConfig?.extra?.[key]) {
+    console.log(`Found ${key} in Constants.expoConfig.extra`);
     return Constants.expoConfig.extra[key];
   }
   // Fallback to process.env for local development
-  return process.env[key];
+  if (process.env[key]) {
+    console.log(`Found ${key} in process.env`);
+    return process.env[key];
+  }
+  console.log(`NOT FOUND: ${key}`);
+  return null;
 };
 
 // Debug: Log environment variables to see what's available
