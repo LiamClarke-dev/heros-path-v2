@@ -52,6 +52,10 @@ const missingValues = Object.entries(requiredConfig)
   .filter(([key, value]) => !value)
   .map(([key]) => key);
 
+let app;
+let auth;
+let db;
+
 if (missingValues.length > 0) {
   console.error('Missing Firebase configuration values:', missingValues);
   console.error('Firebase initialization will fail. Please check your environment variables.');
@@ -68,10 +72,9 @@ if (missingValues.length > 0) {
   };
   
   console.log('Using fallback config to prevent crash');
-  const app = initializeApp(fallbackConfig);
+  app = initializeApp(fallbackConfig);
   
   // Initialize auth with error handling
-  let auth;
   try {
     auth = initializeAuth(app, {
       persistence: getReactNativePersistence(AsyncStorage),
@@ -92,8 +95,7 @@ if (missingValues.length > 0) {
     };
   }
   
-  export { auth };
-  export const db = getFirestore(app);
+  db = getFirestore(app);
 } else {
   // All config values are present, proceed normally
   const firebaseConfig = {
@@ -116,12 +118,14 @@ if (missingValues.length > 0) {
     measurementId: FIREBASE_MEASUREMENT_ID,
   });
 
-  const app = initializeApp(firebaseConfig);
+  app = initializeApp(firebaseConfig);
 
   // <- HERE: initialize Auth with AsyncStorage persistence
-  export const auth = initializeAuth(app, {
+  auth = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
 
-  export const db = getFirestore(app);
+  db = getFirestore(app);
 }
+
+export { auth, db };

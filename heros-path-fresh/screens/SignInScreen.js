@@ -6,30 +6,49 @@ import * as AuthSession from 'expo-auth-session';
 import { auth } from '../firebase';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { useUser } from '../contexts/UserContext';
+import { Platform } from 'react-native';
 
-import { GOOGLE_WEB_CLIENT_ID } from "../config";
-const ANDROID_CLIENT_ID = GOOGLE_WEB_CLIENT_ID;
-const IOS_CLIENT_ID     = GOOGLE_WEB_CLIENT_ID;
-const EXPO_CLIENT_ID    = GOOGLE_WEB_CLIENT_ID;
+import { 
+  GOOGLE_WEB_CLIENT_ID, 
+  GOOGLE_IOS_REVERSED_CLIENT_ID, 
+  GOOGLE_ANDROID_CLIENT_ID 
+} from "../config";
 
-console.log('Using Google Client ID:', GOOGLE_WEB_CLIENT_ID);
+// Use platform-specific client IDs
+const getClientId = () => {
+  if (Platform.OS === 'ios') {
+    return GOOGLE_IOS_REVERSED_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
+  } else if (Platform.OS === 'android') {
+    return GOOGLE_ANDROID_CLIENT_ID || GOOGLE_WEB_CLIENT_ID;
+  } else {
+    return GOOGLE_WEB_CLIENT_ID;
+  }
+};
+
+const clientId = getClientId();
+console.log('Using Google Client ID for', Platform.OS, ':', clientId);
 
 // discovery endpoints for Google
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint:         'https://oauth2.googleapis.com/token',
-  revocationEndpoint:    'https://oauth2.googleapis.com/revoke',
+  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
 };
 
 export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const { createOrUpdateProfile } = useUser();
+  
   const [request, response, promptAsync] = Google.useAuthRequest(
     {
-      expoClientId:    EXPO_CLIENT_ID,
-      androidClientId: ANDROID_CLIENT_ID,
-      iosClientId:     IOS_CLIENT_ID,
-      scopes: ['profile', 'email'],
+      expoClientId: GOOGLE_WEB_CLIENT_ID,
+      androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_REVERSED_CLIENT_ID,
+      scopes: ['profile', 'email', 'openid'],
+      redirectUri: AuthSession.makeRedirectUri({
+        scheme: 'com.liamclarke.herospath',
+        path: 'oauthredirect'
+      }),
     },
     discovery
   );
@@ -102,6 +121,10 @@ export default function SignInScreen() {
   const handleSignIn = async () => {
     console.log('Sign in button pressed');
     console.log('Request object:', request);
+    console.log('Redirect URI:', AuthSession.makeRedirectUri({
+      scheme: 'com.liamclarke.herospath',
+      path: 'oauthredirect'
+    }));
     
     try {
       const result = await promptAsync({ 
