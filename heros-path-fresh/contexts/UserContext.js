@@ -19,23 +19,43 @@ export const UserProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Listen for authentication state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
-      if (firebaseUser) {
-        // Load user profile from Firestore
-        await loadUserProfile(firebaseUser.uid);
+    let unsubscribe;
+    
+    try {
+      // Check if auth is properly initialized
+      if (auth && typeof auth.onAuthStateChanged === 'function') {
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
+          setUser(firebaseUser);
+          
+          if (firebaseUser) {
+            // Load user profile from Firestore
+            await loadUserProfile(firebaseUser.uid);
+          } else {
+            setUserProfile(null);
+          }
+          
+          setLoading(false);
+        });
       } else {
-        setUserProfile(null);
+        console.warn('Firebase Auth not properly initialized, skipping auth state listener');
+        setLoading(false);
       }
-      
+    } catch (error) {
+      console.error('Error setting up auth state listener:', error);
+      setError(error.message);
       setLoading(false);
-    });
+    }
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // Load user profile from Firestore
@@ -106,7 +126,11 @@ export const UserProvider = ({ children }) => {
   // Sign out user
   const signOutUser = async () => {
     try {
-      await signOut(auth);
+      if (auth && typeof auth.signOut === 'function') {
+        await signOut(auth);
+      } else {
+        console.warn('Firebase Auth not properly initialized, cannot sign out');
+      }
       setUser(null);
       setUserProfile(null);
     } catch (error) {
@@ -187,6 +211,7 @@ export const UserProvider = ({ children }) => {
     userProfile,
     loading,
     profileLoading,
+    error,
     createOrUpdateProfile,
     updateProfile,
     signOutUser,
