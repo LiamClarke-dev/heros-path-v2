@@ -14,6 +14,7 @@ import {
   writeBatch 
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import Logger from '../utils/Logger';
 
 class DiscoveryService {
   // Get user's discoveries collection reference
@@ -28,6 +29,9 @@ class DiscoveryService {
 
   // Create a new discovery
   async createDiscovery(userId, discoveryData) {
+    const startTime = Date.now();
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'CREATE', discoveryData.placeId, discoveryData.journeyId, { userId });
+    
     try {
       const discoveriesRef = this.getUserDiscoveriesRef(userId);
       const discoveryRef = doc(discoveriesRef);
@@ -40,9 +44,22 @@ class DiscoveryService {
       };
 
       await setDoc(discoveryRef, discovery);
+      
+      // Update journey completion status if this discovery is for a specific journey
+      if (discoveryData.journeyId) {
+        try {
+          await this.updateJourneyCompletionStatus(userId, discoveryData.journeyId);
+        } catch (statusError) {
+          Logger.warn('DISCOVERY_SERVICE', 'Failed to update journey status after creating discovery', { journeyId: discoveryData.journeyId, error: statusError.message });
+        }
+      }
+      
+      const duration = Date.now() - startTime;
+      Logger.performance('DISCOVERY_SERVICE', 'createDiscovery', duration, { userId, placeId: discoveryData.placeId });
+      
       return { success: true, discovery };
     } catch (error) {
-      console.error('Error creating discovery:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error creating discovery', error);
       throw error;
     }
   }
@@ -148,15 +165,44 @@ class DiscoveryService {
       };
 
       await setDoc(dismissedDoc, dismissedPlace);
+      
+      // Also update the original discovery record to set dismissed: true
+      try {
+        const discoveriesRef = this.getUserDiscoveriesRef(userId);
+        const discoveryQuery = query(discoveriesRef, where('placeId', '==', placeId));
+        const discoverySnap = await getDocs(discoveryQuery);
+        
+        if (!discoverySnap.empty) {
+          const discoveryDoc = discoverySnap.docs[0];
+          await updateDoc(discoveryDoc.ref, { 
+            dismissed: true,
+            updatedAt: serverTimestamp()
+          });
+          Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATED_DISCOVERY_RECORD_DISMISSED', placeId, dismissData.journeyId, { userId });
+        }
+      } catch (updateError) {
+        Logger.warn('DISCOVERY_SERVICE', 'Failed to update discovery record after dismiss', { placeId, error: updateError.message });
+      }
+      
+      // Update journey completion status if this dismissal affects a journey
+      if (dismissData.journeyId) {
+        try {
+          await this.updateJourneyCompletionStatus(userId, dismissData.journeyId);
+        } catch (statusError) {
+          Logger.warn('DISCOVERY_SERVICE', 'Failed to update journey status after dismissing place', { journeyId: dismissData.journeyId, error: statusError.message });
+        }
+      }
+      
       return { success: true };
     } catch (error) {
-      console.error('Error dismissing place:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error dismissing place', error);
       throw error;
     }
   }
 
   // Get all dismissed places for a user
   async getDismissedPlaces(userId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_DISMISSED_PLACES', null, null, { userId });
     try {
       const dismissedRef = this.getUserDismissedRef(userId);
       const q = query(dismissedRef);
@@ -174,21 +220,24 @@ class DiscoveryService {
         return dateB - dateA; // Descending order
       });
       
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_DISMISSED_PLACES_SUCCESS', null, null, { userId, dismissedPlacesCount: dismissedPlaces.length });
       return { success: true, dismissedPlaces };
     } catch (error) {
-      console.error('Error getting dismissed places:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error getting dismissed places', error);
       throw error;
     }
   }
 
   // Check if a place is dismissed
   async isPlaceDismissed(userId, placeId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'IS_PLACE_DISMISSED', placeId, null, { userId });
     try {
       const dismissedRef = doc(db, 'journeys', userId, 'dismissed', placeId);
       const dismissedSnap = await getDoc(dismissedRef);
       
       if (dismissedSnap.exists()) {
         const data = dismissedSnap.data();
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'IS_PLACE_DISMISSED_SUCCESS', placeId, null, { userId, dismissed: true });
         return { 
           success: true, 
           dismissed: true, 
@@ -197,80 +246,99 @@ class DiscoveryService {
           reason: data.reason
         };
       } else {
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'IS_PLACE_DISMISSED_SUCCESS', placeId, null, { userId, dismissed: false });
         return { success: true, dismissed: false };
       }
     } catch (error) {
-      console.error('Error checking if place is dismissed:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error checking if place is dismissed', error);
       throw error;
     }
   }
 
-  // Remove a place from dismissed list
+  // Remove a place from dismissed places
   async undismissPlace(userId, placeId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'UNDISMISSED_PLACE', placeId, null, { userId });
     try {
       const dismissedRef = doc(db, 'journeys', userId, 'dismissed', placeId);
-      await deleteDoc(dismissedRef);
-      return { success: true };
+      const dismissedSnap = await getDoc(dismissedRef);
+      
+      if (dismissedSnap.exists()) {
+        const dismissedData = dismissedSnap.data();
+        await deleteDoc(dismissedRef);
+        
+        // Also update the original discovery record to set dismissed: false
+        try {
+          const discoveriesRef = this.getUserDiscoveriesRef(userId);
+          const discoveryQuery = query(discoveriesRef, where('placeId', '==', placeId));
+          const discoverySnap = await getDocs(discoveryQuery);
+          
+          if (!discoverySnap.empty) {
+            const discoveryDoc = discoverySnap.docs[0];
+            await updateDoc(discoveryDoc.ref, { 
+              dismissed: false,
+              updatedAt: serverTimestamp()
+            });
+            Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATED_DISCOVERY_RECORD', placeId, dismissedData.journeyId, { userId });
+          }
+        } catch (updateError) {
+          Logger.warn('DISCOVERY_SERVICE', 'Failed to update discovery record after undismiss', { placeId, error: updateError.message });
+        }
+        
+        // Update journey completion status if this undismissal affects a journey
+        if (dismissedData.journeyId) {
+          try {
+            await this.updateJourneyCompletionStatus(userId, dismissedData.journeyId);
+          } catch (statusError) {
+            Logger.warn('DISCOVERY_SERVICE', 'Failed to update journey status after undismissing place', { journeyId: dismissedData.journeyId, error: statusError.message });
+          }
+        }
+        
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UNDISMISSED_PLACE_SUCCESS', placeId, null, { userId });
+        return { success: true };
+      } else {
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UNDISMISSED_PLACE_SUCCESS', placeId, null, { userId });
+        return { success: false, error: 'Place was not dismissed' };
+      }
     } catch (error) {
-      console.error('Error undismissing place:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error undismissing place', error);
       throw error;
     }
   }
 
   // Get discovery statistics for a user
   async getDiscoveryStats(userId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_DISCOVERY_STATS', null, null, { userId });
     try {
       const discoveriesRef = this.getUserDiscoveriesRef(userId);
-      const querySnapshot = await getDocs(discoveriesRef);
+      const dismissedRef = this.getUserDismissedRef(userId);
       
-      let totalDiscoveries = 0;
-      let savedCount = 0;
-      let dismissedCount = 0;
-      const placeTypes = {};
+      const [discoveriesSnap, dismissedSnap] = await Promise.all([
+        getDocs(discoveriesRef),
+        getDocs(dismissedRef)
+      ]);
       
-      querySnapshot.forEach((doc) => {
-        const discovery = doc.data();
-        totalDiscoveries++;
-        
-        if (discovery.saved) savedCount++;
-        if (discovery.dismissed) dismissedCount++;
-        
-        if (discovery.placeType) {
-          placeTypes[discovery.placeType] = (placeTypes[discovery.placeType] || 0) + 1;
-        }
-      });
+      const totalDiscoveries = discoveriesSnap.size;
+      const savedDiscoveries = discoveriesSnap.docs.filter(doc => doc.data().saved).length;
+      const dismissedPlaces = dismissedSnap.size;
       
-      return {
-        success: true,
-        stats: {
-          totalDiscoveries,
-          savedCount,
-          dismissedCount,
-          placeTypes,
-          saveRate: totalDiscoveries > 0 ? (savedCount / totalDiscoveries) * 100 : 0,
-          dismissRate: totalDiscoveries > 0 ? (dismissedCount / totalDiscoveries) * 100 : 0,
-        }
+      const stats = {
+        total: totalDiscoveries,
+        saved: savedDiscoveries,
+        dismissed: dismissedPlaces,
+        pending: totalDiscoveries - savedDiscoveries
       };
+      
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_DISCOVERY_STATS_SUCCESS', null, null, { userId, stats });
+      return { success: true, stats };
     } catch (error) {
-      console.error('Error getting discovery stats:', error);
-      // Return empty stats instead of throwing for better UX
-      return {
-        success: false,
-        stats: {
-          totalDiscoveries: 0,
-          savedCount: 0,
-          dismissedCount: 0,
-          placeTypes: {},
-          saveRate: 0,
-          dismissRate: 0,
-        },
-        error: error.message
-      };
+      Logger.error('DISCOVERY_SERVICE', 'Error getting discovery stats', error);
+      throw error;
     }
   }
 
-  // Batch operations for multiple discoveries
+  // Batch update multiple discoveries
   async batchUpdateDiscoveries(userId, updates) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'BATCH_UPDATE_DISCOVERIES', null, null, { userId, updatesCount: updates.length });
     try {
       const batch = writeBatch(db);
       
@@ -283,29 +351,173 @@ class DiscoveryService {
       });
       
       await batch.commit();
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'BATCH_UPDATE_DISCOVERIES_SUCCESS', null, null, { userId, updatesCount: updates.length });
       return { success: true };
     } catch (error) {
-      console.error('Error batch updating discoveries:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error batch updating discoveries', error);
       throw error;
     }
   }
 
-  // Get discoveries by journey
+  // Get discoveries for a specific journey
   async getDiscoveriesByJourney(userId, journeyId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_DISCOVERIES_BY_JOURNEY', null, journeyId, { userId });
     try {
-      return await this.getUserDiscoveries(userId, { journeyId });
+      const discoveriesRef = this.getUserDiscoveriesRef(userId);
+      const q = query(discoveriesRef, where('journeyId', '==', journeyId));
+      const querySnapshot = await getDocs(q);
+      
+      const discoveries = [];
+      querySnapshot.forEach((doc) => {
+        discoveries.push(doc.data());
+      });
+      
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_DISCOVERIES_BY_JOURNEY_SUCCESS', null, journeyId, { userId, discoveriesCount: discoveries.length });
+      return { success: true, discoveries };
     } catch (error) {
-      console.error('Error getting discoveries by journey:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error getting discoveries by journey', error);
       throw error;
     }
   }
 
-  // Get saved places only
+  // Get journey discoveries (alias for getDiscoveriesByJourney)
+  async getJourneyDiscoveries(userId, journeyId) {
+    return this.getDiscoveriesByJourney(userId, journeyId);
+  }
+
+  // Get saved places for a user
   async getSavedPlaces(userId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_SAVED_PLACES', null, null, { userId });
     try {
-      return await this.getUserDiscoveries(userId, { saved: true });
+      const discoveriesRef = this.getUserDiscoveriesRef(userId);
+      const q = query(discoveriesRef, where('saved', '==', true));
+      const querySnapshot = await getDocs(q);
+      
+      const savedPlaces = [];
+      querySnapshot.forEach((doc) => {
+        savedPlaces.push(doc.data());
+      });
+      
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'GET_SAVED_PLACES_SUCCESS', null, null, { userId, savedPlacesCount: savedPlaces.length });
+      return { success: true, discoveries: savedPlaces };
     } catch (error) {
-      console.error('Error getting saved places:', error);
+      Logger.error('DISCOVERY_SERVICE', 'Error getting saved places', error);
+      throw error;
+    }
+  }
+
+  // Remove a place from dismissed places (alias for undismissPlace)
+  async removeFromDismissedPlaces(userId, placeId) {
+    return this.undismissPlace(userId, placeId);
+  }
+
+  // Remove a place from saved places
+  async unsavePlace(userId, placeId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'UNSAVE_PLACE', placeId, null, { userId });
+    try {
+      // First, find the discovery to get the journeyId
+      const discoveriesResult = await this.getUserDiscoveries(userId, { saved: true });
+      const savedDiscovery = discoveriesResult.discoveries.find(d => d.placeId === placeId);
+      
+      if (savedDiscovery) {
+        // Update the discovery to mark it as not saved
+        await this.updateDiscovery(userId, savedDiscovery.id, { saved: false });
+        
+        // Update journey completion status if this unsave affects a journey
+        if (savedDiscovery.journeyId) {
+          try {
+            await this.updateJourneyCompletionStatus(userId, savedDiscovery.journeyId);
+          } catch (statusError) {
+            Logger.warn('DISCOVERY_SERVICE', 'Failed to update journey status after unsaving place', { journeyId: savedDiscovery.journeyId, error: statusError.message });
+          }
+        }
+        
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UNSAVE_PLACE_SUCCESS', placeId, null, { userId });
+        return { success: true };
+      } else {
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UNSAVE_PLACE_SUCCESS', placeId, null, { userId });
+        return { success: false, error: 'Place was not saved' };
+      }
+    } catch (error) {
+      Logger.error('DISCOVERY_SERVICE', 'Error unsaving place', error);
+      throw error;
+    }
+  }
+
+  // Update journey completion status based on discoveries
+  async updateJourneyCompletionStatus(userId, journeyId) {
+    Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_COMPLETION_STATUS', journeyId, null, { userId });
+    try {
+      
+      // Get all discoveries for this journey
+      const discoveriesResult = await this.getDiscoveriesByJourney(userId, journeyId);
+      
+      if (!discoveriesResult.success || !discoveriesResult.discoveries) {
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_COMPLETION_STATUS_NO_DISCOVERIES', journeyId, null, { userId });
+        return { success: false, error: 'No discoveries found' };
+      }
+      
+      const discoveries = discoveriesResult.discoveries;
+      const totalDiscoveries = discoveries.length;
+      
+      if (totalDiscoveries === 0) {
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_COMPLETION_STATUS_NO_DISCOVERIES_MARK_INCOMPLETE', journeyId, null, { userId });
+        // No discoveries means journey is not complete
+        await this.updateJourneyStatus(userId, journeyId, false, 0, 0);
+        return { success: true, completed: false, reviewedCount: 0, totalCount: 0 };
+      }
+      
+      // Count reviewed discoveries (saved or dismissed)
+      const reviewedDiscoveries = discoveries.filter(discovery => 
+        discovery.saved || discovery.dismissed
+      );
+      const reviewedCount = reviewedDiscoveries.length;
+      const isCompleted = reviewedCount === totalDiscoveries;
+      
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_COMPLETION_STATUS_SUCCESS', journeyId, null, { 
+        userId, 
+        totalDiscoveries, 
+        reviewedCount, 
+        isCompleted,
+        discoveries: discoveries.map(d => ({
+          placeId: d.placeId,
+          saved: d.saved,
+          dismissed: d.dismissed,
+          placeName: d.placeName
+        }))
+      });
+      
+      // Update journey status
+      await this.updateJourneyStatus(userId, journeyId, isCompleted, reviewedCount, totalDiscoveries);
+      
+      return { 
+        success: true, 
+        completed: isCompleted, 
+        reviewedCount, 
+        totalCount: totalDiscoveries 
+      };
+    } catch (error) {
+      Logger.error('DISCOVERY_SERVICE', 'Error updating journey completion status', error);
+      throw error;
+    }
+  }
+
+  // Update journey status in Firestore
+  async updateJourneyStatus(userId, journeyId, isCompleted, reviewedCount, totalCount) {
+    try {
+      const journeyRef = doc(db, 'journeys', userId, 'journeys', journeyId);
+      const updateData = {
+        isCompleted: isCompleted,
+        reviewedDiscoveriesCount: reviewedCount,
+        totalDiscoveriesCount: totalCount,
+        completionPercentage: totalCount > 0 ? Math.round((reviewedCount / totalCount) * 100) : 0,
+        lastStatusUpdate: serverTimestamp(),
+      };
+      
+      await updateDoc(journeyRef, updateData);
+      Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_STATUS_SUCCESS', journeyId, null, { userId, isCompleted, reviewedCount, totalCount });
+    } catch (error) {
+      Logger.error('DISCOVERY_SERVICE', 'Error updating journey status', error);
       throw error;
     }
   }

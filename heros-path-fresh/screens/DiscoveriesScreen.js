@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
 import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getSuggestionsForRoute, getPlaceDetailsWithSummaries } from '../services/DiscoveriesService';
+import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
@@ -26,6 +26,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import DiscoveryService from '../services/DiscoveryService';
 import JourneyService from '../services/JourneyService';
+import { 
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  serverTimestamp
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import Logger from '../utils/Logger';
 
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
@@ -62,38 +72,147 @@ export default function DiscoveriesScreen({ navigation, route }) {
   // Real data state
   const [dismissedPlaces, setDismissedPlaces] = useState([]);
   const [savedPlaces, setSavedPlaces] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Load dismissed and saved places from Firestore
-  const loadDismissedAndSaved = async () => {
+  // Define all useCallback hooks at the top
+  const loadDismissedAndSavedCallback = React.useCallback(async () => {
+    Logger.debug('DISCOVERIES_SCREEN', 'loadDismissedAndSavedCallback called');
     if (!user) {
+      Logger.debug('DISCOVERIES_SCREEN', 'No user, clearing dismissed and saved places');
       setDismissedPlaces([]);
       setSavedPlaces([]);
       return;
     }
 
     try {
+      Logger.debug('DISCOVERIES_SCREEN', 'Loading dismissed and saved places from Firestore');
       const [dismissedResult, savedResult] = await Promise.all([
         DiscoveryService.getDismissedPlaces(user.uid),
         DiscoveryService.getSavedPlaces(user.uid)
       ]);
 
       if (dismissedResult.success) {
+        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${dismissedResult.dismissedPlaces.length} dismissed places`);
         setDismissedPlaces(dismissedResult.dismissedPlaces);
       }
       if (savedResult.success) {
+        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${savedResult.discoveries.length} saved places`);
         setSavedPlaces(savedResult.discoveries);
       }
     } catch (error) {
-      console.error('Error loading dismissed and saved places:', error);
+      Logger.error('DISCOVERIES_SCREEN', 'Error loading dismissed and saved places', error);
       
       // Fallback to AsyncStorage if Firestore fails
       try {
+        Logger.debug('DISCOVERIES_SCREEN', 'Falling back to AsyncStorage');
         const dismissed = JSON.parse(await AsyncStorage.getItem('dismissedPlaces')) || [];
         const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
         setDismissedPlaces(dismissed);
         setSavedPlaces(saved);
       } catch (fallbackError) {
-        console.error('Fallback to AsyncStorage also failed:', fallbackError);
+        Logger.error('DISCOVERIES_SCREEN', 'Fallback to AsyncStorage also failed', fallbackError);
+        setDismissedPlaces([]);
+        setSavedPlaces([]);
+      }
+    }
+  }, [user]);
+
+  // Manual refresh function (pull-to-refresh) - ONLY reloads from Firestore, NO API calls
+  const onRefresh = React.useCallback(async () => {
+    Logger.debug('DISCOVERIES_SCREEN', 'onRefresh called - RELOADING FROM FIRESTORE ONLY');
+    if (!selectedRoute || !user) {
+      Logger.debug('DISCOVERIES_SCREEN', 'No selected route or user, skipping refresh');
+      return;
+    }
+    
+    setRefreshing(true);
+    try {
+      // Reload dismissed and saved places
+      Logger.debug('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
+      await loadDismissedAndSavedCallback();
+      
+      // Reload suggestions for current journey from Firestore only
+      Logger.debug('DISCOVERIES_SCREEN', 'Reloading journey discoveries from Firestore');
+      const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
+      
+      let allSuggestions = [];
+      
+      if (journeyDiscoveries.success && journeyDiscoveries.discoveries) {
+        const unreviewed = journeyDiscoveries.discoveries.filter(
+          discovery => !discovery.saved && !discovery.dismissed
+        );
+        
+        const firestoreSuggestions = unreviewed.map(discovery => ({
+          placeId: discovery.placeId,
+          name: discovery.placeData?.name || discovery.placeName || 'Unknown Place',
+          types: discovery.placeData?.types || [discovery.placeType || 'unknown'],
+          rating: discovery.placeData?.rating,
+          photos: discovery.placeData?.photos || [],
+          formatted_address: discovery.placeData?.formatted_address,
+          latitude: discovery.location?.lat,
+          longitude: discovery.location?.lng,
+          category: discovery.placeType || 'unknown',
+          fromFirestore: true,
+          discoveryId: discovery.id
+        }));
+        
+        allSuggestions = firestoreSuggestions;
+      }
+      
+      setSuggestions(allSuggestions);
+      
+      Toast.show('Refreshed discoveries', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    } catch (error) {
+      Logger.error('DISCOVERIES_SCREEN', 'Error refreshing discoveries', error);
+      Toast.show('Failed to refresh', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [selectedRoute, user, loadDismissedAndSavedCallback]);
+
+  // Load dismissed and saved places from Firestore
+  const loadDismissedAndSaved = async () => {
+    Logger.debug('DISCOVERIES_SCREEN', 'loadDismissedAndSaved called');
+    if (!user) {
+      Logger.debug('DISCOVERIES_SCREEN', 'No user, clearing dismissed and saved places');
+      setDismissedPlaces([]);
+      setSavedPlaces([]);
+      return;
+    }
+
+    try {
+      Logger.debug('DISCOVERIES_SCREEN', 'Loading dismissed and saved places from Firestore');
+      const [dismissedResult, savedResult] = await Promise.all([
+        DiscoveryService.getDismissedPlaces(user.uid),
+        DiscoveryService.getSavedPlaces(user.uid)
+      ]);
+
+      if (dismissedResult.success) {
+        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${dismissedResult.dismissedPlaces.length} dismissed places`);
+        setDismissedPlaces(dismissedResult.dismissedPlaces);
+      }
+      if (savedResult.success) {
+        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${savedResult.discoveries.length} saved places`);
+        setSavedPlaces(savedResult.discoveries);
+      }
+    } catch (error) {
+      Logger.error('DISCOVERIES_SCREEN', 'Error loading dismissed and saved places', error);
+      
+      // Fallback to AsyncStorage if Firestore fails
+      try {
+        Logger.debug('DISCOVERIES_SCREEN', 'Falling back to AsyncStorage');
+        const dismissed = JSON.parse(await AsyncStorage.getItem('dismissedPlaces')) || [];
+        const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
+        setDismissedPlaces(dismissed);
+        setSavedPlaces(saved);
+      } catch (fallbackError) {
+        Logger.error('DISCOVERIES_SCREEN', 'Fallback to AsyncStorage also failed', fallbackError);
         setDismissedPlaces([]);
         setSavedPlaces([]);
       }
@@ -107,9 +226,9 @@ export default function DiscoveriesScreen({ navigation, route }) {
     try {
       await DiscoveryService.dismissPlace(user.uid, placeId, dismissData);
       // Reload dismissed places to get updated list
-      await loadDismissedAndSaved();
+      await loadDismissedAndSavedCallback();
     } catch (error) {
-      console.error('Error saving dismissed place:', error);
+      Logger.error('DISCOVERIES_SCREEN', 'Error saving dismissed place', error);
       throw error;
     }
   };
@@ -121,9 +240,9 @@ export default function DiscoveriesScreen({ navigation, route }) {
     try {
       await DiscoveryService.createDiscovery(user.uid, discoveryData);
       // Reload saved places to get updated list
-      await loadDismissedAndSaved();
+      await loadDismissedAndSavedCallback();
     } catch (error) {
-      console.error('Error saving place:', error);
+      Logger.error('DISCOVERIES_SCREEN', 'Error saving place', error);
       throw error;
     }
   };
@@ -131,8 +250,8 @@ export default function DiscoveriesScreen({ navigation, route }) {
   // Load on mount and when screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      loadDismissedAndSaved();
-    }, [])
+      loadDismissedAndSavedCallback();
+    }, [loadDismissedAndSavedCallback])
   );
 
   // When saving a place
@@ -187,8 +306,10 @@ export default function DiscoveriesScreen({ navigation, route }) {
           rating: place.rating,
           photos: place.photos || [],
           formatted_address: place.formatted_address,
-          // Preserve any other relevant data
-          ...place
+          // Preserve any other relevant data, but filter out undefined values
+          ...Object.fromEntries(
+            Object.entries(place).filter(([_, value]) => value !== undefined)
+          )
         }
       };
 
@@ -199,7 +320,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         position: Toast.positions.BOTTOM,
       });
     } catch (error) {
-      console.error('Error saving place:', error);
+      Logger.error('DISCOVERIES_SCREEN', 'Error saving place', error);
       Toast.show('Failed to save place', {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM,
@@ -220,10 +341,24 @@ export default function DiscoveriesScreen({ navigation, route }) {
     try {
       setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
       
-      // Save to Firestore
+      // Save to Firestore with full place data
       const dismissData = {
         dismissedForever: type === 'forever',
-        reason: type === 'forever' ? 'user_dismissed_forever' : 'user_dismissed_temporary'
+        reason: type === 'forever' ? 'user_dismissed_forever' : 'user_dismissed_temporary',
+        journeyId: selectedRoute?.id, // Include journeyId for status updates
+        // Store full place data for display in history
+        placeData: {
+          name: place.name,
+          types: place.types || [],
+          rating: place.rating,
+          photos: place.photos || [],
+          formatted_address: place.formatted_address,
+          category: place.category || place.types?.[0] || 'unknown',
+          // Preserve any other relevant data
+          ...Object.fromEntries(
+            Object.entries(place).filter(([_, value]) => value !== undefined)
+          )
+        }
       };
       
       await saveDismissedPlaces(place.placeId, dismissData);
@@ -237,7 +372,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         position: Toast.positions.BOTTOM,
       });
     } catch (error) {
-      console.error('Error dismissing place:', error);
+      Logger.error('DISCOVERIES_SCREEN', 'Error dismissing place', error);
       Toast.show('Failed to dismiss place', {
         duration: Toast.durations.SHORT,
         position: Toast.positions.BOTTOM,
@@ -282,7 +417,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes([]);
       }
     } catch (error) {
-      console.error('Error loading saved routes:', error);
+      Logger.error('DISCOVERIES_SCREEN', 'Error loading saved routes', error);
       
       // Fallback to AsyncStorage if Firestore fails
       try {
@@ -304,7 +439,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
           setSelectedRoute(journeys[0]);
         }
       } catch (fallbackError) {
-        console.error('Fallback to AsyncStorage also failed:', fallbackError);
+        Logger.error('DISCOVERIES_SCREEN', 'Fallback to AsyncStorage also failed', fallbackError);
         setSavedRoutes([]);
       }
     }
@@ -331,31 +466,117 @@ export default function DiscoveriesScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
-    if (!selectedRoute?.coords) return;
+    if (!selectedRoute?.coords || !user) return;
     setLoading(true);
     
-    // Use the new preferences system when no specific filter is selected
-    const options = { 
-      type: filterType, 
-      language,
-      usePreferences: !filterType // Use preferences when no specific type is selected
-    };
-    
-    getSuggestionsForRoute(selectedRoute.coords, options)
-      .then(newSuggestions => {
-        setSuggestions(newSuggestions);
+    const loadJourneyDiscoveries = async () => {
+      Logger.debug('DISCOVERIES_SCREEN', 'loadJourneyDiscoveries called');
+      try {
+        // First, load existing discoveries from Firestore for this journey
+        Logger.debug('DISCOVERIES_SCREEN', 'Loading existing discoveries from Firestore for journey:', selectedRoute.id);
+        const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
+        
+        // Get user preferences for place types
+        Logger.debug('DISCOVERIES_SCREEN', 'Getting user discovery preferences');
+        const preferences = await getUserDiscoveryPreferences();
+        
+        // Filter preferences if a specific type is selected
+        const filteredPreferences = filterType && filterType !== 'all' 
+          ? { [filterType]: true }
+          : preferences;
+        
+        let allSuggestions = [];
+        let newSuggestions = [];
+        
+        if (journeyDiscoveries.success && journeyDiscoveries.discoveries) {
+          // Add unreviewed discoveries from Firestore
+          const unreviewed = journeyDiscoveries.discoveries.filter(
+            discovery => !discovery.saved && !discovery.dismissed
+          );
+          
+          Logger.debug('DISCOVERIES_SCREEN', `Journey discoveries breakdown:`, {
+            total: journeyDiscoveries.discoveries.length,
+            saved: journeyDiscoveries.discoveries.filter(d => d.saved).length,
+            dismissed: journeyDiscoveries.discoveries.filter(d => d.dismissed).length,
+            unreviewed: unreviewed.length,
+            discoveries: journeyDiscoveries.discoveries.map(d => ({
+              placeId: d.placeId,
+              saved: d.saved,
+              dismissed: d.dismissed,
+              placeName: d.placeName
+            }))
+          });
+          
+          // Convert Firestore discoveries to suggestion format
+          const firestoreSuggestions = unreviewed.map(discovery => ({
+            placeId: discovery.placeId,
+            name: discovery.placeData?.name || discovery.placeName || 'Unknown Place',
+            types: discovery.placeData?.types || [discovery.placeType || 'unknown'],
+            rating: discovery.placeData?.rating,
+            photos: discovery.placeData?.photos || [],
+            formatted_address: discovery.placeData?.formatted_address,
+            latitude: discovery.location?.lat,
+            longitude: discovery.location?.lng,
+            category: discovery.placeType || 'unknown',
+            fromFirestore: true, // Flag to identify Firestore-sourced suggestions
+            discoveryId: discovery.id // Keep the discovery ID for updates
+          }));
+          
+          allSuggestions = firestoreSuggestions;
+          
+          // Only make API calls if there are no existing discoveries OR if this is a new journey
+          const hasExistingDiscoveries = journeyDiscoveries.discoveries.length > 0;
+          const isNewJourney = !hasExistingDiscoveries;
+          
+          if (isNewJourney) {
+            Logger.debug('DISCOVERIES_SCREEN', 'New journey detected - making API calls for initial discoveries');
+            Logger.debug('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
+            newSuggestions = await getSuggestionsForRoute(
+              selectedRoute.coords, 
+              filteredPreferences, 
+              language, 
+              user.uid
+            );
+            allSuggestions = [...firestoreSuggestions, ...newSuggestions];
+          } else {
+            Logger.debug('DISCOVERIES_SCREEN', 'Existing journey with discoveries - skipping API calls to save performance');
+            Logger.debug('DISCOVERIES_SCREEN', 'Found', journeyDiscoveries.discoveries.length, 'existing discoveries');
+          }
+        } else {
+          // No existing discoveries, make API calls
+          Logger.debug('DISCOVERIES_SCREEN', 'No existing discoveries found - making API calls');
+          Logger.debug('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
+          newSuggestions = await getSuggestionsForRoute(
+            selectedRoute.coords, 
+            filteredPreferences, 
+            language, 
+            user.uid
+          );
+          allSuggestions = newSuggestions;
+        }
+        
+        Logger.debug('DISCOVERIES_SCREEN', 'Total suggestions:', allSuggestions.length, '(Firestore:', allSuggestions.filter(s => s.fromFirestore).length, 'API:', allSuggestions.filter(s => !s.fromFirestore).length, ')');
+        setSuggestions(allSuggestions);
+        
         // Show toast notification for new discoveries
-        const count = newSuggestions.length;
-        if (count > 0) {
-          const message = `${count} new suggestion${count === 1 ? '' : 's'} found for this journey`;
+        const newCount = newSuggestions.length;
+        if (newCount > 0) {
+          const message = `${newCount} new suggestion${newCount === 1 ? '' : 's'} found for this journey`;
           Toast.show(message, {
             duration: Toast.durations.LONG,
             position: Toast.positions.BOTTOM,
           });
         }
-      })
-      .finally(() => setLoading(false));
-  }, [selectedRoute, filterType, language]);
+      } catch (error) {
+        Logger.error('DISCOVERIES_SCREEN', 'Failed to load journey discoveries', error);
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadJourneyDiscoveries();
+  }, [selectedRoute, filterType, language, user]);
 
   const handleDismiss = (place) => {
     if (dismissalPreference === 'ask') {
@@ -389,6 +610,180 @@ export default function DiscoveriesScreen({ navigation, route }) {
     setShowOnboarding(true);
   };
 
+  // Helper function to format time ago
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Unknown time ago';
+    
+    let date;
+    try {
+      // Handle Firestore Timestamp objects
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        date = timestamp.toDate();
+      } else if (timestamp && timestamp.seconds) {
+        // Handle Firestore Timestamp with seconds
+        date = new Date(timestamp.seconds * 1000);
+      } else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else {
+        date = new Date(timestamp);
+      }
+    } catch (error) {
+      Logger.error('DISCOVERIES_SCREEN', 'Error parsing timestamp', error, timestamp);
+      return 'Unknown time ago';
+    }
+    
+    if (isNaN(date.getTime())) {
+      return 'Unknown time ago';
+    }
+    
+    const now = Date.now();
+    const timeDiff = now - date.getTime();
+    
+    const minutes = Math.floor(timeDiff / (1000 * 60));
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    
+    if (minutes < 60) {
+      return `${minutes}m ago`;
+    } else if (hours < 24) {
+      return `${hours}h ago`;
+    } else {
+      return `${days}d ago`;
+    }
+  };
+
+  // Handle undo dismiss
+  const handleUndoDismiss = async (place) => {
+    Logger.debug('DISCOVERIES_SCREEN', 'handleUndoDismiss called for place:', place.placeId);
+    try {
+      // Remove from dismissed places
+      Logger.debug('DISCOVERIES_SCREEN', 'Calling DiscoveryService.undismissPlace');
+      await DiscoveryService.undismissPlace(user.uid, place.placeId);
+      
+      // Reload dismissed and saved places
+      Logger.debug('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
+      await loadDismissedAndSavedCallback();
+      
+      // Refresh suggestions to show the restored place (without API calls)
+      if (selectedRoute) {
+        Logger.debug('DISCOVERIES_SCREEN', 'Refreshing suggestions after undo dismiss - NO API CALLS');
+        const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
+        
+        let allSuggestions = [];
+        
+        if (journeyDiscoveries.success && journeyDiscoveries.discoveries) {
+          const unreviewed = journeyDiscoveries.discoveries.filter(
+            discovery => !discovery.saved && !discovery.dismissed
+          );
+          
+          const firestoreSuggestions = unreviewed.map(discovery => ({
+            placeId: discovery.placeId,
+            name: discovery.placeData?.name || discovery.placeName || 'Unknown Place',
+            types: discovery.placeData?.types || [discovery.placeType || 'unknown'],
+            rating: discovery.placeData?.rating,
+            photos: discovery.placeData?.photos || [],
+            formatted_address: discovery.placeData?.formatted_address,
+            latitude: discovery.location?.lat,
+            longitude: discovery.location?.lng,
+            category: discovery.placeType || 'unknown',
+            fromFirestore: true,
+            discoveryId: discovery.id
+          }));
+          
+          allSuggestions = firestoreSuggestions;
+        }
+        
+        setSuggestions(allSuggestions);
+        
+        // Manually update journey completion status to ensure it's correct
+        try {
+          await DiscoveryService.updateJourneyCompletionStatus(user.uid, selectedRoute.id);
+          Logger.debug('DISCOVERIES_SCREEN', 'Manually updated journey completion status after undo dismiss');
+        } catch (statusError) {
+          Logger.warn('DISCOVERIES_SCREEN', 'Failed to update journey status after undo dismiss', { error: statusError.message });
+        }
+      }
+      
+      Toast.show('Place restored to suggestions', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    } catch (error) {
+      Logger.error('DISCOVERIES_SCREEN', 'Error undoing dismiss', error);
+      Toast.show('Failed to restore place', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    }
+  };
+
+  // Handle undo save
+  const handleUndoSave = async (place) => {
+    Logger.debug('DISCOVERIES_SCREEN', 'handleUndoSave called for place:', place.placeId);
+    try {
+      // Remove from saved places
+      Logger.debug('DISCOVERIES_SCREEN', 'Calling DiscoveryService.unsavePlace');
+      await DiscoveryService.unsavePlace(user.uid, place.placeId);
+      
+      // Reload dismissed and saved places
+      Logger.debug('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
+      await loadDismissedAndSavedCallback();
+      
+      // Refresh suggestions to show the restored place (without API calls)
+      if (selectedRoute) {
+        Logger.debug('DISCOVERIES_SCREEN', 'Refreshing suggestions after undo save - NO API CALLS');
+        const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
+        
+        let allSuggestions = [];
+        
+        if (journeyDiscoveries.success && journeyDiscoveries.discoveries) {
+          const unreviewed = journeyDiscoveries.discoveries.filter(
+            discovery => !discovery.saved && !discovery.dismissed
+          );
+          
+          const firestoreSuggestions = unreviewed.map(discovery => ({
+            placeId: discovery.placeId,
+            name: discovery.placeData?.name || discovery.placeName || 'Unknown Place',
+            types: discovery.placeData?.types || [discovery.placeType || 'unknown'],
+            rating: discovery.placeData?.rating,
+            photos: discovery.placeData?.photos || [],
+            formatted_address: discovery.placeData?.formatted_address,
+            latitude: discovery.location?.lat,
+            longitude: discovery.location?.lng,
+            category: discovery.placeType || 'unknown',
+            fromFirestore: true,
+            discoveryId: discovery.id
+          }));
+          
+          allSuggestions = firestoreSuggestions;
+        }
+        
+        setSuggestions(allSuggestions);
+        
+        // Manually update journey completion status to ensure it's correct
+        try {
+          await DiscoveryService.updateJourneyCompletionStatus(user.uid, selectedRoute.id);
+          Logger.debug('DISCOVERIES_SCREEN', 'Manually updated journey completion status after undo save');
+        } catch (statusError) {
+          Logger.warn('DISCOVERIES_SCREEN', 'Failed to update journey status after undo save', { error: statusError.message });
+        }
+      }
+      
+      Toast.show('Place removed from saved', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    } catch (error) {
+      Logger.error('DISCOVERIES_SCREEN', 'Error undoing save', error);
+      Toast.show('Failed to remove place from saved', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    }
+  };
+
   const fetchAiSummary = async (placeId) => {
     if (aiSummaries[placeId] || loadingSummaries[placeId]) return;
     
@@ -403,7 +798,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setAiSummaries(prev => ({ ...prev, [placeId]: { noSummary: true } }));
       }
     } catch (error) {
-      console.warn('Failed to fetch AI summary for place:', placeId, error);
+      Logger.warn('DISCOVERIES_SCREEN', 'Failed to fetch AI summary for place:', placeId, error);
       // Set error state
       setAiSummaries(prev => ({ ...prev, [placeId]: { error: true } }));
     } finally {
@@ -414,10 +809,10 @@ export default function DiscoveriesScreen({ navigation, route }) {
   const testAISummariesFeature = async () => {
     try {
       const result = await testAISummaries();
-      alert(`Place Summaries Test Complete!\n\nChicago: ${result.chicago ? 'Available' : 'Not available'}\nUser Place: ${result.userPlace ? 'Available' : 'Not available'}`);
+      Alert.alert('Place Summaries Test Complete!', `Chicago: ${result.chicago ? 'Available' : 'Not available'}\nUser Place: ${result.userPlace ? 'Available' : 'Not available'}`);
     } catch (error) {
-      console.error('Place Summaries test failed:', error);
-      alert('Place Summaries test failed: ' + error.message);
+      Logger.error('DISCOVERIES_SCREEN', 'Place Summaries test failed', error);
+      Alert.alert('Place Summaries test failed', error.message);
     }
   };
 
@@ -450,11 +845,15 @@ export default function DiscoveriesScreen({ navigation, route }) {
     );
   }
 
+
+
   return (
     <View style={styles.container}>
       <FlatList
         data={suggestions}
         keyExtractor={item => item.placeId}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         ListHeaderComponent={() => (
           <View>
             {/* Enhanced Header with Discovery Management */}
@@ -927,15 +1326,22 @@ export default function DiscoveriesScreen({ navigation, route }) {
               {!dismissedSectionCollapsed && dismissedPlaces.map(place => (
                 <View key={place.placeId} style={styles.manageHistoryItem}>
                   <View style={styles.manageHistoryItemInfo}>
-                    <Text style={styles.manageHistoryItemName}>{place.name}</Text>
-                    <Text style={styles.manageHistoryItemCategory}>{place.category}</Text>
+                    <Text style={styles.manageHistoryItemName}>
+                      {place.placeData?.name || place.name || 'Unknown Place'}
+                    </Text>
+                    <Text style={styles.manageHistoryItemCategory}>
+                      {place.placeData?.category || place.category || 'Unknown Category'}
+                    </Text>
                     <Text style={styles.manageHistoryItemTime}>
-                      Dismissed {Math.floor((Date.now() - place.dismissedAt) / (1000 * 60 * 60))}h ago
+                      Dismissed {formatTimeAgo(place.dismissedAt)}
                     </Text>
                   </View>
                   <View style={styles.manageHistoryItemActions}>
-                    <TouchableOpacity style={styles.restoreButton}>
-                      <Text style={styles.restoreButtonText}>Restore</Text>
+                    <TouchableOpacity 
+                      style={styles.restoreButton}
+                      onPress={() => handleUndoDismiss(place)}
+                    >
+                      <Text style={styles.restoreButtonText}>Undo</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -946,7 +1352,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
                 onPress={() => setDiscoveredSectionCollapsed(!discoveredSectionCollapsed)}
               >
                 <Text style={styles.manageHistorySectionTitle}>
-                  ✅ Discovered Places ({discoveredPlaces.length})
+                  ✅ Saved Places ({discoveredPlaces.length})
                 </Text>
                 <MaterialIcons 
                   name={discoveredSectionCollapsed ? "expand-more" : "expand-less"} 
@@ -958,15 +1364,22 @@ export default function DiscoveriesScreen({ navigation, route }) {
               {!discoveredSectionCollapsed && discoveredPlaces.map(place => (
                 <View key={place.placeId} style={styles.manageHistoryItem}>
                   <View style={styles.manageHistoryItemInfo}>
-                    <Text style={styles.manageHistoryItemName}>{place.name}</Text>
-                    <Text style={styles.manageHistoryItemCategory}>{place.category}</Text>
+                    <Text style={styles.manageHistoryItemName}>
+                      {place.placeData?.name || place.placeName || place.name || 'Unknown Place'}
+                    </Text>
+                    <Text style={styles.manageHistoryItemCategory}>
+                      {place.placeData?.category || place.placeType || place.category || 'Unknown Category'}
+                    </Text>
                     <Text style={styles.manageHistoryItemTime}>
-                      Discovered {Math.floor((Date.now() - place.discoveredAt) / (1000 * 60 * 60 * 24))}d ago
+                      Saved {formatTimeAgo(place.savedAt || place.discoveredAt)}
                     </Text>
                   </View>
                   <View style={styles.manageHistoryItemActions}>
-                    <TouchableOpacity style={styles.dismissButton}>
-                      <Text style={styles.dismissButtonText}>Dismiss</Text>
+                    <TouchableOpacity 
+                      style={styles.restoreButton}
+                      onPress={() => handleUndoSave(place)}
+                    >
+                      <Text style={styles.restoreButtonText}>Undo</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

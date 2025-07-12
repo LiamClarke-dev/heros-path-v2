@@ -23,7 +23,7 @@ const PLACE_CATEGORIES = [
   {
     title: 'Food & Dining',
     icon: 'restaurant',
-    types: ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway', 'food']
+    types: ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway']
   },
   {
     title: 'Shopping & Retail',
