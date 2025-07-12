@@ -461,10 +461,10 @@ class DiscoveryService {
       const totalDiscoveries = discoveries.length;
       
       if (totalDiscoveries === 0) {
-        Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_COMPLETION_STATUS_NO_DISCOVERIES_MARK_INCOMPLETE', journeyId, null, { userId });
-        // No discoveries means journey is not complete
-        await this.updateJourneyStatus(userId, journeyId, false, 0, 0);
-        return { success: true, completed: false, reviewedCount: 0, totalCount: 0 };
+        Logger.discoveryAction('DISCOVERY_SERVICE', 'UPDATE_JOURNEY_COMPLETION_STATUS_NO_DISCOVERIES_MARK_COMPLETE', journeyId, null, { userId });
+        // No discoveries means journey is complete (nothing to review)
+        await this.updateJourneyStatus(userId, journeyId, true, 0, 0);
+        return { success: true, completed: true, reviewedCount: 0, totalCount: 0 };
       }
       
       // Count reviewed discoveries (saved or dismissed)

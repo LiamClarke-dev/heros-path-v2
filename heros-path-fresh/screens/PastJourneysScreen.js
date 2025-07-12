@@ -128,6 +128,42 @@ export default function PastJourneysScreen({ navigation }) {
     );
   };
 
+  const fixJourneyStatuses = async () => {
+    Alert.alert(
+      'Fix Journey Statuses?',
+      'This will update all journey completion statuses to be accurate. This is useful if some journeys show incorrect review status.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Fix Statuses',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              let fixedCount = 0;
+              
+              for (const journey of journeys) {
+                try {
+                  await DiscoveryService.updateJourneyCompletionStatus(user.uid, journey.id);
+                  fixedCount++;
+                } catch (error) {
+                  console.error(`Error fixing journey ${journey.id}:`, error);
+                }
+              }
+              
+              Alert.alert('Success', `Fixed completion status for ${fixedCount} journeys.`);
+              await loadJourneys();
+            } catch (error) {
+              console.error('Error fixing journey statuses:', error);
+              Alert.alert('Error', 'Failed to fix journey statuses');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item, index }) => {
     const d = item.dateObj || new Date(item.date);
     const dateStr = d.toLocaleDateString(undefined, {
@@ -143,6 +179,7 @@ export default function PastJourneysScreen({ navigation }) {
     // Get completion status from pre-computed state
     const isCompleted = journeyStatuses[item.id] || false;
     const isLoadingStatus = !(item.id in journeyStatuses);
+    const hasDiscoveries = item.totalDiscoveriesCount > 0;
 
     return (
       <View style={styles.item}>
@@ -159,13 +196,26 @@ export default function PastJourneysScreen({ navigation }) {
           <Text style={styles.sub}>{item.coords.length} points</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.reviewButton, isCompleted && styles.reviewButtonCompleted]}
+          style={[
+            styles.reviewButton, 
+            isCompleted && styles.reviewButtonCompleted,
+            !hasDiscoveries && styles.reviewButtonNoDiscoveries
+          ]}
           onPress={() =>
             navigation.navigate('Discoveries', { selectedRoute: { ...item, dateObj: undefined } })
           }
         >
-          <Text style={[styles.reviewText, isCompleted && styles.reviewTextCompleted]}>
-            {isLoadingStatus ? '...' : (isCompleted ? '✅ All Reviewed' : '🔍 Review')}
+          <Text style={[
+            styles.reviewText, 
+            isCompleted && styles.reviewTextCompleted,
+            !hasDiscoveries && styles.reviewTextNoDiscoveries
+          ]}>
+            {isLoadingStatus ? '...' : 
+              (hasDiscoveries ? 
+                (isCompleted ? '✅ All Reviewed' : '🔍 Review') : 
+                '📭 No Discoveries'
+              )
+            }
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -183,13 +233,21 @@ export default function PastJourneysScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Temporary development button - REMOVE BEFORE PRODUCTION */}
-      <TouchableOpacity
-        style={styles.deleteAllButton}
-        onPress={deleteAllJourneys}
-      >
-        <Text style={styles.deleteAllButtonText}>🗑️ DELETE ALL JOURNEYS (DEV)</Text>
-      </TouchableOpacity>
+      {/* Temporary development buttons - REMOVE BEFORE PRODUCTION */}
+      <View style={styles.devButtonsContainer}>
+        <TouchableOpacity
+          style={styles.devButton}
+          onPress={fixJourneyStatuses}
+        >
+          <Text style={styles.devButtonText}>🔧 Fix Journey Statuses</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.devButton, styles.deleteAllButton]}
+          onPress={deleteAllJourneys}
+        >
+          <Text style={styles.deleteAllButtonText}>🗑️ DELETE ALL JOURNEYS</Text>
+        </TouchableOpacity>
+      </View>
       
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -299,6 +357,9 @@ const styles = StyleSheet.create({
   reviewButtonCompleted: {
     backgroundColor: '#e8f5e8', // Light green background for completed
   },
+  reviewButtonNoDiscoveries: {
+    backgroundColor: '#f5f5f5', // Light gray background for no discoveries
+  },
   reviewText: {
     fontSize: 12,
     color:    '#1976d2', // A blue color for review
@@ -306,6 +367,9 @@ const styles = StyleSheet.create({
   },
   reviewTextCompleted: {
     color: '#2e7d32', // Darker green for completed
+  },
+  reviewTextNoDiscoveries: {
+    color: '#999', // Gray color for no discoveries
   },
   deleteButton: {
     padding:     8,
@@ -316,17 +380,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#d32f2f',
   },
-  deleteAllButton: {
-    backgroundColor: '#ff9800',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+  devButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  devButton: {
+    flex: 1,
+    padding: 12,
     borderRadius: 8,
-    alignSelf: 'center',
-    marginBottom: 10,
+    alignItems: 'center',
+    backgroundColor: '#e3f2fd',
+  },
+  devButtonText: {
+    color: '#1976d2',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  deleteAllButton: {
+    backgroundColor: '#ffebee',
   },
   deleteAllButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#d32f2f',
     fontWeight: 'bold',
+    fontSize: 14,
   },
 });
