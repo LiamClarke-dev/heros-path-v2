@@ -10,8 +10,8 @@ const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
  */
 export async function getEnhancedPlaceDetails(placeId, language = 'en') {
   try {
-    // Use legacy API for now due to new API 400 errors
-    const basicDetails = await getPlaceDetails(placeId, language, false);
+    // Use the new Places API service with automatic fallback
+    const basicDetails = await getPlaceDetails(placeId, language, true);
     
     // Then get AI summaries if available
     const summaries = await getNewPlaceSummaries(placeId, language);

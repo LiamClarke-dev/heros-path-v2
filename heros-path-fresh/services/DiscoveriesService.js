@@ -221,11 +221,11 @@ export async function getSuggestionsForRoute(
  */
 async function fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lang, maxResults) {
   try {
-    // Use the legacy Places API for now due to new API 400 errors
+    // Use the new Places API service with automatic fallback
     const places = await searchNearbyPlaces(centerLat, centerLng, radius, type, {
       maxResults,
       language: lang,
-      useNewAPI: false // Use legacy API for now
+      useNewAPI: true // Will automatically fallback to legacy if new API fails
     });
 
     return places;
@@ -469,8 +469,8 @@ export async function snapToRoads(rawCoords) {
  */
 export async function getPlaceDetailsWithSummaries(placeId, language = 'en') {
   try {
-    // Use legacy API for now due to new API 400 errors
-    const placeDetails = await getPlaceDetails(placeId, language, false);
+    // First try the new API service
+    const placeDetails = await getPlaceDetails(placeId, language, true);
     
     // If successful, return the details
     if (placeDetails) {
