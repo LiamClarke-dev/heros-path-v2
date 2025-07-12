@@ -16,6 +16,9 @@ import { useIsFocused } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../styles/theme';
 import { snapToRoads } from '../services/DiscoveriesService';
+import { useUser } from '../contexts/UserContext';
+import JourneyService from '../services/JourneyService';
+import DiscoveryService from '../services/DiscoveryService';
 
 const ROUTES_STORAGE_KEY = '@saved_routes';
 const SAVED_PLACES_KEY = 'savedPlaces';
@@ -42,6 +45,7 @@ function getDirection([prev, curr]) {
 }
 
 export default function MapScreen({ navigation, route }) {
+  const { user } = useUser();
   const [tracking, setTracking] = useState(false);
   const [previewRoadCoords, setPreviewRoadCoords] = useState([]);
   const [rawCoords, setRawCoords] = useState([]);
@@ -57,21 +61,53 @@ export default function MapScreen({ navigation, route }) {
   const isFocused = useIsFocused();
 
    useEffect(() => {
-     if (isFocused) {
-       AsyncStorage.getItem(ROUTES_STORAGE_KEY)
-         .then(stored => {
-           const raw = stored ? JSON.parse(stored) : [];
-           setSavedRoutes(raw);
+     if (isFocused && user) {
+       // Load journeys from Firestore
+       JourneyService.getUserJourneys(user.uid)
+         .then(result => {
+           if (result.success) {
+             const journeys = result.journeys.map(journey => ({
+               id: journey.id,
+               coords: journey.route || [],
+               date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
+               name: journey.name,
+               distance: journey.distance,
+               duration: journey.duration,
+             }));
+             setSavedRoutes(journeys);
+           } else {
+             setSavedRoutes([]);
+           }
          })
-         .catch(err => console.error('Failed to load journeys', err));
+         .catch(err => {
+           console.error('Failed to load journeys from Firestore', err);
+           setSavedRoutes([]);
+         });
        
-       // Load saved places
-       AsyncStorage.getItem(SAVED_PLACES_KEY)
-         .then(stored => {
-           const places = stored ? JSON.parse(stored) : [];
-           setSavedPlaces(places);
+       // Load saved places from Firestore
+       DiscoveryService.getSavedPlaces(user.uid)
+         .then(result => {
+           if (result.success) {
+             const places = result.discoveries.map(discovery => ({
+               placeId: discovery.placeId,
+               name: discovery.placeName || discovery.placeData?.name,
+               latitude: discovery.location?.lat,
+               longitude: discovery.location?.lng,
+               rating: discovery.placeData?.rating,
+               types: discovery.placeData?.types || [],
+               formatted_address: discovery.placeData?.formatted_address,
+               // Preserve original place data for compatibility
+               ...discovery.placeData
+             }));
+             setSavedPlaces(places);
+           } else {
+             setSavedPlaces([]);
+           }
          })
-         .catch(err => console.error('Failed to load saved places', err));
+         .catch(err => {
+           console.error('Failed to load saved places from Firestore', err);
+           setSavedPlaces([]);
+         });
        
        // Load show saved places preference
        AsyncStorage.getItem(SHOW_SAVED_PLACES_KEY)
@@ -79,7 +115,29 @@ export default function MapScreen({ navigation, route }) {
            setShowSavedPlaces(stored !== 'false'); // Default to true
          })
          .catch(() => setShowSavedPlaces(true));
-     }   }, [isFocused]);
+     } else if (isFocused && !user) {
+       // Fallback to AsyncStorage for non-authenticated users
+       AsyncStorage.getItem(ROUTES_STORAGE_KEY)
+         .then(stored => {
+           const raw = stored ? JSON.parse(stored) : [];
+           setSavedRoutes(raw);
+         })
+         .catch(err => console.error('Failed to load journeys', err));
+       
+       AsyncStorage.getItem(SAVED_PLACES_KEY)
+         .then(stored => {
+           const places = stored ? JSON.parse(stored) : [];
+           setSavedPlaces(places);
+         })
+         .catch(err => console.error('Failed to load saved places', err));
+       
+       AsyncStorage.getItem(SHOW_SAVED_PLACES_KEY)
+         .then(stored => {
+           setShowSavedPlaces(stored !== 'false');
+         })
+         .catch(() => setShowSavedPlaces(true));
+     }
+   }, [isFocused, user]);
 
    useEffect(() => {
      const journey = route.params?.routeToDisplay;
@@ -159,19 +217,50 @@ export default function MapScreen({ navigation, route }) {
 
       // Save journey
       try {
-        const stored = await AsyncStorage.getItem(ROUTES_STORAGE_KEY);
-        const base = stored ? JSON.parse(stored) : [];
-        const normalized = base.map(e =>
-          Array.isArray(e)
-            ? { id: String(Date.now()), coords: e, date: new Date().toISOString() }
-            : e
-        );
+        if (user) {
+          // Save to Firestore
+          const journeyData = {
+            name: `Journey ${new Date().toLocaleDateString()}`,
+            route: rawCoords,
+            distance: 0, // Calculate distance if needed
+            duration: 0, // Calculate duration if needed
+            startLocation: rawCoords[0] || null,
+            endLocation: rawCoords[rawCoords.length - 1] || null,
+          };
+          
+          const result = await JourneyService.createJourney(user.uid, journeyData);
+          if (result.success) {
+            // Reload journeys to get updated list
+            const journeysResult = await JourneyService.getUserJourneys(user.uid);
+            if (journeysResult.success) {
+              const journeys = journeysResult.journeys.map(journey => ({
+                id: journey.id,
+                coords: journey.route || [],
+                date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
+                name: journey.name,
+                distance: journey.distance,
+                duration: journey.duration,
+              }));
+              setSavedRoutes(journeys);
+            }
+          }
+        } else {
+          // Fallback to AsyncStorage for non-authenticated users
+          const stored = await AsyncStorage.getItem(ROUTES_STORAGE_KEY);
+          const base = stored ? JSON.parse(stored) : [];
+          const normalized = base.map(e =>
+            Array.isArray(e)
+              ? { id: String(Date.now()), coords: e, date: new Date().toISOString() }
+              : e
+          );
 
-        const newEntry = { id: Date.now().toString(), coords: rawCoords, date: new Date().toISOString() };
-        const newSaved = [...normalized, newEntry];
-        await AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(newSaved));
-        setSavedRoutes(newSaved);
-        await AsyncStorage.setItem('lastRoute', JSON.stringify(newEntry));
+          const newEntry = { id: Date.now().toString(), coords: rawCoords, date: new Date().toISOString() };
+          const newSaved = [...normalized, newEntry];
+          await AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(newSaved));
+          setSavedRoutes(newSaved);
+        }
+        
+        await AsyncStorage.setItem('lastRoute', JSON.stringify({ coords: rawCoords, date: new Date().toISOString() }));
 
         // Snap to roads for the live path and hide raw coords
         try {
