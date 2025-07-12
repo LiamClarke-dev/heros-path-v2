@@ -23,7 +23,7 @@ export async function searchNearbyPlaces(latitude, longitude, radius, type, opti
     minRating = 0,
     maxPrice = 4,
     openNow = false,
-    useNewAPI = false // Default to legacy API for now due to 400 errors
+    useNewAPI = true // Default to new API for migration
   } = options;
 
   if (useNewAPI) {
@@ -101,6 +101,16 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
 
     const url = `${NEW_BASE_URL}/places:searchNearby`;
     
+    console.log('New API request:', {
+      url,
+      requestBody,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': '***',
+        'X-Goog-FieldMask': 'places.displayName,places.id,places.types,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.location,places.formattedAddress,places.primaryType'
+      }
+    });
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -112,10 +122,14 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`New Places API request failed: ${response.status} ${response.statusText}`);
+      console.warn('Error response:', errorText);
       throw new Error(`New Places API request failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('New API response:', data);
     
     if (!data.places) {
       return [];
@@ -212,7 +226,7 @@ async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, optio
  * @param {boolean} useNewAPI - Whether to use new API or fallback to legacy
  * @returns {Promise<Object>} Place details object
  */
-export async function getPlaceDetails(placeId, language = 'en', useNewAPI = false) {
+export async function getPlaceDetails(placeId, language = 'en', useNewAPI = true) {
   if (useNewAPI) {
     try {
       return await getPlaceDetailsNew(placeId, language);
@@ -232,6 +246,15 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
   try {
     const url = `${NEW_BASE_URL}/places/${placeId}`;
     
+    console.log('New API details request:', {
+      url,
+      placeId,
+      headers: {
+        'X-Goog-Api-Key': '***',
+        'X-Goog-FieldMask': 'id,displayName,types,rating,userRatingCount,priceLevel,photos,location,formattedAddress,primaryType,websiteUri,phoneNumbers,openingHours,reviews,editorialSummary'
+      }
+    });
+    
     const response = await fetch(url, {
       headers: {
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
@@ -240,10 +263,14 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`New Places API details request failed: ${response.status} ${response.statusText}`);
+      console.warn('Error response:', errorText);
       throw new Error(`New Places API details request failed: ${response.status} ${response.statusText}`);
     }
 
     const place = await response.json();
+    console.log('New API details response:', place);
 
     return {
       placeId: place.id,
@@ -349,17 +376,26 @@ export async function getPlaceSummaries(placeId, language = 'en') {
     const response = await fetch(url, {
       headers: {
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
-        'X-Goog-FieldMask': 'summaries'
+        'X-Goog-FieldMask': 'summaries,editorialSummary'
       }
     });
 
     if (!response.ok) {
-      console.warn('AI summaries not available for this place');
+      console.warn(`AI summaries request failed: ${response.status} ${response.statusText}`);
+      // Try to get response text for debugging
+      const errorText = await response.text();
+      console.warn('Error response:', errorText);
       return null;
     }
 
     const data = await response.json();
-    return data.summaries || null;
+    console.log('AI summaries response:', data);
+    
+    // Return both summaries and editorial summary if available
+    return {
+      summaries: data.summaries || null,
+      editorialSummary: data.editorialSummary || null
+    };
 
   } catch (error) {
     console.warn('Failed to get AI summaries:', error);
