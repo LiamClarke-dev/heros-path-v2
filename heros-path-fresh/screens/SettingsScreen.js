@@ -13,6 +13,7 @@ import {
   Switch
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';

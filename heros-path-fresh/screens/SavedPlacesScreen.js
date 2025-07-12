@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Modal,
   Linking,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -75,29 +76,31 @@ export default function SavedPlacesScreen() {
               onPressOut={() => setDropdownVisible(false)}
             >
               <View style={styles.modalContent}>
-                 <TouchableOpacity
-                   style={styles.modalItem}
-                   onPress={() => {
-                     setFilterType(null);
-                     setDropdownVisible(false);
-                   }}
-                 >
-                   <Text style={styles.modalItemText}>All Types</Text>
-                 </TouchableOpacity>
-                 {PLACE_TYPES
-                   .filter(t => t.key !== 'all')
-                   .map(({ key, label }) => (
+                <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
                   <TouchableOpacity
-                    key={key}
                     style={styles.modalItem}
                     onPress={() => {
-                      setFilterType(key);
+                      setFilterType(null);
                       setDropdownVisible(false);
                     }}
                   >
-                    <Text style={styles.modalItemText}>{label}</Text>
+                    <Text style={styles.modalItemText}>All Types</Text>
                   </TouchableOpacity>
-                ))}
+                  {PLACE_TYPES
+                    .filter(t => t.key !== 'all')
+                    .map(({ key, label }) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={styles.modalItem}
+                      onPress={() => {
+                        setFilterType(key);
+                        setDropdownVisible(false);
+                      }}
+                    >
+                      <Text style={styles.modalItemText}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             </TouchableOpacity>
           </Modal>
@@ -201,6 +204,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.md,
+    maxHeight: 300, // Limit height to prevent overflow
+  },
+  modalScrollView: {
+    maxHeight: 250, // Leave room for padding
   },
   modalItem: {
     paddingVertical: Spacing.sm,
