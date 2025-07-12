@@ -136,10 +136,28 @@ export async function getSuggestionsForRoute(
   
   let allResults = [];
   
-  // If a specific type is requested, use that
+  // If a specific type is requested, use that but still apply preferences and rating filters
   if (type && type !== 'all') {
     const results = await fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lang, maxResults);
     allResults = results;
+    
+    // Apply rating filter even for specific types
+    const minRating = await getMinRatingPreference();
+    allResults = allResults.filter(place => !place.rating || place.rating >= minRating);
+    console.log(`⭐ Filtered by rating (${minRating}+): ${allResults.length}`);
+    
+    // Apply user preferences filter even for specific types
+    if (usePreferences) {
+      const preferences = await getUserDiscoveryPreferences();
+      allResults = allResults.filter(place => {
+        // If place has no types, include it (fallback)
+        if (!place.types || place.types.length === 0) return true;
+        
+        // Check if any of the place's types are enabled in user preferences
+        return place.types.some(placeType => preferences[placeType] === true);
+      });
+      console.log(`🎯 Filtered by preferences: ${allResults.length}`);
+    }
   } else if (usePreferences) {
     // Get user preferences and fetch places for enabled types
     const preferences = await getUserDiscoveryPreferences();
@@ -203,11 +221,11 @@ export async function getSuggestionsForRoute(
  */
 async function fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lang, maxResults) {
   try {
-    // Use the new Places API service with automatic fallback
+    // Use the legacy Places API for now due to new API 400 errors
     const places = await searchNearbyPlaces(centerLat, centerLng, radius, type, {
       maxResults,
       language: lang,
-      useNewAPI: true // Will automatically fallback to legacy if new API fails
+      useNewAPI: false // Use legacy API for now
     });
 
     return places;
@@ -451,8 +469,8 @@ export async function snapToRoads(rawCoords) {
  */
 export async function getPlaceDetailsWithSummaries(placeId, language = 'en') {
   try {
-    // First try the new API service
-    const placeDetails = await getPlaceDetails(placeId, language, true);
+    // Use legacy API for now due to new API 400 errors
+    const placeDetails = await getPlaceDetails(placeId, language, false);
     
     // If successful, return the details
     if (placeDetails) {
