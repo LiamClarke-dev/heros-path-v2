@@ -93,8 +93,8 @@ export default function PastJourneysScreen({ navigation }) {
     const label = item.name || `Journey #${index+1} – ${dateStr} at ${timeStr}`;
 
     // Check if journey has discoveries (completion status)
-    // This would be enhanced when we integrate with DiscoveryService
-    const isCompleted = index % 2 === 0; // Temporary - will be replaced with real logic
+    // TODO: Integrate with DiscoveryService to check if journey has discoveries
+    const isCompleted = false; // Will be replaced with real logic when we check discoveries
 
     return (
       <View style={styles.item}>
