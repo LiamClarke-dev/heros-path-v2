@@ -1,8 +1,10 @@
 // services/EnhancedPlacesService.js
 import { GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
-import { getPlaceDetails, getPlaceSummaries as getNewPlaceSummaries } from './NewPlacesService';
-
-const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
+import { 
+  getPlaceDetails, 
+  getPlaceSummaries as getNewPlaceSummaries,
+  searchNearbyPlaces as searchNearbyPlacesNew
+} from './NewPlacesService';
 
 /**
  * Get enhanced place details including AI summaries
@@ -27,10 +29,6 @@ export async function getEnhancedPlaceDetails(placeId, language = 'en') {
   }
 }
 
-
-
-
-
 /**
  * Get nearby places with enhanced filtering and sorting
  * Uses the new Places API features for better results
@@ -51,7 +49,7 @@ export async function getNearbyPlacesEnhanced(latitude, longitude, radius, optio
   if (types.length > 0) {
     for (const type of types) {
       try {
-        const results = await searchNearbyByType(latitude, longitude, radius, type, {
+        const results = await searchNearbyPlacesNew(latitude, longitude, radius, type, {
           minRating,
           maxPrice,
           openNow,
@@ -65,7 +63,7 @@ export async function getNearbyPlacesEnhanced(latitude, longitude, radius, optio
     }
   } else {
     // Search for general points of interest
-    const results = await searchNearbyByType(latitude, longitude, radius, 'point_of_interest', {
+    const results = await searchNearbyPlacesNew(latitude, longitude, radius, 'point_of_interest', {
       minRating,
       maxPrice,
       openNow,
@@ -92,64 +90,18 @@ export async function getNearbyPlacesEnhanced(latitude, longitude, radius, optio
 }
 
 /**
- * Search for nearby places of a specific type
- */
-async function searchNearbyByType(latitude, longitude, radius, type, options = {}) {
-  const {
-    minRating = 0,
-    maxPrice = 4,
-    openNow = false,
-    language = 'en',
-    maxResults = 20
-  } = options;
-  
-  let url = `${BASE_URL}/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${GOOGLE_MAPS_API_KEY_ANDROID}&language=${language}`;
-  
-  if (openNow) {
-    url += '&opennow=true';
-  }
-  
-  if (maxPrice < 4) {
-    url += `&maxprice=${maxPrice}`;
-  }
-  
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      throw new Error(`Nearby search failed: ${data.status}`);
-    }
-    
-    return (data.results || []).slice(0, maxResults).map(place => ({
-      placeId: place.place_id,
-      name: place.name,
-      category: place.types?.[0] || type,
-      description: place.vicinity || place.types?.[0]?.replace('_', ' ') || '',
-      latitude: place.geometry?.location?.lat,
-      longitude: place.geometry?.location?.lng,
-      rating: place.rating,
-      userRatingsTotal: place.user_ratings_total,
-      priceLevel: place.price_level,
-      isOpen: place.opening_hours?.open_now,
-      photos: place.photos?.map(photo => ({
-        photoReference: photo.photo_reference,
-        width: photo.width,
-        height: photo.height
-      })) || [],
-      types: place.types || []
-    }));
-  } catch (error) {
-    console.warn(`Failed to search nearby for type ${type}:`, error);
-    return [];
-  }
-}
-
-/**
  * Generate a photo URL for a place
+ * Updated to handle both new and legacy photo references
  */
 export function getPlacePhotoUrl(photoReference, maxWidth = 400) {
   if (!photoReference) return null;
+  
+  // Check if it's a new API photo reference (contains 'places/')
+  if (photoReference.includes('places/')) {
+    return `https://places.googleapis.com/v1/${photoReference}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_MAPS_API_KEY_ANDROID}`;
+  }
+  
+  // Legacy photo reference
   return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${GOOGLE_MAPS_API_KEY_ANDROID}`;
 }
 
@@ -179,6 +131,12 @@ export const SUPPORTED_PLACE_TYPES = [
   
   // Transportation
   'subway_station', 'train_station', 'bus_station', 'airport',
+  
+  // Education
+  'school', 'university', 'library',
+  
+  // Religious
+  'church', 'mosque', 'synagogue', 'hindu_temple',
   
   // General
   'point_of_interest', 'establishment'
