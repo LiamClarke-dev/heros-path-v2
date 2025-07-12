@@ -68,9 +68,9 @@ class DiscoveryService {
   async getUserDiscoveries(userId, filters = {}) {
     try {
       const discoveriesRef = this.getUserDiscoveriesRef(userId);
-      let q = query(discoveriesRef, orderBy('createdAt', 'desc'));
+      let q = query(discoveriesRef);
       
-      // Apply filters
+      // Apply filters (simplified to avoid composite index requirements)
       if (filters.journeyId) {
         q = query(q, where('journeyId', '==', filters.journeyId));
       }
@@ -89,6 +89,13 @@ class DiscoveryService {
       const discoveries = [];
       querySnapshot.forEach((doc) => {
         discoveries.push(doc.data());
+      });
+      
+      // Sort in memory instead of using orderBy to avoid index requirements
+      discoveries.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+        return dateB - dateA; // Descending order
       });
       
       return { success: true, discoveries };
@@ -152,12 +159,19 @@ class DiscoveryService {
   async getDismissedPlaces(userId) {
     try {
       const dismissedRef = this.getUserDismissedRef(userId);
-      const q = query(dismissedRef, orderBy('dismissedAt', 'desc'));
+      const q = query(dismissedRef);
       const querySnapshot = await getDocs(q);
       
       const dismissedPlaces = [];
       querySnapshot.forEach((doc) => {
         dismissedPlaces.push(doc.data());
+      });
+      
+      // Sort in memory instead of using orderBy to avoid index requirements
+      dismissedPlaces.sort((a, b) => {
+        const dateA = a.dismissedAt?.toDate?.() || new Date(a.dismissedAt) || new Date(0);
+        const dateB = b.dismissedAt?.toDate?.() || new Date(b.dismissedAt) || new Date(0);
+        return dateB - dateA; // Descending order
       });
       
       return { success: true, dismissedPlaces };
