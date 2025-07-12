@@ -1,5 +1,6 @@
 // services/EnhancedPlacesService.js
 import { GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
+import { getPlaceDetails, getPlaceSummaries as getNewPlaceSummaries } from './NewPlacesService';
 
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
@@ -9,11 +10,11 @@ const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
  */
 export async function getEnhancedPlaceDetails(placeId, language = 'en') {
   try {
-    // First get basic place details
-    const basicDetails = await getPlaceDetails(placeId, language);
+    // Use the new Places API service with automatic fallback
+    const basicDetails = await getPlaceDetails(placeId, language, true);
     
     // Then get AI summaries if available
-    const summaries = await getPlaceSummaries(placeId, language);
+    const summaries = await getNewPlaceSummaries(placeId, language);
     
     return {
       ...basicDetails,
@@ -22,7 +23,7 @@ export async function getEnhancedPlaceDetails(placeId, language = 'en') {
   } catch (error) {
     console.warn('Failed to get enhanced place details:', error);
     // Fallback to basic details only
-    return await getPlaceDetails(placeId, language);
+    return await getPlaceDetails(placeId, language, false);
   }
 }
 

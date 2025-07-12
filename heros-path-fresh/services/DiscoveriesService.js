@@ -3,6 +3,7 @@ import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS, GOOGLE_ROADS_API_
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getEnhancedPlaceDetails } from './EnhancedPlacesService';
+import { searchNearbyPlaces, getPlaceDetails, testAPIConnectivity } from './NewPlacesService';
 
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -198,41 +199,18 @@ export async function getSuggestionsForRoute(
 
 /**
  * Fetch places of a specific type from Google Places API
+ * Now uses the new Places API with automatic fallback to legacy
  */
 async function fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lang, maxResults) {
-  let url =
-    `${BASE_URL}/nearbysearch/json` +
-    `?key=${apiKey}` +
-    `&location=${centerLat},${centerLng}` +
-    `&radius=${radius}` +
-    `&language=${lang}` +
-    `&type=${encodeURIComponent(type)}`;
-
   try {
-    const res = await fetch(url);
-    const json = await res.json();
-    if (json.status !== 'OK') return [];
-
-    return (json.results || []).slice(0, maxResults).map(place => {
-      // build photo URL if available
-      const photoRef = place.photos?.[0]?.photo_reference;
-      const photoUrl = photoRef
-        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${photoRef}&key=${apiKey}`
-        : null;
-
-      return {
-        placeId: place.place_id,
-        name: place.name,
-        category: place.types?.[0] || type,
-        types: place.types || [], // Store all types for filtering
-        description: place.vicinity || place.types?.[0]?.replace('_', ' ') || '',
-        thumbnail: photoUrl,
-        rating: place.rating,
-        userRatingsTotal: place.user_ratings_total,
-        latitude: place.geometry?.location?.lat,
-        longitude: place.geometry?.location?.lng,
-      };
+    // Use the new Places API service with automatic fallback
+    const places = await searchNearbyPlaces(centerLat, centerLng, radius, type, {
+      maxResults,
+      language: lang,
+      useNewAPI: true // Will automatically fallback to legacy if new API fails
     });
+
+    return places;
   } catch (err) {
     console.warn(`fetchPlacesByType failed for ${type}:`, err);
     return [];
@@ -469,13 +447,23 @@ export async function snapToRoads(rawCoords) {
 
 /**
  * Get enhanced details for a specific place including AI summaries
+ * Now uses the new Places API with automatic fallback
  */
 export async function getPlaceDetailsWithSummaries(placeId, language = 'en') {
   try {
+    // First try the new API service
+    const placeDetails = await getPlaceDetails(placeId, language, true);
+    
+    // If successful, return the details
+    if (placeDetails) {
+      return placeDetails;
+    }
+    
+    // Fallback to enhanced place details from the old service
     const enhancedDetails = await getEnhancedPlaceDetails(placeId, language);
     return enhancedDetails;
   } catch (error) {
-    console.warn('Failed to get enhanced place details:', error);
+    console.warn('Failed to get place details with summaries:', error);
     // Return basic details if enhanced details fail
     return null;
   }
@@ -483,3 +471,51 @@ export async function getPlaceDetailsWithSummaries(placeId, language = 'en') {
 
 // alias
 export { getSuggestionsForRoute as getPassingPlaces };
+
+/**
+ * Test API connectivity and provide migration status
+ * This helps determine which API is working and provides migration guidance
+ */
+export async function testPlacesAPIMigration() {
+  console.log('🔍 Testing Google Places API migration status...');
+  
+  try {
+    const connectivity = await testAPIConnectivity();
+    
+    const status = {
+      timestamp: new Date().toISOString(),
+      newAPI: connectivity.newAPI,
+      legacyAPI: connectivity.legacyAPI,
+      newAPIError: connectivity.newAPIError,
+      legacyAPIError: connectivity.legacyAPIError,
+      recommendation: '',
+      migrationStatus: ''
+    };
+    
+    if (connectivity.newAPI) {
+      status.migrationStatus = 'READY';
+      status.recommendation = 'New Places API is working. You can safely migrate to use it exclusively.';
+    } else if (connectivity.legacyAPI) {
+      status.migrationStatus = 'FALLBACK';
+      status.recommendation = 'New Places API is not available, but legacy API is working. Continue using hybrid approach.';
+    } else {
+      status.migrationStatus = 'ERROR';
+      status.recommendation = 'Both APIs are failing. Check API key configuration and network connectivity.';
+    }
+    
+    console.log('📊 Migration Status:', status);
+    return status;
+    
+  } catch (error) {
+    console.error('❌ Failed to test API migration:', error);
+    return {
+      timestamp: new Date().toISOString(),
+      newAPI: false,
+      legacyAPI: false,
+      newAPIError: error.message,
+      legacyAPIError: 'Test failed',
+      recommendation: 'API testing failed. Check configuration and try again.',
+      migrationStatus: 'ERROR'
+    };
+  }
+}
