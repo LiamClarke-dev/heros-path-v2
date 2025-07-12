@@ -92,8 +92,33 @@ export async function getMinRatingPreference() {
 }
 
 /**
- * Given an array of { latitude, longitude } coords, compute
- * a center point & radius (meters) covering the whole route.
+ * Calculate the center point of a route
+ * @param {Array} coords - Array of coordinate objects with latitude/longitude
+ * @returns {Object} Center point with latitude and longitude
+ */
+function calculateRouteCenter(coords) {
+  if (!coords || coords.length === 0) {
+    return { latitude: 0, longitude: 0 };
+  }
+  
+  if (coords.length === 1) {
+    return { latitude: coords[0].latitude, longitude: coords[0].longitude };
+  }
+  
+  // Calculate the average of all coordinates
+  const totalLat = coords.reduce((sum, coord) => sum + coord.latitude, 0);
+  const totalLng = coords.reduce((sum, coord) => sum + coord.longitude, 0);
+  
+  return {
+    latitude: totalLat / coords.length,
+    longitude: totalLng / coords.length
+  };
+}
+
+/**
+ * Calculate route center
+ * @param {Array} routeCoords - Array of route coordinates
+ * @returns {Object} Center point with latitude and longitude
  */
 function coordsToBoundingCircle(coords) {
   const lats = coords.map(c => c.latitude);
@@ -160,6 +185,35 @@ export async function getSuggestionsForRoute(routeCoords, preferences, language 
     console.error('Failed to get route suggestions:', error);
     return [];
   }
+}
+
+/**
+ * Filter places based on user preferences
+ * @param {Array} places - Array of places to filter
+ * @param {Object} preferences - User preferences object
+ * @returns {Array} Filtered places
+ */
+function filterPlacesByPreferences(places, preferences = {}) {
+  if (!places || places.length === 0) return places;
+  
+  return places.filter(place => {
+    // Filter by minimum rating if specified
+    if (preferences.minRating && place.rating) {
+      if (place.rating < preferences.minRating) return false;
+    }
+    
+    // Filter by minimum review count if specified
+    if (preferences.minReviews && place.userRatingsTotal) {
+      if (place.userRatingsTotal < preferences.minReviews) return false;
+    }
+    
+    // Filter by place type if specified
+    if (preferences.type && place.category) {
+      if (place.category !== preferences.type) return false;
+    }
+    
+    return true;
+  });
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   ScrollView,
   Linking,
   Platform,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -26,7 +27,20 @@ import { useFocusEffect } from '@react-navigation/native';
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
 
-export default function DiscoveriesScreen() {
+// Dummy data for testing
+const DUMMY_DISMISSED_PLACES = [
+  { placeId: 'dismissed1', name: 'Art Gallery', category: 'art_gallery', dismissedAt: new Date(Date.now() - 2 * 60 * 60 * 1000) }, // 2 hours ago
+  { placeId: 'dismissed2', name: 'Coffee Shop', category: 'cafe', dismissedAt: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // 1 day ago
+  { placeId: 'dismissed3', name: 'Park', category: 'park', dismissedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, // 3 days ago
+];
+
+const DUMMY_DISCOVERED_PLACES = [
+  { placeId: 'discovered1', name: 'Restaurant', category: 'restaurant', discoveredAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }, // 5 days ago
+  { placeId: 'discovered2', name: 'Museum', category: 'museum', discoveredAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // 1 week ago
+  { placeId: 'discovered3', name: 'Library', category: 'library', discoveredAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) }, // 10 days ago
+];
+
+export default function DiscoveriesScreen({ navigation, route }) {
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
   const [filterType, setFilterType]               = useState(null);
@@ -37,6 +51,23 @@ export default function DiscoveriesScreen() {
   const [typeDropdownVisible, setTypeDropdownVisible]   = useState(false);
   const [aiSummaries, setAiSummaries]             = useState({});
   const [loadingSummaries, setLoadingSummaries]   = useState({});
+
+  // New state for discovery management
+  const [showOnboarding, setShowOnboarding]       = useState(false);
+  const [showDismissModal, setShowDismissModal]   = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showManageHistory, setShowManageHistory] = useState(false);
+  const [placeToDismiss, setPlaceToDismiss]       = useState(null);
+  const [dismissalPreference, setDismissalPreference] = useState('ask'); // 'ask', '30days', 'forever'
+  const [rememberChoice, setRememberChoice]       = useState(false);
+  const [recentlyDismissed, setRecentlyDismissed] = useState([]);
+  const [dismissedSectionCollapsed, setDismissedSectionCollapsed] = useState(true);
+  const [discoveredSectionCollapsed, setDiscoveredSectionCollapsed] = useState(true);
+
+  // Dummy data state
+  const [dismissedPlaces, setDismissedPlaces] = useState(DUMMY_DISMISSED_PLACES);
+  const [discoveredPlaces] = useState(DUMMY_DISCOVERED_PLACES);
+  const [savedPlaces, setSavedPlaces] = useState([]);
 
   const loadSavedRoutes = () => {
     AsyncStorage.getItem(ROUTES_KEY)
@@ -50,7 +81,13 @@ export default function DiscoveriesScreen() {
           })
           .sort((a, b) => new Date(b.date) - new Date(a.date));
         setSavedRoutes(journeys);
-        if (journeys.length) setSelectedRoute(journeys[0]);
+        
+        // Set selected route from navigation params or default to first journey
+        if (route.params?.selectedRoute) {
+          setSelectedRoute(route.params.selectedRoute);
+        } else if (journeys.length) {
+          setSelectedRoute(journeys[0]);
+        }
       })
       .catch(console.error);
   };
@@ -69,6 +106,10 @@ export default function DiscoveriesScreen() {
   useEffect(() => {
     AsyncStorage.getItem(LANGUAGE_KEY)
       .then(lang => lang && setLanguage(lang));
+    
+    // Load dismissal preference
+    AsyncStorage.getItem('@dismissal_preference')
+      .then(pref => pref && setDismissalPreference(pref));
   }, []);
 
   useEffect(() => {
@@ -120,6 +161,7 @@ export default function DiscoveriesScreen() {
       JSON.stringify([...saved, placeWithLocation])
     );
     setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
+    setSavedPlaces(prev => [...prev, placeWithLocation]);
     
     Toast.show('Place saved!', {
       duration: Toast.durations.SHORT,
@@ -127,8 +169,52 @@ export default function DiscoveriesScreen() {
     });
   };
   
-  const handleDismiss = id =>
-    setSuggestions(s => s.filter(p => p.placeId !== id));
+  const handleDismiss = (place) => {
+    if (dismissalPreference === 'ask') {
+      setPlaceToDismiss(place);
+      setShowDismissModal(true);
+    } else {
+      // Use saved preference
+      const dismissalType = dismissalPreference === '30days' ? '30 days' : 'forever';
+      dismissPlace(place, dismissalType);
+    }
+  };
+
+  const dismissPlace = (place, type) => {
+    setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
+    setRecentlyDismissed(prev => [...prev, { ...place, dismissedAt: new Date() }]);
+    setDismissedPlaces(prev => [...prev, { ...place, dismissedAt: new Date() }]);
+    
+    const message = type === 'forever' 
+      ? `${place.name} hidden forever`
+      : `${place.name} hidden for 30 days`;
+    
+    Toast.show(message, {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM,
+    });
+  };
+
+  const handleDismissModalAction = (type) => {
+    if (rememberChoice) {
+      setDismissalPreference(type === '30days' ? '30days' : 'forever');
+      AsyncStorage.setItem('@dismissal_preference', type === '30days' ? '30days' : 'forever');
+    }
+    
+    dismissPlace(placeToDismiss, type);
+    setShowDismissModal(false);
+    setPlaceToDismiss(null);
+    setRememberChoice(false);
+  };
+
+  const completeOnboarding = () => {
+    setShowOnboarding(false);
+    AsyncStorage.setItem('@discovery_onboarding_shown', 'true');
+  };
+
+  const showOnboardingAgain = () => {
+    setShowOnboarding(true);
+  };
 
   const fetchAiSummary = async (placeId) => {
     if (aiSummaries[placeId] || loadingSummaries[placeId]) return;
@@ -179,262 +265,615 @@ export default function DiscoveriesScreen() {
   }
 
   return (
-    <FlatList
-      data={suggestions}
-      keyExtractor={item => item.placeId}
-      ListHeaderComponent={() => (
-        <View style={styles.headerRow}>
-          {/* Journey dropdown */}
-          <View style={styles.dropdownWrapper}>
-            <TouchableOpacity
-              style={styles.pickerToggle}
-              onPress={() => setRouteDropdownVisible(true)}
-            >
-              <Text style={styles.pickerToggleText}>
-                {new Date(selectedRoute.date).toLocaleDateString()} (
-                {selectedRoute.coords.length} pts) ▼
-              </Text>
-            </TouchableOpacity>
-            <Modal
-              visible={routeDropdownVisible}
-              transparent animationType="fade"
-              onRequestClose={() => setRouteDropdownVisible(false)}
-            >
-              <TouchableOpacity
-                style={styles.modalBackdrop}
-                activeOpacity={1}
-                onPressOut={() => setRouteDropdownVisible(false)}
-              >
-                <View style={styles.modalContent}>
-                  <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-                    {savedRoutes.map(j => (
-                      <TouchableOpacity
-                        key={j.id}
-                        style={styles.modalItem}
-                        onPress={() => {
-                          setSelectedRoute(j);
-                          setRouteDropdownVisible(false);
-                        }}
-                      >
-                        <Text style={styles.modalItemText}>
-                          {new Date(j.date).toLocaleString()} — {j.coords.length} pts
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
+    <View style={styles.container}>
+      <FlatList
+        data={suggestions}
+        keyExtractor={item => item.placeId}
+        ListHeaderComponent={() => (
+          <View>
+            {/* Enhanced Header with Discovery Management */}
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.headerTitle}>Total Discoveries ({suggestions.length})</Text>
+                <View style={styles.headerStats}>
+                  <Text style={styles.headerStatText}>Saved: {savedPlaces?.length || 0}</Text>
+                  <Text style={styles.headerStatText}>Dismissed: {dismissedPlaces.length}</Text>
                 </View>
-              </TouchableOpacity>
-            </Modal>
-          </View>
-
-          {/* Discovery Type dropdown */}
-          <View style={styles.dropdownWrapper}>
-            <TouchableOpacity
-              style={styles.pickerToggle}
-              onPress={() => setTypeDropdownVisible(true)}
-            >
-              <Text style={styles.pickerToggleText}>
-                {filterType
-                  ? (PLACE_TYPES.find(t => t.key === filterType)?.label || 'All Types')
-                  : 'All Types'} ▼
-              </Text>
-            </TouchableOpacity>
-            <Modal
-              visible={typeDropdownVisible}
-              transparent animationType="fade"
-              onRequestClose={() => setTypeDropdownVisible(false)}
-            >
-              <TouchableOpacity
-                style={styles.modalBackdrop}
-                activeOpacity={1}
-                onPressOut={() => setTypeDropdownVisible(false)}
-              >
-                <View style={styles.modalContent}>
-                  <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-                    <TouchableOpacity
-                      style={styles.modalItem}
-                      onPress={() => {
-                        setFilterType(null);
-                        setTypeDropdownVisible(false);
-                      }}
-                    >
-                      <Text style={styles.modalItemText}>All Types</Text>
-                    </TouchableOpacity>
-                    {PLACE_TYPES
-                      .filter(t => t.key !== 'all')
-                      .map(({ key, label }) => (
-                       <TouchableOpacity
-                         key={key}
-                         style={styles.modalItem}
-                         onPress={() => {
-                           setFilterType(key);
-                           setTypeDropdownVisible(false);
-                         }}
-                       >
-                         <Text style={styles.modalItemText}>{label}</Text>
-                       </TouchableOpacity>
-                     ))}
-                  </ScrollView>
-                </View>
-              </TouchableOpacity>
-            </Modal>
-          </View>
-
-          {/* AI Summaries Test Button */}
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={testAISummariesFeature}
-          >
-            <MaterialIcons name="science" size={16} color={Colors.primary} />
-            <Text style={styles.testButtonText}>Test AI</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      contentContainerStyle={styles.listContent}
-      ListEmptyComponent={() => (
-        <View style={styles.center}>
-          <Text>No suggestions for this journey.</Text>
-        </View>
-      )}
-      renderItem={({ item }) => (
-        <Swipeable
-          renderLeftActions={() => (
-            <TouchableOpacity
-              style={[styles.action, styles.save]}
-              onPress={() => handleSave(item)}
-            >
-              <Text style={styles.actionText}>Save</Text>
-            </TouchableOpacity>
-          )}
-          renderRightActions={() => (
-            <TouchableOpacity
-              style={[styles.action, styles.dismiss]}
-              onPress={() => handleDismiss(item.placeId)}
-            >
-              <Text style={styles.actionText}>Dismiss</Text>
-            </TouchableOpacity>
-          )}
-        >
-          <View style={styles.card}>
-            {item.thumbnail && (
-              <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
-            )}
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-              {item.category && (
-                <Text style={styles.category}>
-                  {item.category.replace('_', ' ')}
-                  {item.combinedTypes && item.combinedTypes.length > 1 && (
-                    <Text style={styles.combinedTypes}>
-                      {' • ' + item.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
-                    </Text>
-                  )}
-                </Text>
-              )}
-              {item.description && (
-                <Text style={styles.description}>{item.description}</Text>
-              )}
-              
-              {/* Place Summary Section */}
-              {aiSummaries[item.placeId] && (
-                <View style={styles.summaryContainer}>
-                  <Text style={styles.summaryTitle}>Place Summary</Text>
-                  {aiSummaries[item.placeId].noSummary ? (
-                    <Text style={styles.summaryText}>No summary available for this place</Text>
-                  ) : aiSummaries[item.placeId].error ? (
-                    <View>
-                      <Text style={styles.summaryText}>Failed to load summary</Text>
-                      <TouchableOpacity
-                        style={styles.retryButton}
-                        onPress={() => fetchAiSummary(item.placeId)}
-                      >
-                        <Text style={styles.retryButtonText}>Retry</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View>
-                      <Text style={styles.summaryText}>
-                        {aiSummaries[item.placeId].generativeSummary?.overview?.text ||
-                         aiSummaries[item.placeId].editorialSummary?.text ||
-                         (aiSummaries[item.placeId].topReview && `"${aiSummaries[item.placeId].topReview.text?.text || aiSummaries[item.placeId].topReview.text}" - ${aiSummaries[item.placeId].topReview.authorAttribution?.displayName || 'User'}`) ||
-                         'No summary available for this place'}
-                      </Text>
-                      {/* Show summary type indicator */}
-                      {(aiSummaries[item.placeId].generativeSummary || aiSummaries[item.placeId].editorialSummary) && (
-                        <Text style={styles.summaryTypeIndicator}>
-                          {aiSummaries[item.placeId].generativeSummary ? '🤖 AI Summary' : '📝 Editorial Summary'}
-                        </Text>
-                      )}
-                      {aiSummaries[item.placeId].generativeSummary?.disclosureText?.text && (
-                        <View style={styles.disclosureContainer}>
-                          <Text style={styles.disclosureText}>
-                            {aiSummaries[item.placeId].generativeSummary.disclosureText.text}
-                          </Text>
-                          {aiSummaries[item.placeId].generativeSummary?.overviewFlagContentUri && (
-                            <TouchableOpacity
-                              style={styles.flagButton}
-                              onPress={() => {
-                                const url = aiSummaries[item.placeId].generativeSummary.overviewFlagContentUri;
-                                Linking.openURL(url);
-                              }}
-                            >
-                              <MaterialIcons name="flag" size={12} color={Colors.tabInactive} />
-                              <Text style={styles.flagButtonText}>Report</Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      )}
-                    </View>
-                  )}
-                </View>
-              )}
-              
-              {!aiSummaries[item.placeId] && !loadingSummaries[item.placeId] && (
+              </View>
+              <View style={styles.headerRight}>
                 <TouchableOpacity
-                  style={styles.summaryButton}
-                  onPress={() => fetchAiSummary(item.placeId)}
+                  style={styles.gearButton}
+                  onPress={() => setShowSettingsModal(true)}
                 >
-                  <MaterialIcons name="description" size={16} color={Colors.primary} />
-                  <Text style={styles.summaryButtonText}>Get Summary</Text>
+                  <MaterialIcons name="settings" size={20} color={Colors.primary} />
                 </TouchableOpacity>
-              )}
-              
-              {loadingSummaries[item.placeId] && (
-                <View style={styles.summaryLoading}>
-                  <ActivityIndicator size="small" color={Colors.primary} />
-                  <Text style={styles.summaryLoadingText}>Loading summary...</Text>
-                </View>
-              )}
-              
-              <Text style={styles.meta}>
-                ★ {item.rating ?? '—'} ({item.userRatingsTotal ?? '0'})
-              </Text>
+                <TouchableOpacity
+                  style={styles.manageButton}
+                  onPress={() => setShowManageHistory(true)}
+                >
+                  <MaterialIcons name="history" size={16} color={Colors.background} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Journey and Type dropdowns side by side */}
+            <View style={styles.dropdownsRow}>
+              {/* Journey dropdown */}
+              <View style={styles.dropdownWrapper}>
+                <TouchableOpacity
+                  style={styles.pickerToggle}
+                  onPress={() => setRouteDropdownVisible(true)}
+                >
+                  <Text style={styles.pickerToggleText}>
+                    {new Date(selectedRoute.date).toLocaleDateString()} (
+                    {selectedRoute.coords.length} pts) ▼
+                  </Text>
+                </TouchableOpacity>
+                <Modal
+                  visible={routeDropdownVisible}
+                  transparent animationType="fade"
+                  onRequestClose={() => setRouteDropdownVisible(false)}
+                >
+                  <TouchableOpacity
+                    style={styles.modalBackdrop}
+                    activeOpacity={1}
+                    onPressOut={() => setRouteDropdownVisible(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+                        {savedRoutes.map(j => (
+                          <TouchableOpacity
+                            key={j.id}
+                            style={styles.modalItem}
+                            onPress={() => {
+                              setSelectedRoute(j);
+                              setRouteDropdownVisible(false);
+                            }}
+                          >
+                            <Text style={styles.modalItemText}>
+                              {new Date(j.date).toLocaleString()} — {j.coords.length} pts
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              </View>
+
+              {/* Discovery Type dropdown */}
+              <View style={styles.dropdownWrapper}>
+                <TouchableOpacity
+                  style={styles.pickerToggle}
+                  onPress={() => setTypeDropdownVisible(true)}
+                >
+                  <Text style={styles.pickerToggleText}>
+                    {filterType
+                      ? (PLACE_TYPES.find(t => t.key === filterType)?.label || 'All Types')
+                      : 'All Types'} ▼
+                  </Text>
+                </TouchableOpacity>
+                <Modal
+                  visible={typeDropdownVisible}
+                  transparent animationType="fade"
+                  onRequestClose={() => setTypeDropdownVisible(false)}
+                >
+                  <TouchableOpacity
+                    style={styles.modalBackdrop}
+                    activeOpacity={1}
+                    onPressOut={() => setTypeDropdownVisible(false)}
+                  >
+                    <View style={styles.modalContent}>
+                      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+                        <TouchableOpacity
+                          style={styles.modalItem}
+                          onPress={() => {
+                            setFilterType(null);
+                            setTypeDropdownVisible(false);
+                          }}
+                        >
+                          <Text style={styles.modalItemText}>All Types</Text>
+                        </TouchableOpacity>
+                        {PLACE_TYPES
+                          .filter(t => t.key !== 'all')
+                          .map(({ key, label }) => (
+                           <TouchableOpacity
+                             key={key}
+                             style={styles.modalItem}
+                             onPress={() => {
+                               setFilterType(key);
+                               setTypeDropdownVisible(false);
+                             }}
+                           >
+                             <Text style={styles.modalItemText}>{label}</Text>
+                           </TouchableOpacity>
+                         ))}
+                      </ScrollView>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+              </View>
+            </View>
+
+            {/* AI Summaries Test Button - Commented out for future use */}
+            {/* <TouchableOpacity
+              style={styles.testButton}
+              onPress={testAISummariesFeature}
+            >
+              <MaterialIcons name="science" size={16} color={Colors.primary} />
+              <Text style={styles.testButtonText}>Test AI</Text>
+            </TouchableOpacity> */}
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={() => (
+          <View style={styles.completionContainer}>
+            <MaterialIcons name="check-circle" size={64} color={Colors.primary} />
+            <Text style={styles.completionTitle}>Congratulations!</Text>
+            <Text style={styles.completionText}>
+              There are no more places to review on this journey.
+            </Text>
+            <Text style={styles.completionSubtext}>
+              Get out there and explore to discover more!
+            </Text>
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <Swipeable
+            renderLeftActions={() => (
               <TouchableOpacity
-                onPress={() => {
-                  const url =
-                    `https://www.google.com/maps/search/?api=1` +
-                    `&query=${encodeURIComponent(item.name)}` +
-                    `&query_place_id=${item.placeId}`;
-                  Linking.openURL(url);
-                }}
+                style={[styles.action, styles.save]}
+                onPress={() => handleSave(item)}
               >
-                <Text style={styles.link}>View on Maps</Text>
+                <Text style={styles.actionText}>Save</Text>
+              </TouchableOpacity>
+            )}
+            renderRightActions={() => (
+              <TouchableOpacity
+                style={[styles.action, styles.dismiss]}
+                onPress={() => handleDismiss(item)}
+              >
+                <Text style={styles.actionText}>Dismiss</Text>
+              </TouchableOpacity>
+            )}
+          >
+            <View style={styles.card}>
+              {item.thumbnail && (
+                <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
+              )}
+              <View style={styles.info}>
+                <Text style={styles.name}>{item.name}</Text>
+                {item.category && (
+                  <Text style={styles.category}>
+                    {item.category.replace('_', ' ')}
+                    {item.combinedTypes && item.combinedTypes.length > 1 && (
+                      <Text style={styles.combinedTypes}>
+                        {' • ' + item.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
+                      </Text>
+                    )}
+                  </Text>
+                )}
+                {item.description && (
+                  <Text style={styles.description}>{item.description}</Text>
+                )}
+                
+                {/* Place Summary Section */}
+                {aiSummaries[item.placeId] && (
+                  <View style={styles.summaryContainer}>
+                    <Text style={styles.summaryTitle}>Place Summary</Text>
+                    {aiSummaries[item.placeId].noSummary ? (
+                      <Text style={styles.summaryText}>No summary available for this place</Text>
+                    ) : aiSummaries[item.placeId].error ? (
+                      <View>
+                        <Text style={styles.summaryText}>Failed to load summary</Text>
+                        <TouchableOpacity
+                          style={styles.retryButton}
+                          onPress={() => fetchAiSummary(item.placeId)}
+                        >
+                          <Text style={styles.retryButtonText}>Retry</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View>
+                        <Text style={styles.summaryText}>
+                          {aiSummaries[item.placeId].generativeSummary?.overview?.text ||
+                           aiSummaries[item.placeId].editorialSummary?.text ||
+                           (aiSummaries[item.placeId].topReview && `"${aiSummaries[item.placeId].topReview.text?.text || aiSummaries[item.placeId].topReview.text}" - ${aiSummaries[item.placeId].topReview.authorAttribution?.displayName || 'User'}`) ||
+                           'No summary available for this place'}
+                        </Text>
+                        {/* Show summary type indicator */}
+                        {(aiSummaries[item.placeId].generativeSummary || aiSummaries[item.placeId].editorialSummary) && (
+                          <Text style={styles.summaryTypeIndicator}>
+                            {aiSummaries[item.placeId].generativeSummary ? '🤖 AI Summary' : '📝 Editorial Summary'}
+                          </Text>
+                        )}
+                        {aiSummaries[item.placeId].generativeSummary?.disclosureText?.text && (
+                          <View style={styles.disclosureContainer}>
+                            <Text style={styles.disclosureText}>
+                              {aiSummaries[item.placeId].generativeSummary.disclosureText.text}
+                            </Text>
+                            {aiSummaries[item.placeId].generativeSummary?.overviewFlagContentUri && (
+                              <TouchableOpacity
+                                style={styles.flagButton}
+                                onPress={() => {
+                                  const url = aiSummaries[item.placeId].generativeSummary.overviewFlagContentUri;
+                                  Linking.openURL(url);
+                                }}
+                              >
+                                <MaterialIcons name="flag" size={12} color={Colors.tabInactive} />
+                                <Text style={styles.flagButtonText}>Report</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+                
+                {!aiSummaries[item.placeId] && !loadingSummaries[item.placeId] && (
+                  <TouchableOpacity
+                    style={styles.summaryButton}
+                    onPress={() => fetchAiSummary(item.placeId)}
+                  >
+                    <MaterialIcons name="description" size={16} color={Colors.primary} />
+                    <Text style={styles.summaryButtonText}>Get Summary</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {loadingSummaries[item.placeId] && (
+                  <View style={styles.summaryLoading}>
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                    <Text style={styles.summaryLoadingText}>Loading summary...</Text>
+                  </View>
+                )}
+                
+                <Text style={styles.meta}>
+                  ★ {item.rating ?? '—'} ({item.userRatingsTotal ?? '0'})
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    const url =
+                      `https://www.google.com/maps/search/?api=1` +
+                      `&query=${encodeURIComponent(item.name)}` +
+                      `&query_place_id=${item.placeId}`;
+                    Linking.openURL(url);
+                  }}
+                >
+                  <Text style={styles.link}>View on Maps</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Swipeable>
+        )}
+      style={styles.listContainer}
+      />
+
+      {/* Onboarding Modal */}
+      <Modal
+        visible={showOnboarding}
+        transparent
+        animationType="fade"
+        onRequestClose={completeOnboarding}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.onboardingModal}>
+            <Text style={styles.onboardingTitle}>Welcome to Discoveries!</Text>
+            <View style={styles.onboardingContent}>
+              <View style={styles.onboardingItem}>
+                <MaterialIcons name="swipe-right" size={24} color={Colors.primary} />
+                <Text style={styles.onboardingText}>Swipe right to save a place</Text>
+              </View>
+              <View style={styles.onboardingItem}>
+                <MaterialIcons name="swipe-left" size={24} color={Colors.primary} />
+                <Text style={styles.onboardingText}>Swipe left to dismiss a place</Text>
+              </View>
+            </View>
+            <View style={styles.onboardingButtons}>
+              <TouchableOpacity
+                style={styles.onboardingButton}
+                onPress={completeOnboarding}
+              >
+                <Text style={styles.onboardingButtonText}>Got it!</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.onboardingButtonSecondary}
+                onPress={showOnboardingAgain}
+              >
+                <Text style={styles.onboardingButtonTextSecondary}>Show me again</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </Swipeable>
+        </View>
+      </Modal>
+
+      {/* Enhanced Dismiss Modal */}
+      <Modal
+        visible={showDismissModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDismissModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.dismissModal}>
+            <Text style={styles.dismissModalTitle}>
+              Dismiss "{placeToDismiss?.name}"?
+            </Text>
+            <View style={styles.dismissOptions}>
+              <TouchableOpacity
+                style={styles.dismissOption}
+                onPress={() => handleDismissModalAction('30days')}
+              >
+                <MaterialIcons name="schedule" size={20} color={Colors.primary} />
+                <Text style={styles.dismissOptionText}>Hide for 30 days</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dismissOption}
+                onPress={() => handleDismissModalAction('forever')}
+              >
+                <MaterialIcons name="block" size={20} color={Colors.primary} />
+                <Text style={styles.dismissOptionText}>Hide forever</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dismissOption}
+                onPress={() => setShowDismissModal(false)}
+              >
+                <MaterialIcons name="cancel" size={20} color={Colors.tabInactive} />
+                <Text style={styles.dismissOptionText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.rememberChoiceContainer}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setRememberChoice(!rememberChoice)}
+              >
+                {rememberChoice && (
+                  <MaterialIcons name="check" size={16} color={Colors.primary} />
+                )}
+              </TouchableOpacity>
+              <Text style={styles.rememberChoiceText}>
+                Remember my choice for future dismissals
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Settings Modal */}
+      <Modal
+        visible={showSettingsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.settingsModal}>
+            <Text style={styles.settingsModalTitle}>Discovery Settings</Text>
+            <View style={styles.settingsContent}>
+              <Text style={styles.settingsSectionTitle}>Default Dismissal:</Text>
+              <TouchableOpacity
+                style={[
+                  styles.settingsOption,
+                  dismissalPreference === 'ask' && styles.settingsOptionActive
+                ]}
+                onPress={() => setDismissalPreference('ask')}
+              >
+                <MaterialIcons 
+                  name={dismissalPreference === 'ask' ? 'radio-button-checked' : 'radio-button-unchecked'} 
+                  size={20} 
+                  color={Colors.primary} 
+                />
+                <Text style={styles.settingsOptionText}>Ask each time</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.settingsOption,
+                  dismissalPreference === '30days' && styles.settingsOptionActive
+                ]}
+                onPress={() => setDismissalPreference('30days')}
+              >
+                <MaterialIcons 
+                  name={dismissalPreference === '30days' ? 'radio-button-checked' : 'radio-button-unchecked'} 
+                  size={20} 
+                  color={Colors.primary} 
+                />
+                <Text style={styles.settingsOptionText}>Hide for 30 days</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.settingsOption,
+                  dismissalPreference === 'forever' && styles.settingsOptionActive
+                ]}
+                onPress={() => setDismissalPreference('forever')}
+              >
+                <MaterialIcons 
+                  name={dismissalPreference === 'forever' ? 'radio-button-checked' : 'radio-button-unchecked'} 
+                  size={20} 
+                  color={Colors.primary} 
+                />
+                <Text style={styles.settingsOptionText}>Hide forever</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={() => setShowSettingsModal(false)}
+            >
+              <Text style={styles.settingsButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Manage History Modal */}
+      <Modal
+        visible={showManageHistory}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowManageHistory(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.manageHistoryModal}>
+            <View style={styles.manageHistoryHeader}>
+              <Text style={styles.manageHistoryTitle}>Manage Discovery History</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowManageHistory(false)}
+              >
+                <MaterialIcons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.manageHistoryContent} showsVerticalScrollIndicator={true}>
+              <TouchableOpacity
+                style={styles.manageHistorySectionHeader}
+                onPress={() => setDismissedSectionCollapsed(!dismissedSectionCollapsed)}
+              >
+                <Text style={styles.manageHistorySectionTitle}>
+                  ❌ Dismissed Places ({dismissedPlaces.length})
+                </Text>
+                <MaterialIcons 
+                  name={dismissedSectionCollapsed ? "expand-more" : "expand-less"} 
+                  size={20} 
+                  color={Colors.text} 
+                />
+              </TouchableOpacity>
+              
+              {!dismissedSectionCollapsed && dismissedPlaces.map(place => (
+                <View key={place.placeId} style={styles.manageHistoryItem}>
+                  <View style={styles.manageHistoryItemInfo}>
+                    <Text style={styles.manageHistoryItemName}>{place.name}</Text>
+                    <Text style={styles.manageHistoryItemCategory}>{place.category}</Text>
+                    <Text style={styles.manageHistoryItemTime}>
+                      Dismissed {Math.floor((Date.now() - place.dismissedAt) / (1000 * 60 * 60))}h ago
+                    </Text>
+                  </View>
+                  <View style={styles.manageHistoryItemActions}>
+                    <TouchableOpacity style={styles.restoreButton}>
+                      <Text style={styles.restoreButtonText}>Restore</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.manageHistorySectionHeader}
+                onPress={() => setDiscoveredSectionCollapsed(!discoveredSectionCollapsed)}
+              >
+                <Text style={styles.manageHistorySectionTitle}>
+                  ✅ Discovered Places ({discoveredPlaces.length})
+                </Text>
+                <MaterialIcons 
+                  name={discoveredSectionCollapsed ? "expand-more" : "expand-less"} 
+                  size={20} 
+                  color={Colors.text} 
+                />
+              </TouchableOpacity>
+              
+              {!discoveredSectionCollapsed && discoveredPlaces.map(place => (
+                <View key={place.placeId} style={styles.manageHistoryItem}>
+                  <View style={styles.manageHistoryItemInfo}>
+                    <Text style={styles.manageHistoryItemName}>{place.name}</Text>
+                    <Text style={styles.manageHistoryItemCategory}>{place.category}</Text>
+                    <Text style={styles.manageHistoryItemTime}>
+                      Discovered {Math.floor((Date.now() - place.discoveredAt) / (1000 * 60 * 60 * 24))}d ago
+                    </Text>
+                  </View>
+                  <View style={styles.manageHistoryItemActions}>
+                    <TouchableOpacity style={styles.dismissButton}>
+                      <Text style={styles.dismissButtonText}>Dismiss</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Shake to Undo Button (Demo) */}
+      {recentlyDismissed.length > 0 && (
+        <TouchableOpacity
+          style={styles.shakeButton}
+          onPress={() => {
+            const lastDismissed = recentlyDismissed[recentlyDismissed.length - 1];
+            Alert.alert(
+              'Undo Dismiss',
+              `Restore "${lastDismissed.name}" to suggestions?`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                  text: 'Restore', 
+                  onPress: () => {
+                    setRecentlyDismissed(prev => prev.slice(0, -1));
+                    Toast.show(`${lastDismissed.name} restored to suggestions`, {
+                      duration: Toast.durations.SHORT,
+                      position: Toast.positions.BOTTOM,
+                    });
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <MaterialIcons name="undo" size={20} color={Colors.background} />
+          <Text style={styles.shakeButtonText}>Undo Last Dismiss</Text>
+        </TouchableOpacity>
       )}
-      style={styles.listContainer}
-    />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  // Enhanced Header Styles
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: Spacing.md,
     backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.tabInactive + '20',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    ...Typography.h2,
+    color: Colors.text,
+    marginBottom: Spacing.xs / 2,
+  },
+  headerStats: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  headerStatText: {
+    ...Typography.caption,
+    color: Colors.tabInactive,
+    fontSize: 12,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  gearButton: {
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    backgroundColor: Colors.primary + '10',
+  },
+  manageButton: {
+    padding: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Layout.borderRadius,
+  },
+  manageButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
   },
   dropdownWrapper: {
     flex: 1,
@@ -642,5 +1081,325 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: Spacing.xs / 2,
     fontStyle: 'italic',
+  },
+
+  // Onboarding Modal Styles
+  onboardingModal: {
+    backgroundColor: Colors.background,
+    borderRadius: Layout.borderRadius,
+    padding: Spacing.lg,
+    margin: Spacing.lg,
+    alignItems: 'center',
+  },
+  onboardingTitle: {
+    ...Typography.h1,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  onboardingContent: {
+    width: '100%',
+    marginBottom: Spacing.lg,
+  },
+  onboardingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    padding: Spacing.sm,
+    backgroundColor: Colors.primary + '10',
+    borderRadius: Layout.borderRadius,
+  },
+  onboardingText: {
+    ...Typography.body,
+    color: Colors.text,
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  onboardingButtons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  onboardingButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: Layout.borderRadius,
+  },
+  onboardingButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  onboardingButtonSecondary: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.tabInactive + '20',
+    borderRadius: Layout.borderRadius,
+  },
+  onboardingButtonTextSecondary: {
+    ...Typography.body,
+    color: Colors.text,
+  },
+
+  // Dismiss Modal Styles
+  dismissModal: {
+    backgroundColor: Colors.background,
+    borderRadius: Layout.borderRadius,
+    padding: Spacing.lg,
+    margin: Spacing.lg,
+  },
+  dismissModalTitle: {
+    ...Typography.h2,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  dismissOptions: {
+    marginBottom: Spacing.lg,
+  },
+  dismissOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.primary + '10',
+    borderRadius: Layout.borderRadius,
+  },
+  dismissOptionText: {
+    ...Typography.body,
+    color: Colors.text,
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  rememberChoiceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.tabInactive + '20',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.sm,
+  },
+  rememberChoiceText: {
+    ...Typography.body,
+    color: Colors.text,
+    fontSize: 14,
+  },
+
+  // Settings Modal Styles
+  settingsModal: {
+    backgroundColor: Colors.background,
+    borderRadius: Layout.borderRadius,
+    padding: Spacing.lg,
+    margin: Spacing.lg,
+  },
+  settingsModalTitle: {
+    ...Typography.h2,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  settingsContent: {
+    marginBottom: Spacing.lg,
+  },
+  settingsSectionTitle: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.md,
+  },
+  settingsOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.tabInactive + '10',
+    borderRadius: Layout.borderRadius,
+  },
+  settingsOptionActive: {
+    backgroundColor: Colors.primary + '20',
+  },
+  settingsOptionText: {
+    ...Typography.body,
+    color: Colors.text,
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  settingsButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: Layout.borderRadius,
+    alignItems: 'center',
+  },
+  settingsButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
+  },
+
+  // Manage History Modal Styles
+  manageHistoryModal: {
+    backgroundColor: Colors.background,
+    borderRadius: Layout.borderRadius,
+    margin: Spacing.md,
+    maxHeight: '80%',
+  },
+  manageHistoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.tabInactive + '20',
+  },
+  manageHistoryTitle: {
+    ...Typography.h2,
+    color: Colors.text,
+    flex: 1,
+  },
+  closeButton: {
+    padding: Spacing.sm,
+  },
+  manageHistoryContent: {
+    padding: Spacing.lg,
+    maxHeight: '70%',
+  },
+  manageHistorySectionTitle: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  manageHistorySectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.md,
+    backgroundColor: Colors.tabInactive + '10',
+    borderRadius: Layout.borderRadius,
+    marginBottom: Spacing.sm,
+  },
+  manageHistoryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.tabInactive + '10',
+    borderRadius: Layout.borderRadius,
+  },
+  manageHistoryItemInfo: {
+    flex: 1,
+  },
+  manageHistoryItemName: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+  },
+  manageHistoryItemCategory: {
+    ...Typography.body,
+    color: Colors.tabInactive,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  manageHistoryItemTime: {
+    ...Typography.body,
+    color: Colors.tabInactive,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  manageHistoryItemActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  restoreButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Layout.borderRadius,
+  },
+  restoreButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  dismissButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.swipeDismiss,
+    borderRadius: Layout.borderRadius,
+  },
+  dismissButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+
+  // Shake to Undo Button Styles
+  shakeButton: {
+    position: 'absolute',
+    bottom: Spacing.lg,
+    right: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Layout.borderRadius * 2,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  shakeButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
+    marginLeft: Spacing.xs,
+  },
+  dropdownsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  completionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  completionTitle: {
+    ...Typography.h2,
+    color: Colors.text,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  completionText: {
+    ...Typography.body,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  completionSubtext: {
+    ...Typography.body,
+    color: Colors.tabInactive,
+    textAlign: 'center',
+    fontSize: 16,
   },
 });
