@@ -4,6 +4,51 @@
 
 Hero's Path is a React Native/Expo app that lets users track their walks with a glowing polyline and an animated Link sprite, save past routes for later review, and discover nearby points of interest after each outing. It also includes social sharing of walks and curated "Discoveries," plus user-defined goals to make daily walking more engaging.
 
+## 🚨 **CRITICAL UPDATE: Google Places API Migration**
+
+### Current Status (December 2024)
+- **Current Branch:** `feature/discovery-preferences-and-map-enhancements`
+- **Save Point Tag:** `legacy-stable-before-places-migration`
+- **API Status:** Currently using Google Places API (Legacy) - **MIGRATION REQUIRED**
+
+### Recent Analysis & Decision
+After reviewing the [Google Places API documentation](https://developers.google.com/maps/documentation/places/web-service/legacy/overview-legacy), we've identified that the app needs to migrate from the Legacy API to the new Places API (New) for long-term success.
+
+**Key Issues with Current Legacy API:**
+- Inconsistent response data between different endpoints
+- Duplicate location problems due to multiple place types per location
+- Limited support for new features like AI summaries
+- Google is actively deprecating legacy APIs
+
+**Benefits of New Places API:**
+- Consistent response data across all endpoints
+- Primary place types eliminate duplicate detection issues
+- Enhanced features: AI summaries, dynamic data, improved filtering
+- Better performance and security (OAuth support)
+- Simplified pricing with field masking
+
+### Migration Strategy
+1. **Safe Rollback Point:** Tag `legacy-stable-before-places-migration` created
+2. **Hybrid Approach:** Gradually migrate endpoints while maintaining fallback
+3. **API Key Verification:** Ensure current keys have access to new API
+4. **Testing Strategy:** Test new endpoints in development before full migration
+
+### For New Developer Handover
+**Current API Usage:**
+- `nearbysearch/json` - Finding places around routes
+- `details/json` - Getting place details
+- `photo` - Place photos
+
+**Migration Required:**
+- Update endpoints to new API format
+- Modify response parsing for standardized data structure
+- Simplify deduplication logic (new API provides consistent data)
+- Update field requests to use field masking
+
+**Sources:**
+- [Google Places API (Legacy) Overview](https://developers.google.com/maps/documentation/places/web-service/legacy/overview-legacy)
+- [Migration Guide](https://developers.google.com/maps/documentation/places/web-service/legacy/migrate-overview)
+
 ## Tech Stack
 
 * **Expo SDK:** ~53.0.17
@@ -286,6 +331,7 @@ service cloud.firestore {
 * **Discovery preferences screen** (dedicated modal with organized categories)
 
 ### 🔄 In Progress
+* **Google Places API Migration** (Legacy → New API)
 * User profile management (avatar upload, privacy settings)
 * AI summaries testing (Google Places API New integration)
 
