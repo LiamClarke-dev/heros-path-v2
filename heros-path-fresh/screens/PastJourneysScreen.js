@@ -164,6 +164,45 @@ export default function PastJourneysScreen({ navigation }) {
     );
   };
 
+  const purgeAllAccountData = async () => {
+    Alert.alert(
+      '🚨 PURGE ALL ACCOUNT DATA?',
+      'This will PERMANENTLY DELETE ALL your data:\n\n• All journeys and routes\n• All saved places\n• All dismissed places\n• All discovery preferences\n• All app settings\n• All local storage data\n\nThis action CANNOT be undone and will give you a completely fresh start.\n\nAre you absolutely sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: '🚨 PURGE EVERYTHING',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const result = await JourneyService.purgeAllUserData(user.uid);
+              
+              Alert.alert(
+                '✅ Account Purged Successfully',
+                `All your data has been completely removed:\n\n• ${result.deletedJourneys} journeys deleted\n• ${result.deletedDiscoveries} discoveries deleted\n• ${result.deletedDismissed} dismissed places deleted\n• ${result.clearedStorageKeys} app settings cleared\n\nYou now have a completely fresh account!`,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Reload journeys to show empty state
+                      loadJourneys();
+                    }
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('Error purging account data:', error);
+              Alert.alert('Error', 'Failed to purge account data. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item, index }) => {
     const d = item.dateObj || new Date(item.date);
     const dateStr = d.toLocaleDateString(undefined, {
@@ -246,6 +285,12 @@ export default function PastJourneysScreen({ navigation }) {
           onPress={deleteAllJourneys}
         >
           <Text style={styles.deleteAllButtonText}>🗑️ DELETE ALL JOURNEYS</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.devButton, styles.purgeAllButton]}
+          onPress={purgeAllAccountData}
+        >
+          <Text style={styles.purgeAllButtonText}>🚨 PURGE EVERYTHING</Text>
         </TouchableOpacity>
       </View>
       
@@ -402,6 +447,14 @@ const styles = StyleSheet.create({
   },
   deleteAllButtonText: {
     color: '#d32f2f',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  purgeAllButton: {
+    backgroundColor: '#ff5722',
+  },
+  purgeAllButtonText: {
+    color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 14,
   },

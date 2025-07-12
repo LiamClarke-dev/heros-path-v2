@@ -2,7 +2,7 @@
 // Centralized logging utility for debugging
 // TODO: REMOVE ALL DEBUG LOGS BEFORE PRODUCTION - Search for "🔍 DEBUG" to find all logs
 
-const DEBUG_MODE = true; // Set to false to disable all debug logs
+const DEBUG_MODE = false; // Set to false to disable all debug logs
 
 class Logger {
   static debug(component, message, data = null) {
@@ -116,6 +116,20 @@ class Logger {
     
     const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
     const logMessage = `💾 CACHE [${timestamp}] [${component}] ${action} ${key}`;
+    
+    if (details) {
+      console.log(logMessage, details);
+    } else {
+      console.log(logMessage);
+    }
+  }
+
+  // Filter logging
+  static filter(component, action, filterType, details = null) {
+    if (!DEBUG_MODE) return;
+    
+    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+    const logMessage = `🔍 FILTER [${timestamp}] [${component}] ${action} for ${filterType}`;
     
     if (details) {
       console.log(logMessage, details);
