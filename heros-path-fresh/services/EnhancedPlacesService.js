@@ -108,10 +108,11 @@ export function getPlacePhotoUrl(photoReference, maxWidth = 400) {
 /**
  * Get place types that are supported by the API
  * Based on the latest Google Places API documentation
+ * Updated to only include types that are actually supported
  */
 export const SUPPORTED_PLACE_TYPES = [
   // Food & Drink
-  'restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway', 'food',
+  'restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway',
   
   // Shopping
   'shopping_mall', 'store', 'convenience_store', 'department_store',

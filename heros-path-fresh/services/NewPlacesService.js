@@ -498,10 +498,11 @@ export async function testAPIConnectivity() {
 /**
  * Get supported place types for the new API
  * Based on the latest Google Places API documentation
+ * Updated to only include types that are actually supported
  */
 export const NEW_API_PLACE_TYPES = [
   // Food & Drink
-  'restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway', 'food',
+  'restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway',
   
   // Shopping
   'shopping_mall', 'store', 'convenience_store', 'department_store',
