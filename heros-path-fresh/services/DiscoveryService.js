@@ -239,7 +239,19 @@ class DiscoveryService {
       };
     } catch (error) {
       console.error('Error getting discovery stats:', error);
-      throw error;
+      // Return empty stats instead of throwing for better UX
+      return {
+        success: false,
+        stats: {
+          totalDiscoveries: 0,
+          savedCount: 0,
+          dismissedCount: 0,
+          placeTypes: {},
+          saveRate: 0,
+          dismissRate: 0,
+        },
+        error: error.message
+      };
     }
   }
 

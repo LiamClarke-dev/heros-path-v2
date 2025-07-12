@@ -145,6 +145,18 @@ export default function DiscoveriesScreen({ navigation, route }) {
     }
 
     try {
+      // Validate coordinates before creating discovery
+      const lat = place.latitude || place.geometry?.location?.lat;
+      const lng = place.longitude || place.geometry?.location?.lng;
+      
+      if (lat === undefined || lng === undefined || lat === null || lng === null) {
+        Toast.show('Cannot save place - missing location data', {
+          duration: Toast.durations.SHORT,
+          position: Toast.positions.BOTTOM,
+        });
+        return;
+      }
+      
       // Create discovery data for Firestore
       const discoveryData = {
         journeyId: selectedRoute?.id || null,
@@ -152,8 +164,8 @@ export default function DiscoveriesScreen({ navigation, route }) {
         placeName: place.name,
         placeType: place.types?.[0] || 'unknown',
         location: {
-          lat: place.latitude || place.geometry?.location?.lat,
-          lng: place.longitude || place.geometry?.location?.lng,
+          lat: lat,
+          lng: lng,
         },
         discoveredAt: new Date(),
         dismissed: false,
