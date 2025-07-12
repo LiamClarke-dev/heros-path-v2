@@ -23,17 +23,28 @@ export async function searchNearbyPlaces(latitude, longitude, radius, type, opti
     minRating = 0,
     maxPrice = 4,
     openNow = false,
-    useNewAPI = true
+    useNewAPI = false // Default to legacy API for now due to 400 errors
   } = options;
 
   if (useNewAPI) {
-    return await searchNearbyPlacesNew(latitude, longitude, radius, type, {
-      maxResults,
-      language,
-      minRating,
-      maxPrice,
-      openNow
-    });
+    try {
+      return await searchNearbyPlacesNew(latitude, longitude, radius, type, {
+        maxResults,
+        language,
+        minRating,
+        maxPrice,
+        openNow
+      });
+    } catch (error) {
+      console.warn('New API failed, falling back to legacy:', error);
+      return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, {
+        maxResults,
+        language,
+        minRating,
+        maxPrice,
+        openNow
+      });
+    }
   } else {
     return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, {
       maxResults,
@@ -201,9 +212,14 @@ async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, optio
  * @param {boolean} useNewAPI - Whether to use new API or fallback to legacy
  * @returns {Promise<Object>} Place details object
  */
-export async function getPlaceDetails(placeId, language = 'en', useNewAPI = true) {
+export async function getPlaceDetails(placeId, language = 'en', useNewAPI = false) {
   if (useNewAPI) {
-    return await getPlaceDetailsNew(placeId, language);
+    try {
+      return await getPlaceDetailsNew(placeId, language);
+    } catch (error) {
+      console.warn('New API details failed, falling back to legacy:', error);
+      return await getPlaceDetailsLegacy(placeId, language);
+    }
   } else {
     return await getPlaceDetailsLegacy(placeId, language);
   }
