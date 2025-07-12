@@ -178,20 +178,22 @@ export default function DiscoveriesScreen() {
                 onPressOut={() => setRouteDropdownVisible(false)}
               >
                 <View style={styles.modalContent}>
-                  {savedRoutes.map(j => (
-                    <TouchableOpacity
-                      key={j.id}
-                      style={styles.modalItem}
-                      onPress={() => {
-                        setSelectedRoute(j);
-                        setRouteDropdownVisible(false);
-                      }}
-                    >
-                      <Text style={styles.modalItemText}>
-                        {new Date(j.date).toLocaleString()} — {j.coords.length} pts
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+                    {savedRoutes.map(j => (
+                      <TouchableOpacity
+                        key={j.id}
+                        style={styles.modalItem}
+                        onPress={() => {
+                          setSelectedRoute(j);
+                          setRouteDropdownVisible(false);
+                        }}
+                      >
+                        <Text style={styles.modalItemText}>
+                          {new Date(j.date).toLocaleString()} — {j.coords.length} pts
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </View>
               </TouchableOpacity>
             </Modal>
@@ -220,29 +222,31 @@ export default function DiscoveriesScreen() {
                 onPressOut={() => setTypeDropdownVisible(false)}
               >
                 <View style={styles.modalContent}>
-                 <TouchableOpacity
-                   style={styles.modalItem}
-                   onPress={() => {
-                     setFilterType(null);
-                     setTypeDropdownVisible(false);
-                   }}
-                 >
-                   <Text style={styles.modalItemText}>All Types</Text>
-                 </TouchableOpacity>
-                 {PLACE_TYPES
-                   .filter(t => t.key !== 'all')
-                   .map(({ key, label }) => (
+                  <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
                     <TouchableOpacity
-                      key={key}
                       style={styles.modalItem}
                       onPress={() => {
-                        setFilterType(key);
+                        setFilterType(null);
                         setTypeDropdownVisible(false);
                       }}
                     >
-                      <Text style={styles.modalItemText}>{label}</Text>
+                      <Text style={styles.modalItemText}>All Types</Text>
                     </TouchableOpacity>
-                  ))}
+                    {PLACE_TYPES
+                      .filter(t => t.key !== 'all')
+                      .map(({ key, label }) => (
+                       <TouchableOpacity
+                         key={key}
+                         style={styles.modalItem}
+                         onPress={() => {
+                           setFilterType(key);
+                           setTypeDropdownVisible(false);
+                         }}
+                       >
+                         <Text style={styles.modalItemText}>{label}</Text>
+                       </TouchableOpacity>
+                     ))}
+                  </ScrollView>
                 </View>
               </TouchableOpacity>
             </Modal>
@@ -376,6 +380,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.md,
+    maxHeight: 300, // Limit height to prevent overflow
+  },
+  modalScrollView: {
+    maxHeight: 250, // Leave room for padding
   },
   modalItem: {
     paddingVertical: Spacing.sm,

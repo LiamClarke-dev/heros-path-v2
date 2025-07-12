@@ -174,6 +174,16 @@ export async function getSuggestionsForRoute(
     allResults = allResults.filter(place => !place.rating || place.rating >= minRating);
     console.log(`⭐ Filtered by rating (${minRating}+): ${allResults.length}`);
     
+    // Filter by user preferences (check if any of the place's types match enabled preferences)
+    allResults = allResults.filter(place => {
+      // If place has no types, include it (fallback)
+      if (!place.types || place.types.length === 0) return true;
+      
+      // Check if any of the place's types are enabled in user preferences
+      return place.types.some(placeType => preferences[placeType] === true);
+    });
+    console.log(`🎯 Filtered by preferences: ${allResults.length}`);
+    
     // Shuffle and limit results
     allResults = shuffleArray(allResults).slice(0, maxResults);
     console.log(`🎯 Total results after filtering: ${allResults.length}`);
@@ -214,6 +224,7 @@ async function fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lan
         placeId: place.place_id,
         name: place.name,
         category: place.types?.[0] || type,
+        types: place.types || [], // Store all types for filtering
         description: place.vicinity || place.types?.[0]?.replace('_', ' ') || '',
         thumbnail: photoUrl,
         rating: place.rating,
