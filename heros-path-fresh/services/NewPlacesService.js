@@ -103,7 +103,7 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
 
     const url = `${NEW_BASE_URL}/places:searchNearby`;
     
-    // Updated field mask to match new API structure
+    // Conservative field mask with only essential fields that are definitely available
     const fieldMask = [
       'places.id',
       'places.displayName',
@@ -115,8 +115,10 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
       'places.location',
       'places.formattedAddress',
       'places.primaryType',
-      'places.primaryTypeDisplayName',
-      'places.shortFormattedAddress',
+      'places.websiteUri',
+      'places.regularOpeningHours',
+      'places.reviews',
+      'places.editorialSummary',
       'places.attributions'
     ].join(',');
     
@@ -167,7 +169,7 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
         longitude: place.location?.longitude,
         priceLevel: place.priceLevel,
         address: place.formattedAddress,
-        shortAddress: place.shortFormattedAddress,
+        shortAddress: place.shortFormattedAddress || place.formattedAddress,
         attributions: place.attributions
       }));
 
@@ -265,7 +267,7 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
   try {
     const url = `${NEW_BASE_URL}/places/${placeId}`;
     
-    // Updated field mask to match new API structure and include all needed fields
+    // Conservative field mask with only essential fields that are definitely available
     const fieldMask = [
       'id',
       'displayName',
@@ -276,19 +278,12 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
       'photos',
       'location',
       'formattedAddress',
-      'shortFormattedAddress',
       'primaryType',
-      'primaryTypeDisplayName',
       'websiteUri',
-      'phoneNumbers',
       'regularOpeningHours',
-      'currentOpeningHours',
       'reviews',
       'editorialSummary',
-      'attributions',
-      'utcOffsetMinutes',
-      'nationalPhoneNumber',
-      'internationalPhoneNumber'
+      'attributions'
     ].join(',');
     
     console.log('New API details request:', {
@@ -318,20 +313,20 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
       placeId: place.id,
       name: place.displayName?.text || 'Unknown Place',
       address: place.formattedAddress,
-      shortAddress: place.shortFormattedAddress,
+      shortAddress: place.shortFormattedAddress || place.formattedAddress,
       latitude: place.location?.latitude,
       longitude: place.location?.longitude,
       types: place.types || [],
       primaryType: place.primaryType || place.types?.[0] || 'point_of_interest',
-      primaryTypeDisplayName: place.primaryTypeDisplayName,
+      primaryTypeDisplayName: place.primaryTypeDisplayName || place.primaryType || place.types?.[0] || 'point_of_interest',
       rating: place.rating,
       userRatingsTotal: place.userRatingCount,
       priceLevel: place.priceLevel,
       website: place.websiteUri,
-      phoneNumber: place.nationalPhoneNumber || place.internationalPhoneNumber,
+      phoneNumber: place.nationalPhoneNumber || place.internationalPhoneNumber || null,
       openingHours: place.regularOpeningHours?.weekdayDescriptions || [],
       currentOpeningHours: place.currentOpeningHours?.weekdayDescriptions || [],
-      isOpen: place.currentOpeningHours?.openNow,
+      isOpen: place.currentOpeningHours?.openNow || place.regularOpeningHours?.openNow || false,
       photos: place.photos?.map(photo => ({
         photoReference: photo.name,
         width: photo.widthPx,
@@ -346,7 +341,7 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
       })) || [],
       editorialSummary: place.editorialSummary?.text,
       attributions: place.attributions,
-      utcOffsetMinutes: place.utcOffsetMinutes
+      utcOffsetMinutes: place.utcOffsetMinutes || null
     };
 
   } catch (error) {
