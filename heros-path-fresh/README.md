@@ -6,48 +6,63 @@ Hero's Path is a React Native/Expo app that lets users track their walks with a 
 
 ## 🚨 **CRITICAL UPDATE: Google Places API Migration**
 
-### Current Status (July 2025)
+### ✅ **Migration Status: COMPLETE** (July 2025)
 - **Current Branch:** `feature/discovery-preferences-and-map-enhancements`
-- **Save Point Tag:** `legacy-stable-before-places-migration`
-- **API Status:** Currently using Google Places API (Legacy) - **MIGRATION REQUIRED**
+- **Migration Status:** ✅ **FULLY COMPLETE** - Using Google Places API (New) with automatic fallback
+- **Documentation:** See `GOOGLE_PLACES_API_MIGRATION_COMPLETE.md` for full details
 
-### Recent Analysis & Decision
-After reviewing the [Google Places API documentation](https://developers.google.com/maps/documentation/places/web-service/legacy/overview-legacy), we've identified that the app needs to migrate from the Legacy API to the new Places API (New) for long-term success.
+### 🎯 **For New Developers**
+**⚠️ IMPORTANT:** Before working with Google Places API functionality, please read the complete migration documentation:
 
-**Key Issues with Current Legacy API:**
-- Inconsistent response data between different endpoints
-- Duplicate location problems due to multiple place types per location
-- Limited support for new features like AI summaries
-- Google is actively deprecating legacy APIs
+📖 **`GOOGLE_PLACES_API_MIGRATION_COMPLETE.md`** - Comprehensive guide covering:
+- Complete API migration implementation
+- Field mappings and response transformations
+- AI summaries integration with proper disclosure
+- Testing interfaces and troubleshooting
+- Backward compatibility and fallback mechanisms
 
-**Benefits of New Places API:**
-- Consistent response data across all endpoints
-- Primary place types eliminate duplicate detection issues
-- Enhanced features: AI summaries, dynamic data, improved filtering
-- Better performance and security (OAuth support)
-- Simplified pricing with field masking
+### 🚨 **CRITICAL: Route Discovery Algorithm**
 
-### Migration Strategy
-1. **Safe Rollback Point:** Tag `legacy-stable-before-places-migration` created
-2. **Hybrid Approach:** Gradually migrate endpoints while maintaining fallback
-3. **API Key Verification:** Ensure current keys have access to new API
-4. **Testing Strategy:** Test new endpoints in development before full migration
+**⚠️ DEVELOPMENT NOTE - CORE VALUE FEATURE**
 
-### For New Developer Handover
-**Current API Usage:**
-- `nearbysearch/json` - Finding places around routes
-- `details/json` - Getting place details
-- `photo` - Place photos
+The current route discovery algorithm in `services/DiscoveriesService.js` uses `calculateRouteCenter()` which averages all GPS coordinates to find a single center point. **This is a temporary development solution that fundamentally breaks the app's core value proposition.**
 
-**Migration Required:**
-- Update endpoints to new API format
-- Modify response parsing for standardized data structure
-- Simplify deduplication logic (new API provides consistent data)
-- Update field requests to use field masking
+**The Problem:**
+- **Straight line routes**: Misses discoveries at the start/end of long walks
+- **Long routes**: Only finds places in the middle section
+- **Core value failure**: Users should discover places along their ENTIRE route, not just the center
 
-**Sources:**
-- [Google Places API (Legacy) Overview](https://developers.google.com/maps/documentation/places/web-service/legacy/overview-legacy)
-- [Migration Guide](https://developers.google.com/maps/documentation/places/web-service/legacy/migrate-overview)
+**The Solution Needed:**
+- **Path-based search**: Search along the actual route path every 200-500m
+- **Route segmentation**: Split long routes into searchable segments
+- **Smart radius**: Adjust search radius based on route characteristics
+
+**Impact:**
+This is a small piece of code but **CRITICAL** to the app's core value of discovering new places by walking new streets. The current approach only works for small loops and circular routes, failing for the most common use case.
+
+**Priority:** High - This should be implemented when wiring up real functionality, not left as a development shortcut.
+
+### ✅ **Migration Benefits Achieved**
+- **Consistent response data** across all endpoints
+- **Primary place types** eliminate duplicate detection issues
+- **Enhanced features**: AI summaries, dynamic data, improved filtering
+- **Better performance** and security (OAuth support)
+- **Simplified pricing** with field masking
+- **Full backward compatibility** with automatic fallback
+
+### 🔧 **Current API Implementation**
+- **Primary Service**: `services/NewPlacesService.js` - Unified API interface
+- **Enhanced Service**: `services/EnhancedPlacesService.js` - Advanced features wrapper
+- **Discovery Service**: `services/DiscoveriesService.js` - Route-based place suggestions
+- **Testing Interface**: Settings screen includes API connectivity testing
+
+### 🚀 **Key Features Working**
+- ✅ **AI-powered place summaries** with proper "Summarized with Gemini" disclosure
+- ✅ **Editorial summaries** for places without AI content
+- ✅ **Automatic fallback** to legacy API when new API unavailable
+- ✅ **Field masking** for optimized performance
+- ✅ **All place types** compatible with new API
+- ✅ **Production-ready** with comprehensive error handling
 
 ## Tech Stack
 
@@ -167,6 +182,7 @@ heros-path-fresh/
 ├── firebase.js              # Firebase initialization
 ├── GoogleService-Info.plist # iOS Firebase configuration
 ├── .gitignore
+├── GOOGLE_PLACES_API_MIGRATION_COMPLETE.md  # Complete migration documentation
 ├── screens/
 │   ├── MapScreen.js
 │   ├── PastJourneysScreen.js
@@ -183,6 +199,7 @@ heros-path-fresh/
 ├── services/
 │   ├── DiscoveriesService.js
 │   ├── UserProfileService.js
+│   ├── NewPlacesService.js  # Primary Google Places API service
 │   └── EnhancedPlacesService.js
 ├── hooks/
 │   └── useSuggestedPlaces.js
@@ -327,16 +344,15 @@ service cloud.firestore {
 * **Optimized development workflow** (cost-effective testing strategy)
 * **Improved deduplication** (using place_id as primary method)
 * **Rating filtering** (minimum rating preferences)
-* **AI summaries integration** (ready for Google Places API New)
+* **AI summaries integration** (working with proper disclosure)
 * **Discovery preferences screen** (dedicated modal with organized categories)
-* **Google Places API Migration** (hybrid implementation with automatic fallback)
-* **Migration Testing Interface** (real-time API connectivity testing)
-* **New Places API Service** (unified interface with field masking)
+* **✅ Google Places API Migration** (fully complete with automatic fallback)
+* **✅ Migration Testing Interface** (real-time API connectivity testing)
+* **✅ New Places API Service** (unified interface with field masking)
+* **✅ Production-ready logging** (clean, essential error handling)
 
 ### 🔄 In Progress
-* **Google Places API Migration** (Legacy → New API) - **HYBRID IMPLEMENTATION COMPLETE**
 * User profile management (avatar upload, privacy settings)
-* AI summaries testing (Google Places API New integration)
 
 ### 📋 Backlog
 * Social feed, friends, privacy controls
@@ -416,7 +432,7 @@ service cloud.firestore {
 ### Data Architecture
 * **Local Storage:** AsyncStorage for user preferences and cached data
 * **Cloud Storage:** Firebase Firestore for user profiles and social features
-* **API Integration:** Google Places API for discoveries and routing
+* **API Integration:** Google Places API for discoveries and routing (see `GOOGLE_PLACES_API_MIGRATION_COMPLETE.md`)
 * **Real-time Updates:** Firebase real-time listeners for social features
 
 ### Key Technical Decisions
