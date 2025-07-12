@@ -279,38 +279,112 @@ npx expo start -c
 3. Click "Create database" and choose test mode (for development) or production mode (for production).
 4. Choose a region and click "Enable".
 
-### Collections to Scaffold
-- `users` (created automatically by the app)
-- `journeys` (create manually for testing, or let the app create)
-- `savedPlaces` (create manually for testing, or let the app create)
-- `discoveries` (optional, for discovery features)
+### Database Structure (User-Centric Collections)
+
+We use a **user-centric collection structure** for optimal performance and security:
+
+```
+users/{userId}                           # User profiles (existing)
+journeys/{userId}/journeys/{journeyId}   # User's journey routes
+journeys/{userId}/discoveries/{discoveryId}  # User's place discoveries
+journeys/{userId}/dismissed/{placeId}    # User's dismissed places
+```
 
 ### Example Document Structure
-- See `services/UserProfileService.js` for user profile fields.
-- Journeys and saved places should include a `userId` field to associate with the user.
 
-### Firestore Security Rules (Recommended)
+#### User Profile (`users/{userId}`)
+```javascript
+{
+  displayName: "Liam",
+  email: "liam@example.com",
+  friends: ["user2", "user3"],
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
 ```
+
+#### Journey (`journeys/{userId}/journeys/{journeyId}`)
+```javascript
+{
+  name: "Downtown Adventure",
+  startLocation: { lat: 40.7128, lng: -74.0060 },
+  endLocation: { lat: 40.7589, lng: -73.9851 },
+  route: [{ lat: 40.7128, lng: -74.0060 }, ...],
+  distance: 2.5, // kilometers
+  duration: 1800, // seconds
+  createdAt: timestamp,
+  updatedAt: timestamp
+}
+```
+
+#### Discovery (`journeys/{userId}/discoveries/{discoveryId}`)
+```javascript
+{
+  journeyId: "journey123",
+  placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4", // Google Places ID
+  placeName: "Central Park",
+  placeType: "park",
+  location: { lat: 40.7829, lng: -73.9654 },
+  discoveredAt: timestamp,
+  dismissed: false,
+  saved: true,
+  // Inline place data for offline access
+  placeData: {
+    name: "Central Park",
+    types: ["park", "tourist_attraction"],
+    rating: 4.7,
+    photos: [...],
+    // etc.
+  }
+}
+```
+
+#### Dismissed Place (`journeys/{userId}/dismissed/{placeId}`)
+```javascript
+{
+  placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4",
+  dismissedAt: timestamp,
+  dismissedForever: false, // or true for permanent dismissal
+  reason: "not_interested" // optional
+}
+```
+
+### Firestore Security Rules (Updated)
+
+```javascript
 service cloud.firestore {
   match /databases/{database}/documents {
+    // User profiles
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    match /journeys/{journeyId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    
+    // User's journeys subcollection
+    match /journeys/{userId}/journeys/{journeyId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    match /savedPlaces/{savedPlaceId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    
+    // User's discoveries subcollection
+    match /journeys/{userId}/discoveries/{discoveryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    match /discoveries/{discoveryId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    
+    // User's dismissed places subcollection
+    match /journeys/{userId}/dismissed/{placeId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
 ```
+
+### Benefits of This Structure
+
+1. **Scalable**: Each user's data is isolated in their own subcollections
+2. **Fast queries**: No complex joins or filtering needed
+3. **Secure**: Users can only access their own data
+4. **Cost-effective**: Only read/write user's own data
+5. **Offline-friendly**: Place data stored inline with discoveries
+6. **Future-proof**: Easy to add user-specific features
 
 ## Secrets & Security
 - **Never commit secrets or API keys to GitHub.**

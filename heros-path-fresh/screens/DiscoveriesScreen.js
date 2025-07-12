@@ -23,24 +23,19 @@ import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
+import { useUser } from '../contexts/UserContext';
+import DiscoveryService from '../services/DiscoveryService';
+import JourneyService from '../services/JourneyService';
 
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
 
-// Dummy data for testing
-const DUMMY_DISMISSED_PLACES = [
-  { placeId: 'dismissed1', name: 'Art Gallery', category: 'art_gallery', dismissedAt: new Date(Date.now() - 2 * 60 * 60 * 1000) }, // 2 hours ago
-  { placeId: 'dismissed2', name: 'Coffee Shop', category: 'cafe', dismissedAt: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // 1 day ago
-  { placeId: 'dismissed3', name: 'Park', category: 'park', dismissedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }, // 3 days ago
-];
-
-const DUMMY_DISCOVERED_PLACES = [
-  { placeId: 'discovered1', name: 'Restaurant', category: 'restaurant', discoveredAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }, // 5 days ago
-  { placeId: 'discovered2', name: 'Museum', category: 'museum', discoveredAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // 1 week ago
-  { placeId: 'discovered3', name: 'Library', category: 'library', discoveredAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) }, // 10 days ago
-];
+// Remove dummy data
+// const DUMMY_DISMISSED_PLACES = [...];
+// const DUMMY_DISCOVERED_PLACES = [...];
 
 export default function DiscoveriesScreen({ navigation, route }) {
+  const { user, migrationStatus } = useUser();
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
   const [filterType, setFilterType]               = useState(null);
@@ -52,34 +47,207 @@ export default function DiscoveriesScreen({ navigation, route }) {
   const [aiSummaries, setAiSummaries]             = useState({});
   const [loadingSummaries, setLoadingSummaries]   = useState({});
 
-  // New state for discovery management
+  // Discovery management state
   const [showOnboarding, setShowOnboarding]       = useState(false);
   const [showDismissModal, setShowDismissModal]   = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showManageHistory, setShowManageHistory] = useState(false);
   const [placeToDismiss, setPlaceToDismiss]       = useState(null);
-  const [dismissalPreference, setDismissalPreference] = useState('ask'); // 'ask', '30days', 'forever'
+  const [dismissalPreference, setDismissalPreference] = useState('ask');
   const [rememberChoice, setRememberChoice]       = useState(false);
   const [recentlyDismissed, setRecentlyDismissed] = useState([]);
   const [dismissedSectionCollapsed, setDismissedSectionCollapsed] = useState(true);
   const [discoveredSectionCollapsed, setDiscoveredSectionCollapsed] = useState(true);
 
-  // Dummy data state
-  const [dismissedPlaces, setDismissedPlaces] = useState(DUMMY_DISMISSED_PLACES);
-  const [discoveredPlaces] = useState(DUMMY_DISCOVERED_PLACES);
+  // Real data state
+  const [dismissedPlaces, setDismissedPlaces] = useState([]);
   const [savedPlaces, setSavedPlaces] = useState([]);
 
-  const loadSavedRoutes = () => {
-    AsyncStorage.getItem(ROUTES_KEY)
-      .then(json => {
-        const raw = json ? JSON.parse(json) : [];
-        const journeys = raw
-          .map(j => j.id ? j : {
-            id: String(Date.now()),
-            coords: j,
-            date: new Date().toISOString(),
-          })
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Load dismissed and saved places from Firestore
+  const loadDismissedAndSaved = async () => {
+    if (!user) {
+      setDismissedPlaces([]);
+      setSavedPlaces([]);
+      return;
+    }
+
+    try {
+      const [dismissedResult, savedResult] = await Promise.all([
+        DiscoveryService.getDismissedPlaces(user.uid),
+        DiscoveryService.getSavedPlaces(user.uid)
+      ]);
+
+      if (dismissedResult.success) {
+        setDismissedPlaces(dismissedResult.dismissedPlaces);
+      }
+      if (savedResult.success) {
+        setSavedPlaces(savedResult.discoveries);
+      }
+    } catch (error) {
+      console.error('Error loading dismissed and saved places:', error);
+      setDismissedPlaces([]);
+      setSavedPlaces([]);
+    }
+  };
+
+  // Save dismissed places to Firestore
+  const saveDismissedPlaces = async (placeId, dismissData = {}) => {
+    if (!user) return;
+
+    try {
+      await DiscoveryService.dismissPlace(user.uid, placeId, dismissData);
+      // Reload dismissed places to get updated list
+      await loadDismissedAndSaved();
+    } catch (error) {
+      console.error('Error saving dismissed place:', error);
+      throw error;
+    }
+  };
+
+  // Save saved places to Firestore
+  const saveSavedPlaces = async (discoveryData) => {
+    if (!user) return;
+
+    try {
+      await DiscoveryService.createDiscovery(user.uid, discoveryData);
+      // Reload saved places to get updated list
+      await loadDismissedAndSaved();
+    } catch (error) {
+      console.error('Error saving place:', error);
+      throw error;
+    }
+  };
+
+  // Load on mount and when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDismissedAndSaved();
+    }, [])
+  );
+
+  // When saving a place
+  const handleSave = async place => {
+    if (!user) {
+      Toast.show('Please sign in to save places', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+      return;
+    }
+
+    // Check if already saved
+    if (savedPlaces.find(p => p.placeId === place.placeId)) {
+      Toast.show('Place already saved!', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+      return;
+    }
+
+    try {
+      // Create discovery data for Firestore
+      const discoveryData = {
+        journeyId: selectedRoute?.id || null,
+        placeId: place.placeId,
+        placeName: place.name,
+        placeType: place.types?.[0] || 'unknown',
+        location: {
+          lat: place.latitude || place.geometry?.location?.lat,
+          lng: place.longitude || place.geometry?.location?.lng,
+        },
+        discoveredAt: new Date(),
+        dismissed: false,
+        saved: true,
+        // Store full place data for offline access
+        placeData: {
+          name: place.name,
+          types: place.types || [],
+          rating: place.rating,
+          photos: place.photos || [],
+          formatted_address: place.formatted_address,
+          // Preserve any other relevant data
+          ...place
+        }
+      };
+
+      await saveSavedPlaces(discoveryData);
+      setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
+      Toast.show('Place saved!', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    } catch (error) {
+      console.error('Error saving place:', error);
+      Toast.show('Failed to save place', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    }
+  };
+
+  // When dismissing a place
+  const dismissPlace = async (place, type) => {
+    if (!user) {
+      Toast.show('Please sign in to dismiss places', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+      return;
+    }
+
+    try {
+      setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
+      
+      // Save to Firestore
+      const dismissData = {
+        dismissedForever: type === 'forever',
+        reason: type === 'forever' ? 'user_dismissed_forever' : 'user_dismissed_temporary'
+      };
+      
+      await saveDismissedPlaces(place.placeId, dismissData);
+      setRecentlyDismissed(prev => [...prev, { ...place, dismissedAt: new Date() }]);
+      
+      const message = type === 'forever' 
+        ? `${place.name} hidden forever`
+        : `${place.name} hidden for 30 days`;
+      Toast.show(message, {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    } catch (error) {
+      console.error('Error dismissing place:', error);
+      Toast.show('Failed to dismiss place', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+    }
+  };
+
+  // Remove dummy discoveredPlaces, use savedPlaces as discovered
+  const discoveredPlaces = savedPlaces;
+
+  const loadSavedRoutes = async () => {
+    if (!user) {
+      setSavedRoutes([]);
+      return;
+    }
+
+    try {
+      const result = await JourneyService.getUserJourneys(user.uid);
+      
+      if (result.success) {
+        // Transform Firestore data to match existing UI expectations
+        const journeys = result.journeys.map(journey => ({
+          id: journey.id,
+          coords: journey.route || [],
+          date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
+          name: journey.name,
+          distance: journey.distance,
+          duration: journey.duration,
+          startLocation: journey.startLocation,
+          endLocation: journey.endLocation,
+        }));
+        
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
@@ -88,8 +256,13 @@ export default function DiscoveriesScreen({ navigation, route }) {
         } else if (journeys.length) {
           setSelectedRoute(journeys[0]);
         }
-      })
-      .catch(console.error);
+      } else {
+        setSavedRoutes([]);
+      }
+    } catch (error) {
+      console.error('Error loading saved routes:', error);
+      setSavedRoutes([]);
+    }
   };
 
   useEffect(() => {
@@ -139,36 +312,6 @@ export default function DiscoveriesScreen({ navigation, route }) {
       .finally(() => setLoading(false));
   }, [selectedRoute, filterType, language]);
 
-  const handleSave = async place => {
-    const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
-    if (saved.find(p => p.placeId === place.placeId)) {
-      Toast.show('Place already saved!', {
-        duration: Toast.durations.SHORT,
-        position: Toast.positions.BOTTOM,
-      });
-      return;
-    }
-    
-    // Ensure the place has location data for map pins
-    const placeWithLocation = {
-      ...place,
-      latitude: place.latitude || null,
-      longitude: place.longitude || null,
-    };
-    
-    await AsyncStorage.setItem(
-      'savedPlaces',
-      JSON.stringify([...saved, placeWithLocation])
-    );
-    setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
-    setSavedPlaces(prev => [...prev, placeWithLocation]);
-    
-    Toast.show('Place saved!', {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-    });
-  };
-  
   const handleDismiss = (place) => {
     if (dismissalPreference === 'ask') {
       setPlaceToDismiss(place);
@@ -178,21 +321,6 @@ export default function DiscoveriesScreen({ navigation, route }) {
       const dismissalType = dismissalPreference === '30days' ? '30 days' : 'forever';
       dismissPlace(place, dismissalType);
     }
-  };
-
-  const dismissPlace = (place, type) => {
-    setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
-    setRecentlyDismissed(prev => [...prev, { ...place, dismissedAt: new Date() }]);
-    setDismissedPlaces(prev => [...prev, { ...place, dismissedAt: new Date() }]);
-    
-    const message = type === 'forever' 
-      ? `${place.name} hidden forever`
-      : `${place.name} hidden for 30 days`;
-    
-    Toast.show(message, {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-    });
   };
 
   const handleDismissModalAction = (type) => {
@@ -248,10 +376,23 @@ export default function DiscoveriesScreen({ navigation, route }) {
     }
   };
 
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text>Please sign in to view discoveries.</Text>
+      </View>
+    );
+  }
+
   if (!savedRoutes.length) {
     return (
       <View style={styles.center}>
         <Text>No past journeys found.</Text>
+        {migrationStatus && !migrationStatus.hasMigrated && (
+          <Text style={styles.migrationNote}>
+            Your data will be migrated to the cloud when you sign in.
+          </Text>
+        )}
       </View>
     );
   }
@@ -1401,5 +1542,12 @@ const styles = StyleSheet.create({
     color: Colors.tabInactive,
     textAlign: 'center',
     fontSize: 16,
+  },
+  migrationNote: {
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
   },
 });

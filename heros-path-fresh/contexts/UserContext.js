@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import UserProfileService from '../services/UserProfileService';
+import DataMigrationService from '../services/DataMigrationService';
 
 const UserContext = createContext();
 
@@ -19,6 +20,8 @@ export const UserProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState(null);
   const [error, setError] = useState(null);
 
   // Listen for authentication state changes
@@ -59,6 +62,9 @@ export const UserProvider = ({ children }) => {
               });
             }
             await loadUserProfile(firebaseUser.uid);
+            
+            // Check and handle data migration
+            await checkAndHandleMigration(firebaseUser.uid);
           } else {
             setUserProfile(null);
           }
@@ -227,11 +233,70 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // Check and handle data migration
+  const checkAndHandleMigration = async (userId) => {
+    try {
+      setMigrationLoading(true);
+      const status = await DataMigrationService.getMigrationStatus(userId);
+      setMigrationStatus(status);
+      
+      // If not migrated and has data to migrate, start migration
+      if (!status.hasMigrated && (status.stats.hasJourneys || status.stats.hasSavedPlaces || status.stats.hasDismissedPlaces)) {
+        console.log('Starting data migration for user:', userId);
+        const migrationResult = await DataMigrationService.migrateAllData(userId);
+        setMigrationStatus(prev => ({ ...prev, migrationResult }));
+        console.log('Migration completed:', migrationResult);
+      }
+    } catch (error) {
+      console.error('Error during migration check:', error);
+      setError('Migration failed: ' + error.message);
+    } finally {
+      setMigrationLoading(false);
+    }
+  };
+
+  // Manual migration trigger
+  const triggerMigration = async () => {
+    if (!user) {
+      throw new Error('User must be authenticated to trigger migration');
+    }
+
+    try {
+      setMigrationLoading(true);
+      const result = await DataMigrationService.migrateAllData(user.uid);
+      setMigrationStatus(prev => ({ ...prev, migrationResult: result }));
+      return result;
+    } catch (error) {
+      console.error('Error triggering migration:', error);
+      throw error;
+    } finally {
+      setMigrationLoading(false);
+    }
+  };
+
+  // Get migration status
+  const getMigrationStatus = async () => {
+    if (!user) {
+      throw new Error('User must be authenticated to get migration status');
+    }
+
+    try {
+      const status = await DataMigrationService.getMigrationStatus(user.uid);
+      setMigrationStatus(status);
+      return status;
+    } catch (error) {
+      console.error('Error getting migration status:', error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     userProfile,
     loading,
     profileLoading,
+    migrationLoading,
+    migrationStatus,
     error,
     createOrUpdateProfile,
     updateProfile,
@@ -241,6 +306,8 @@ export const UserProvider = ({ children }) => {
     getFriendsList,
     addFriend,
     removeFriend,
+    triggerMigration,
+    getMigrationStatus,
   };
 
   return (

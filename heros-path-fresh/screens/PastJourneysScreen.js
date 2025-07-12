@@ -6,13 +6,15 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const ROUTES_STORAGE_KEY = '@saved_routes';
+import { useUser } from '../contexts/UserContext';
+import JourneyService from '../services/JourneyService';
 
 export default function PastJourneysScreen({ navigation }) {
   const [journeys, setJourneys] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { user, migrationStatus } = useUser();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', loadJourneys);
@@ -20,18 +22,41 @@ export default function PastJourneysScreen({ navigation }) {
   }, [navigation]);
 
   async function loadJourneys() {
-    const stored = await AsyncStorage.getItem(ROUTES_STORAGE_KEY);
-    const raw = stored ? JSON.parse(stored) : [];
-    setJourneys(
-      raw.map((entry, idx) =>
-        Array.isArray(entry)
-          ? { id: String(idx), coords: entry, date: new Date().toISOString() }
-          : entry
-      )
-    );
+    if (!user) {
+      setJourneys([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await JourneyService.getUserJourneys(user.uid);
+      
+      if (result.success) {
+        // Transform Firestore data to match existing UI expectations
+        const transformedJourneys = result.journeys.map(journey => ({
+          id: journey.id,
+          coords: journey.route || [],
+          date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
+          name: journey.name,
+          distance: journey.distance,
+          duration: journey.duration,
+          startLocation: journey.startLocation,
+          endLocation: journey.endLocation,
+        }));
+        
+        setJourneys(transformedJourneys);
+      } else {
+        setJourneys([]);
+      }
+    } catch (error) {
+      console.error('Error loading journeys:', error);
+      setJourneys([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const deleteJourney = (id) => {
+  const deleteJourney = async (id) => {
     Alert.alert(
       'Delete Journey?',
       'Are you sure you want to delete this journey?',
@@ -40,11 +65,15 @@ export default function PastJourneysScreen({ navigation }) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            const updated = journeys.filter(j => j.id !== id);
-            setJourneys(updated);
-            AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(updated))
-              .catch(err => console.error(err));
+          onPress: async () => {
+            try {
+              await JourneyService.deleteJourney(user.uid, id);
+              // Reload journeys to reflect the change
+              await loadJourneys();
+            } catch (error) {
+              console.error('Error deleting journey:', error);
+              Alert.alert('Error', 'Failed to delete journey');
+            }
           },
         },
       ]
@@ -59,10 +88,13 @@ export default function PastJourneysScreen({ navigation }) {
     const timeStr = d.toLocaleTimeString(undefined, {
       hour: '2-digit', minute: '2-digit'
     });
-    const label = `Journey #${index+1} – ${dateStr} at ${timeStr}`;
+    
+    // Use journey name if available, otherwise generate label
+    const label = item.name || `Journey #${index+1} – ${dateStr} at ${timeStr}`;
 
-    // Dummy completion status - in real app, this would come from storage
-    const isCompleted = index % 2 === 0; // Every other journey is "completed" for demo
+    // Check if journey has discoveries (completion status)
+    // This would be enhanced when we integrate with DiscoveryService
+    const isCompleted = index % 2 === 0; // Temporary - will be replaced with real logic
 
     return (
       <View style={styles.item}>
@@ -103,8 +135,20 @@ export default function PastJourneysScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {sorted.length === 0 ? (
-        <Text style={styles.empty}>No past journeys yet.</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading journeys...</Text>
+        </View>
+      ) : sorted.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.empty}>No past journeys yet.</Text>
+          {migrationStatus && !migrationStatus.hasMigrated && (
+            <Text style={styles.migrationNote}>
+              Your data will be migrated to the cloud when you sign in.
+            </Text>
+          )}
+        </View>
       ) : (
         <FlatList
           data={sorted}
@@ -126,6 +170,28 @@ const styles = StyleSheet.create({
     textAlign: 'center', 
     marginTop: 20,
     color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  migrationNote: {
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
   },
 
   item: {

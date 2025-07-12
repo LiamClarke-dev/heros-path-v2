@@ -19,6 +19,7 @@ import { useUser } from '../contexts/UserContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { testPlacesAPIMigration } from '../services/DiscoveriesService';
 import { useNavigation } from '@react-navigation/native';
+import DataMigrationService from '../services/DataMigrationService';
 
 const LANG_KEY = '@user_language';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -30,12 +31,13 @@ const LANGUAGES = [
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
-  const { user, userProfile, profileLoading, updateProfile, signOutUser } = useUser();
+  const { user, userProfile, profileLoading, updateProfile, signOutUser, migrationStatus: userMigrationStatus, triggerMigration } = useUser();
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);
   const [discoveryPreferences, setDiscoveryPreferences] = useState({});
   const [migrationStatus, setMigrationStatus] = useState(null);
   const [testingMigration, setTestingMigration] = useState(false);
+  const [dataMigrationStatus, setDataMigrationStatus] = useState(null);
   const [editForm, setEditForm] = useState({
     displayName: '',
     bio: '',
@@ -146,6 +148,36 @@ export default function SettingsScreen() {
       setTestingMigration(false);
     }
   };
+
+  // Check data migration status
+  const checkDataMigrationStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const status = await DataMigrationService.getMigrationStatus(user.uid);
+      setDataMigrationStatus(status);
+    } catch (error) {
+      console.error('Error checking data migration status:', error);
+    }
+  };
+
+  // Manual data migration trigger
+  const handleManualMigration = async () => {
+    if (!user) return;
+    
+    try {
+      const result = await triggerMigration();
+      setDataMigrationStatus(prev => ({ ...prev, migrationResult: result }));
+      Alert.alert('Migration Complete', result.message);
+    } catch (error) {
+      Alert.alert('Migration Error', error.message);
+    }
+  };
+
+  // Check migration status on mount
+  useEffect(() => {
+    checkDataMigrationStatus();
+  }, [user]);
 
   if (profileLoading) {
     return (
@@ -366,6 +398,77 @@ export default function SettingsScreen() {
               <View style={styles.errorContainer}>
                 <Text style={styles.errorLabel}>Legacy API Error:</Text>
                 <Text style={styles.errorText}>{migrationStatus.legacyAPIError}</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Data Migration Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Data Migration</Text>
+        <Text style={styles.sectionDescription}>
+          Migrate your local data to the cloud for cross-device sync and backup.
+        </Text>
+        
+        <TouchableOpacity 
+          style={styles.testButton} 
+          onPress={handleManualMigration}
+          disabled={!user}
+        >
+          <Text style={styles.testButtonText}>
+            {user ? 'Migrate Data to Cloud' : 'Sign in to migrate'}
+          </Text>
+        </TouchableOpacity>
+
+        {dataMigrationStatus && (
+          <View style={styles.migrationStatusContainer}>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Migration Status:</Text>
+              <View style={[
+                styles.statusIndicator, 
+                dataMigrationStatus.hasMigrated ? styles.statusSuccess : styles.statusWarning
+              ]}>
+                <Text style={styles.statusText}>
+                  {dataMigrationStatus.hasMigrated ? '✅ Complete' : '⏳ Pending'}
+                </Text>
+              </View>
+            </View>
+
+            {!dataMigrationStatus.hasMigrated && dataMigrationStatus.stats && (
+              <View style={styles.migrationStats}>
+                <Text style={styles.migrationStatsTitle}>Data to migrate:</Text>
+                <Text style={styles.migrationStatsText}>
+                  • Journeys: {dataMigrationStatus.stats.journeysCount}
+                </Text>
+                <Text style={styles.migrationStatsText}>
+                  • Saved Places: {dataMigrationStatus.stats.savedPlacesCount}
+                </Text>
+                <Text style={styles.migrationStatsText}>
+                  • Dismissed Places: {dataMigrationStatus.stats.dismissedPlacesCount}
+                </Text>
+              </View>
+            )}
+
+            {dataMigrationStatus.migrationResult && (
+              <View style={styles.migrationResult}>
+                <Text style={styles.migrationResultTitle}>Last Migration:</Text>
+                <Text style={styles.migrationResultText}>
+                  {dataMigrationStatus.migrationResult.message}
+                </Text>
+                {dataMigrationStatus.migrationResult.results && (
+                  <View style={styles.migrationDetails}>
+                    <Text style={styles.migrationDetailsText}>
+                      Journeys: {dataMigrationStatus.migrationResult.results.journeys.migrated}/{dataMigrationStatus.migrationResult.results.journeys.total}
+                    </Text>
+                    <Text style={styles.migrationDetailsText}>
+                      Saved Places: {dataMigrationStatus.migrationResult.results.savedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.savedPlaces.total}
+                    </Text>
+                    <Text style={styles.migrationDetailsText}>
+                      Dismissed Places: {dataMigrationStatus.migrationResult.results.dismissedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.dismissedPlaces.total}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -661,5 +764,55 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.text + '80',
     fontSize: 12,
+  },
+  migrationStatusContainer: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.tabInactive + '20',
+    borderRadius: 8,
+  },
+  migrationStats: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    backgroundColor: Colors.background,
+    borderRadius: 4,
+  },
+  migrationStatsTitle: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
+  migrationStatsText: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  migrationResult: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    backgroundColor: Colors.primary + '20',
+    borderRadius: 4,
+  },
+  migrationResultTitle: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
+  migrationResultText: {
+    ...Typography.body,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  migrationDetails: {
+    marginTop: Spacing.sm,
+  },
+  migrationDetailsText: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    fontSize: 12,
+    marginBottom: 2,
   },
 });
