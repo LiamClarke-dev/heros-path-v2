@@ -18,6 +18,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries } from '../services/DiscoveriesService';
+import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -138,11 +139,26 @@ export default function DiscoveriesScreen() {
       const enhancedDetails = await getPlaceDetailsWithSummaries(placeId, language);
       if (enhancedDetails?.summaries) {
         setAiSummaries(prev => ({ ...prev, [placeId]: enhancedDetails.summaries }));
+      } else {
+        // If no summaries are available, set a flag to show "no summary available"
+        setAiSummaries(prev => ({ ...prev, [placeId]: { noSummary: true } }));
       }
     } catch (error) {
       console.warn('Failed to fetch AI summary for place:', placeId, error);
+      // Set error state
+      setAiSummaries(prev => ({ ...prev, [placeId]: { error: true } }));
     } finally {
       setLoadingSummaries(prev => ({ ...prev, [placeId]: false }));
+    }
+  };
+
+  const testAISummariesFeature = async () => {
+    try {
+      const result = await testAISummaries();
+      alert(`Place Summaries Test Complete!\n\nChicago: ${result.chicago ? 'Available' : 'Not available'}\nUser Place: ${result.userPlace ? 'Available' : 'Not available'}`);
+    } catch (error) {
+      console.error('Place Summaries test failed:', error);
+      alert('Place Summaries test failed: ' + error.message);
     }
   };
 
@@ -263,6 +279,15 @@ export default function DiscoveriesScreen() {
               </TouchableOpacity>
             </Modal>
           </View>
+
+          {/* AI Summaries Test Button */}
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={testAISummariesFeature}
+          >
+            <MaterialIcons name="science" size={16} color={Colors.primary} />
+            <Text style={styles.testButtonText}>Test AI</Text>
+          </TouchableOpacity>
         </View>
       )}
       contentContainerStyle={styles.listContent}
@@ -310,16 +335,57 @@ export default function DiscoveriesScreen() {
                 <Text style={styles.description}>{item.description}</Text>
               )}
               
-              {/* AI Summary Section */}
+              {/* Place Summary Section */}
               {aiSummaries[item.placeId] && (
                 <View style={styles.summaryContainer}>
-                  <Text style={styles.summaryTitle}>AI Summary</Text>
-                  <Text style={styles.summaryText}>
-                    {aiSummaries[item.placeId].generativeSummary?.overview?.text || 
-                     aiSummaries[item.placeId].generativeSummary?.text ||
-                     aiSummaries[item.placeId].editorialSummary?.text ||
-                     'Summary available'}
-                  </Text>
+                  <Text style={styles.summaryTitle}>Place Summary</Text>
+                  {aiSummaries[item.placeId].noSummary ? (
+                    <Text style={styles.summaryText}>No summary available for this place</Text>
+                  ) : aiSummaries[item.placeId].error ? (
+                    <View>
+                      <Text style={styles.summaryText}>Failed to load summary</Text>
+                      <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={() => fetchAiSummary(item.placeId)}
+                      >
+                        <Text style={styles.retryButtonText}>Retry</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={styles.summaryText}>
+                        {aiSummaries[item.placeId].generativeSummary?.overview?.text ||
+                         aiSummaries[item.placeId].editorialSummary?.text ||
+                         (aiSummaries[item.placeId].topReview && `"${aiSummaries[item.placeId].topReview.text?.text || aiSummaries[item.placeId].topReview.text}" - ${aiSummaries[item.placeId].topReview.authorAttribution?.displayName || 'User'}`) ||
+                         'No summary available for this place'}
+                      </Text>
+                      {/* Show summary type indicator */}
+                      {(aiSummaries[item.placeId].generativeSummary || aiSummaries[item.placeId].editorialSummary) && (
+                        <Text style={styles.summaryTypeIndicator}>
+                          {aiSummaries[item.placeId].generativeSummary ? '🤖 AI Summary' : '📝 Editorial Summary'}
+                        </Text>
+                      )}
+                      {aiSummaries[item.placeId].generativeSummary?.disclosureText?.text && (
+                        <View style={styles.disclosureContainer}>
+                          <Text style={styles.disclosureText}>
+                            {aiSummaries[item.placeId].generativeSummary.disclosureText.text}
+                          </Text>
+                          {aiSummaries[item.placeId].generativeSummary?.overviewFlagContentUri && (
+                            <TouchableOpacity
+                              style={styles.flagButton}
+                              onPress={() => {
+                                const url = aiSummaries[item.placeId].generativeSummary.overviewFlagContentUri;
+                                Linking.openURL(url);
+                              }}
+                            >
+                              <MaterialIcons name="flag" size={12} color={Colors.tabInactive} />
+                              <Text style={styles.flagButtonText}>Report</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               )}
               
@@ -328,15 +394,15 @@ export default function DiscoveriesScreen() {
                   style={styles.summaryButton}
                   onPress={() => fetchAiSummary(item.placeId)}
                 >
-                  <MaterialIcons name="auto-awesome" size={16} color={Colors.primary} />
-                  <Text style={styles.summaryButtonText}>Get AI Summary</Text>
+                  <MaterialIcons name="description" size={16} color={Colors.primary} />
+                  <Text style={styles.summaryButtonText}>Get Summary</Text>
                 </TouchableOpacity>
               )}
               
               {loadingSummaries[item.placeId] && (
                 <View style={styles.summaryLoading}>
                   <ActivityIndicator size="small" color={Colors.primary} />
-                  <Text style={styles.summaryLoadingText}>Loading AI summary...</Text>
+                  <Text style={styles.summaryLoadingText}>Loading summary...</Text>
                 </View>
               )}
               
@@ -519,5 +585,62 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.text + '80',
     marginLeft: Spacing.xs,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary + '10',
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    marginTop: Spacing.xs,
+  },
+  retryButtonText: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '10',
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    marginLeft: Spacing.xs,
+  },
+  testButtonText: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginLeft: Spacing.xs,
+  },
+  disclosureText: {
+    ...Typography.body,
+    color: Colors.tabInactive,
+    fontSize: 12,
+    marginTop: Spacing.xs / 2,
+  },
+  disclosureContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.xs / 2,
+  },
+  flagButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '10',
+    padding: Spacing.xs,
+    borderRadius: Layout.borderRadius,
+    marginLeft: Spacing.xs,
+  },
+  flagButtonText: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginLeft: Spacing.xs,
+  },
+  summaryTypeIndicator: {
+    ...Typography.body,
+    color: Colors.tabInactive,
+    fontSize: 12,
+    marginTop: Spacing.xs / 2,
+    fontStyle: 'italic',
   },
 });
