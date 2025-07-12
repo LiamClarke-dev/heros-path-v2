@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
+import { useIsFocused } from '@react-navigation/native';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 
@@ -19,12 +20,23 @@ export default function SavedPlacesScreen() {
   const [allPlaces, setAllPlaces] = useState([]);
   const [filterType, setFilterType] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const isFocused = useIsFocused();
+
+  const loadSavedPlaces = async () => {
+    try {
+      const json = await AsyncStorage.getItem('savedPlaces');
+      const places = json ? JSON.parse(json) : [];
+      setAllPlaces(places);
+    } catch (error) {
+      console.error('Failed to load saved places:', error);
+    }
+  };
 
   useEffect(() => {
-    AsyncStorage.getItem('savedPlaces')
-      .then(json => setAllPlaces(json ? JSON.parse(json) : []))
-      .catch(console.error);
-  }, []);
+    if (isFocused) {
+      loadSavedPlaces();
+    }
+  }, [isFocused]);
 
   const handleRemove = async placeId => {
     const updated = allPlaces.filter(p => p.placeId !== placeId);
@@ -124,6 +136,11 @@ export default function SavedPlacesScreen() {
                 {item.category && (
                   <Text style={styles.category}>
                     {item.category.replace('_', ' ')}
+                    {item.combinedTypes && item.combinedTypes.length > 1 && (
+                      <Text style={styles.combinedTypes}>
+                        {' • ' + item.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
+                      </Text>
+                    )}
                   </Text>
                 )}
                 {item.description && (
@@ -216,6 +233,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: Colors.tabInactive,
     marginVertical: Spacing.xs / 2,
+  },
+  combinedTypes: {
+    ...Typography.body,
+    fontStyle: 'italic',
+    color: Colors.primary,
+    fontSize: 12,
   },
   description: {
     ...Typography.body,

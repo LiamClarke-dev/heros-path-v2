@@ -44,23 +44,14 @@ export default function SettingsScreen() {
       })
       .catch(() => {/* ignore */});
     
-    AsyncStorage.getItem(DISCOVERY_PREFERENCES_KEY)
-      .then(val => {
-        if (val) {
-          setDiscoveryPreferences(JSON.parse(val));
-        } else {
-          // Default: enable all place types
-          const defaultPrefs = {};
-          PLACE_TYPES.forEach(type => {
-            if (type.key !== 'all') {
-              defaultPrefs[type.key] = true;
-            }
-          });
-          setDiscoveryPreferences(defaultPrefs);
-          AsyncStorage.setItem(DISCOVERY_PREFERENCES_KEY, JSON.stringify(defaultPrefs));
-        }
-      })
-      .catch(() => {/* ignore */});
+    // Use the service function to get preferences (which handles syncing)
+    import('../services/DiscoveriesService').then(({ getUserDiscoveryPreferences }) => {
+      getUserDiscoveryPreferences()
+        .then(prefs => {
+          setDiscoveryPreferences(prefs);
+        })
+        .catch(() => {/* ignore */});
+    });
   }, []);
 
   // Update edit form when profile changes
@@ -238,19 +229,18 @@ export default function SettingsScreen() {
           Choose which types of places you'd like to discover during your walks:
         </Text>
         
-        {PLACE_TYPES.filter(type => type.key !== 'all').map(({ key, label }) => (
-          <View key={key} style={styles.preferenceItem}>
-            <View style={styles.preferenceRow}>
-              <Text style={styles.preferenceLabel}>{label}</Text>
-              <Switch
-                value={discoveryPreferences[key] || false}
-                onValueChange={() => toggleDiscoveryPreference(key)}
-                trackColor={{ false: Colors.tabInactive + '50', true: Colors.primary + '50' }}
-                thumbColor={discoveryPreferences[key] ? Colors.primary : Colors.tabInactive}
-              />
+        <TouchableOpacity 
+          style={styles.preferenceLink}
+          onPress={() => navigation.navigate('DiscoveryPreferences')}
+        >
+          <View style={styles.preferenceLinkContent}>
+            <View style={styles.preferenceLinkLeft}>
+              <MaterialIcons name="tune" size={24} color={Colors.primary} />
+              <Text style={styles.preferenceLinkText}>Configure Discovery Settings</Text>
             </View>
+            <MaterialIcons name="chevron-right" size={24} color={Colors.text + '60'} />
           </View>
-        ))}
+        </TouchableOpacity>
       </View>
 
       {/* Preferences Section */}
@@ -451,6 +441,28 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
     fontWeight: '600',
+  },
+  preferenceLink: {
+    backgroundColor: Colors.tabInactive + '20',
+    borderRadius: 8,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  preferenceLinkContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  preferenceLinkLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  preferenceLinkText: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
   },
   languageOptions: {
     flexDirection: 'row',

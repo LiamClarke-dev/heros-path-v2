@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
-import { getSuggestionsForRoute } from '../services/DiscoveriesService';
+import Toast from 'react-native-root-toast';
+import { getSuggestionsForRoute, getPlaceDetailsWithSummaries } from '../services/DiscoveriesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 
@@ -31,6 +32,8 @@ export default function DiscoveriesScreen() {
   const [loading, setLoading]                     = useState(false);
   const [routeDropdownVisible, setRouteDropdownVisible] = useState(false);
   const [typeDropdownVisible, setTypeDropdownVisible]   = useState(false);
+  const [aiSummaries, setAiSummaries]             = useState({});
+  const [loadingSummaries, setLoadingSummaries]   = useState({});
 
   useEffect(() => {
     AsyncStorage.getItem(ROUTES_KEY)
@@ -66,13 +69,30 @@ export default function DiscoveriesScreen() {
     };
     
     getSuggestionsForRoute(selectedRoute.coords, options)
-      .then(setSuggestions)
+      .then(newSuggestions => {
+        setSuggestions(newSuggestions);
+        // Show toast notification for new discoveries
+        const count = newSuggestions.length;
+        if (count > 0) {
+          const message = `${count} new suggestion${count === 1 ? '' : 's'} found for this journey`;
+          Toast.show(message, {
+            duration: Toast.durations.LONG,
+            position: Toast.positions.BOTTOM,
+          });
+        }
+      })
       .finally(() => setLoading(false));
   }, [selectedRoute, filterType, language]);
 
   const handleSave = async place => {
     const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
-    if (saved.find(p => p.placeId === place.placeId)) return;
+    if (saved.find(p => p.placeId === place.placeId)) {
+      Toast.show('Place already saved!', {
+        duration: Toast.durations.SHORT,
+        position: Toast.positions.BOTTOM,
+      });
+      return;
+    }
     
     // Ensure the place has location data for map pins
     const placeWithLocation = {
@@ -86,10 +106,32 @@ export default function DiscoveriesScreen() {
       JSON.stringify([...saved, placeWithLocation])
     );
     setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
+    
+    Toast.show('Place saved!', {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM,
+    });
   };
   
   const handleDismiss = id =>
     setSuggestions(s => s.filter(p => p.placeId !== id));
+
+  const fetchAiSummary = async (placeId) => {
+    if (aiSummaries[placeId] || loadingSummaries[placeId]) return;
+    
+    setLoadingSummaries(prev => ({ ...prev, [placeId]: true }));
+    
+    try {
+      const enhancedDetails = await getPlaceDetailsWithSummaries(placeId, language);
+      if (enhancedDetails?.summaries) {
+        setAiSummaries(prev => ({ ...prev, [placeId]: enhancedDetails.summaries }));
+      }
+    } catch (error) {
+      console.warn('Failed to fetch AI summary for place:', placeId, error);
+    } finally {
+      setLoadingSummaries(prev => ({ ...prev, [placeId]: false }));
+    }
+  };
 
   if (!savedRoutes.length) {
     return (
@@ -240,11 +282,44 @@ export default function DiscoveriesScreen() {
               {item.category && (
                 <Text style={styles.category}>
                   {item.category.replace('_', ' ')}
+                  {item.combinedTypes && item.combinedTypes.length > 1 && (
+                    <Text style={styles.combinedTypes}>
+                      {' • ' + item.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
+                    </Text>
+                  )}
                 </Text>
               )}
               {item.description && (
                 <Text style={styles.description}>{item.description}</Text>
               )}
+              
+              {/* AI Summary Section */}
+              {aiSummaries[item.placeId] && (
+                <View style={styles.summaryContainer}>
+                  <Text style={styles.summaryTitle}>AI Summary</Text>
+                  <Text style={styles.summaryText}>
+                    {aiSummaries[item.placeId].overview?.text || aiSummaries[item.placeId].text || 'Summary available'}
+                  </Text>
+                </View>
+              )}
+              
+              {!aiSummaries[item.placeId] && !loadingSummaries[item.placeId] && (
+                <TouchableOpacity
+                  style={styles.summaryButton}
+                  onPress={() => fetchAiSummary(item.placeId)}
+                >
+                  <MaterialIcons name="auto-awesome" size={16} color={Colors.primary} />
+                  <Text style={styles.summaryButtonText}>Get AI Summary</Text>
+                </TouchableOpacity>
+              )}
+              
+              {loadingSummaries[item.placeId] && (
+                <View style={styles.summaryLoading}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <Text style={styles.summaryLoadingText}>Loading AI summary...</Text>
+                </View>
+              )}
+              
               <Text style={styles.meta}>
                 ★ {item.rating ?? '—'} ({item.userRatingsTotal ?? '0'})
               </Text>
@@ -352,6 +427,12 @@ const styles = StyleSheet.create({
     color: Colors.tabInactive,
     marginVertical: Spacing.xs / 2,
   },
+  combinedTypes: {
+    ...Typography.body,
+    fontStyle: 'italic',
+    color: Colors.primary,
+    fontSize: 12,
+  },
   description: {
     ...Typography.body,
     color: Colors.text,
@@ -371,5 +452,48 @@ const styles = StyleSheet.create({
   actionText: {
     ...Typography.body,
     color: Colors.background,
+  },
+  summaryContainer: {
+    backgroundColor: Colors.primary + '10',
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    marginVertical: Spacing.xs,
+  },
+  summaryTitle: {
+    ...Typography.body,
+    fontWeight: '600',
+    color: Colors.primary,
+    marginBottom: Spacing.xs / 2,
+  },
+  summaryText: {
+    ...Typography.body,
+    color: Colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  summaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '10',
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    marginVertical: Spacing.xs,
+  },
+  summaryButtonText: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginLeft: Spacing.xs,
+  },
+  summaryLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+    marginVertical: Spacing.xs,
+  },
+  summaryLoadingText: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    marginLeft: Spacing.xs,
   },
 });

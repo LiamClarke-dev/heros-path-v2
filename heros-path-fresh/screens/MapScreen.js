@@ -196,18 +196,24 @@ export default function MapScreen({ navigation, route }) {
     ));
 
   const renderSavedPlaces = () => {
-    if (!showSavedPlaces) return null;
+    if (!showSavedPlaces || savedPlaces.length === 0) return null;
     
-    return savedPlaces
+    // Remove duplicates based on placeId
+    const uniquePlaces = savedPlaces.filter((place, index, self) => 
+      index === self.findIndex(p => p.placeId === place.placeId)
+    );
+    
+    return uniquePlaces
       .filter(place => place.latitude && place.longitude)
       .map(place => (
         <Marker
-          key={place.placeId}
+          key={`saved-${place.placeId}`}
           coordinate={{
             latitude: place.latitude,
             longitude: place.longitude,
           }}
           pinColor={Colors.primary}
+          tracksViewChanges={false}
         >
           <Callout>
             <View style={styles.calloutContainer}>
@@ -215,6 +221,11 @@ export default function MapScreen({ navigation, route }) {
               {place.category && (
                 <Text style={styles.calloutCategory}>
                   {place.category.replace('_', ' ')}
+                  {place.combinedTypes && place.combinedTypes.length > 1 && (
+                    <Text style={styles.calloutCombinedTypes}>
+                      {' • ' + place.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
+                    </Text>
+                  )}
                 </Text>
               )}
               {place.rating && (
@@ -279,6 +290,11 @@ export default function MapScreen({ navigation, route }) {
       
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
+        {/* Discovery preferences button */}
+        <TouchableOpacity style={styles.preferencesButton} onPress={() => navigation.navigate('DiscoveryPreferences')}>
+          <MaterialIcons name="tune" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+        
         {/* Locate button */}
         <TouchableOpacity style={styles.locateButton} onPress={locateMe}>
           <MaterialIcons name="my-location" size={28} color={Colors.primary} />
@@ -290,7 +306,7 @@ export default function MapScreen({ navigation, route }) {
           onPress={toggleSavedPlaces}
         >
           <MaterialIcons 
-            name={showSavedPlaces ? "place" : "place-outline"} 
+            name={showSavedPlaces ? "place" : "place-border"} 
             size={24} 
             color={showSavedPlaces ? Colors.background : Colors.primary} 
           />
@@ -320,6 +336,20 @@ const styles = StyleSheet.create({
     right: Spacing.md,
     bottom: 120,
     alignItems: 'center',
+  },
+  preferencesButton: {
+    backgroundColor: Colors.background,
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginBottom: Spacing.sm,
   },
   locateButton: {
     backgroundColor: Colors.background,
@@ -394,6 +424,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 4,
     textTransform: 'capitalize',
+  },
+  calloutCombinedTypes: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontSize: 10,
+    fontStyle: 'italic',
   },
   calloutRating: {
     ...Typography.body,
