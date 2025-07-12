@@ -129,6 +129,7 @@ heros-path-fresh/
 │   ├── SavedPlacesScreen.js
 │   ├── SocialScreen.js
 │   ├── SettingsScreen.js
+│   ├── DiscoveryPreferencesScreen.js  # Dedicated preferences modal
 │   ├── SignInScreen.js
 │   └── EmailAuthScreen.js   # Email/password sign in/up
 ├── contexts/
@@ -136,7 +137,8 @@ heros-path-fresh/
 │   └── ExplorationContext.js # Exploration state management
 ├── services/
 │   ├── DiscoveriesService.js
-│   └── UserProfileService.js
+│   ├── UserProfileService.js
+│   └── EnhancedPlacesService.js
 ├── hooks/
 │   └── useSuggestedPlaces.js
 ├── constants/
@@ -274,13 +276,18 @@ service cloud.firestore {
 * User profile creation and editing
 * Testing email/password and Google OAuth flows
 * Firestore collection scaffolding and security rules
-* **Discovery preferences system** (user-selectable place types)
+* **Discovery preferences system** (user-selectable place types with grouped categories)
 * **Enhanced map features** (saved places pins with callouts)
 * **Toast notifications** (properly configured with RootSiblingParent)
 * **Optimized development workflow** (cost-effective testing strategy)
+* **Improved deduplication** (using place_id as primary method)
+* **Rating filtering** (minimum rating preferences)
+* **AI summaries integration** (ready for Google Places API New)
+* **Discovery preferences screen** (dedicated modal with organized categories)
 
 ### 🔄 In Progress
 * User profile management (avatar upload, privacy settings)
+* AI summaries testing (Google Places API New integration)
 
 ### 📋 Backlog
 * Social feed, friends, privacy controls
@@ -290,42 +297,91 @@ service cloud.firestore {
 
 ## Next Features Roadmap
 
-### 1. User Profile Management
-* Avatar upload and management
-* Profile privacy settings
+### Phase 1: Gamification Foundation (2-3 weeks)
+**Street Coverage Tracking System**
+* GPS coordinate to street mapping
+* Binary street state: walked/unwalked
+* Visual: Blue polylines for walked streets (extends existing saved routes)
+* Coverage percentage calculation
+* Local storage for coverage data
 
-### 2. Advanced Discoveries Filtering
-* Category tabs: Restaurants, Cafés, Bars, Parks, Museums, etc.
-* "All" view showing every suggestion without filtering
-* On-tap fetch for fresh Places API queries
-* Cache-busting per category
+**Achievement System**
+* "First Street": Walk your first new street
+* "Explorer": Walk 10 different streets
+* "Neighborhood Master": Complete 80% of neighborhood
+* "Consistent Walker": Walk 7 days in a row
+* Achievement notifications and progress tracking
 
-### 3. Custom Collections & Swipe Actions
-* Swipe-to-save suggestions
-* Swipe-to-dismiss unwanted entries
-* Saved places section
-* User-created custom lists (e.g., "Date Night," "Dog-Friendly")
+### Phase 2: Smart Routing System (3-4 weeks)
+**Destination Selection**
+* Google Places search bar with autocomplete
+* Saved places/discoveries picker
+* Destination pin on map
 
-### 4. Smarter Route Suggestions
-* Unexplored-first routing
-* Alternative detours through new streets
-* Distance & POI preferences
+**Route Types**
+* **Fastest Route**: Direct path via Google Maps Directions API
+* **Exploration Route**: Avoids previously walked streets, respects max detour time
+* **Discovery Route**: Avoids walked streets + considers discovery preferences
 
-### 5. Neighborhood Coverage Visualization
-* Painted streets overlay showing walked areas
-* Coverage percentage display
-* Heatmap view for frequent walking areas
+**Exploration Settings**
+* Max detour time (5, 10, 15, 20 minutes)
+* Exploration vs. discovery preference weighting
+* Route optimization algorithms
 
-### 6. Settings & Personalization
-* Discovery category toggles
-* Min rating & max distance filters
-* Notification controls
+### Phase 3: Visual Enhancements (2-3 weeks)
+**Map Overlays**
+* Neighborhood boundaries and completion indicators
+* Achievement markers and special street highlights
+* Progress visualization
 
-### 7. Social Sharing & Network
-* Friends list management
-* Activity feed
-* Privacy controls
-* Profile pages
+**UI Polish**
+* Enhanced theme system with platform-specific styling
+* Achievement badges and progress indicators
+* Improved map controls and interactions
+
+### Phase 4: Advanced Features (Future)
+**Social Features**
+* Friends list and activity sharing
+* Neighborhood leaderboards
+* Route sharing and recommendations
+
+**Analytics & Insights**
+* Walking patterns and statistics
+* Discovery analytics
+* Personal walking insights
+
+**Premium Features**
+* Advanced exploration algorithms
+* Detailed neighborhood analytics
+* Custom achievement creation
+* Route sharing with friends
+
+## Technical Architecture & Decisions
+
+### Platform Strategy
+* **Primary Platform:** iOS (React Native with platform-specific styling)
+* **Secondary Platform:** Android (cross-platform compatibility)
+* **Future Consideration:** Native SwiftUI app for iOS (separate project)
+* **Current Approach:** React Native with enhanced iOS styling
+
+### Data Architecture
+* **Local Storage:** AsyncStorage for user preferences and cached data
+* **Cloud Storage:** Firebase Firestore for user profiles and social features
+* **API Integration:** Google Places API for discoveries and routing
+* **Real-time Updates:** Firebase real-time listeners for social features
+
+### Key Technical Decisions
+* **Deduplication Strategy:** Place_id primary, location/name fallback
+* **Discovery Preferences:** Grouped categories with rating filtering
+* **Map Visualization:** Blue polylines for walked streets (simple binary state)
+* **Routing Algorithm:** Exploration-first with discovery preferences integration
+* **Achievement System:** Street-based milestones with progress tracking
+
+### Performance Considerations
+* **Lazy Loading:** AI summaries loaded on-demand
+* **Caching Strategy:** Discovery results cached with preference-based filtering
+* **Map Optimization:** Polylines rendered efficiently with proper key management
+* **Memory Management:** Proper cleanup of location subscribers and map references
 
 ## Development Notes
 
