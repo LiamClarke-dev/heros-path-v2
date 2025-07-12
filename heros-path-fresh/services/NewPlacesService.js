@@ -9,51 +9,84 @@ const NEW_BASE_URL = 'https://places.googleapis.com/v1';
 const LEGACY_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
 /**
- * Search for nearby places using the new Places API
- * @param {number} latitude - Center latitude
- * @param {number} longitude - Center longitude
+ * Search for nearby places using the new Places API with automatic fallback
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
  * @param {number} radius - Search radius in meters
- * @param {string} type - Place type filter
+ * @param {string} type - Place type
  * @param {Object} options - Additional options
- * @returns {Promise<Array>} Array of place objects
+ * @returns {Promise<Array>} Array of places
  */
-export async function searchNearbyPlaces(latitude, longitude, radius, type, options = {}) {
-  const {
-    maxResults = 20,
-    language = 'en',
-    minRating = 0,
-    maxPrice = 4,
-    openNow = false,
-    useNewAPI = true // Default to new API for migration
-  } = options;
-
+export async function searchNearbyPlaces(lat, lng, radius, type, options = {}) {
+  const { useNewAPI = true, maxResults = 20, language = 'en' } = options;
+  
   if (useNewAPI) {
     try {
-      return await searchNearbyPlacesNew(latitude, longitude, radius, type, {
-        maxResults,
-        language,
-        minRating,
-        maxPrice,
-        openNow
+      const url = `${NEW_BASE_URL}/places:searchNearby`;
+      
+      const requestBody = {
+        locationRestriction: {
+          circle: {
+            center: { latitude: lat, longitude: lng },
+            radius: radius
+          }
+        },
+        maxResultCount: maxResults,
+        languageCode: language
+      };
+
+      if (type && type !== 'all') {
+        requestBody.includedTypes = [type];
+      }
+
+      const fieldMask = 'places.id,places.displayName,places.types,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.location,places.formattedAddress,places.primaryType,places.websiteUri,places.regularOpeningHours,places.reviews,places.editorialSummary,places.attributions';
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
+          'X-Goog-FieldMask': fieldMask
+        },
+        body: JSON.stringify(requestBody)
       });
+
+      if (!response.ok) {
+        throw new Error(`New API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.places && data.places.length > 0) {
+        return data.places.map(place => transformNewPlaceResponse(place));
+      }
+      
+      return [];
     } catch (error) {
-      console.warn('New API failed, falling back to legacy:', error);
-      return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, {
-        maxResults,
-        language,
-        minRating,
-        maxPrice,
-        openNow
-      });
+      console.warn('New API failed, falling back to legacy API:', error.message);
+      // Fall back to legacy API
     }
-  } else {
-    return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, {
-      maxResults,
-      language,
-      minRating,
-      maxPrice,
-      openNow
-    });
+  }
+
+  // Legacy API fallback
+  try {
+    const url = `${LEGACY_BASE_URL}/nearbysearch/json?key=${GOOGLE_MAPS_API_KEY_ANDROID}&location=${lat},${lng}&radius=${radius}&maxResults=${maxResults}&language=${language}`;
+    
+    if (type && type !== 'all') {
+      url += `&type=${type}`;
+    }
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results) {
+      return data.results.map(place => transformLegacyPlaceResponse(place));
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Legacy API also failed:', error);
+    return [];
   }
 }
 
@@ -240,59 +273,70 @@ async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, optio
 }
 
 /**
- * Get place details using the new Places API
+ * Get detailed information about a specific place
  * @param {string} placeId - Google Place ID
- * @param {string} language - Language code
- * @param {boolean} useNewAPI - Whether to use new API or fallback to legacy
- * @returns {Promise<Object>} Place details object
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object|null>} Place details or null if not found
  */
-export async function getPlaceDetails(placeId, language = 'en', useNewAPI = true) {
+export async function getPlaceDetails(placeId, options = {}) {
+  const { useNewAPI = true, language = 'en' } = options;
+  
   if (useNewAPI) {
     try {
-      return await getPlaceDetailsNew(placeId, language);
+      const url = `${NEW_BASE_URL}/places/${placeId}`;
+      const fieldMask = 'id,displayName,types,rating,userRatingCount,priceLevel,photos,location,formattedAddress,primaryType,websiteUri,phoneNumbers,regularOpeningHours,reviews,editorialSummary,attributions';
+      
+      const response = await fetch(url, {
+        headers: {
+          'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
+          'X-Goog-FieldMask': fieldMask
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`New API details request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return transformNewPlaceDetailsResponse(data);
     } catch (error) {
-      console.warn('New API details failed, falling back to legacy:', error);
-      return await getPlaceDetailsLegacy(placeId, language);
+      console.warn('New API details failed, falling back to legacy API:', error.message);
+      // Fall back to legacy API
     }
-  } else {
-    return await getPlaceDetailsLegacy(placeId, language);
+  }
+
+  // Legacy API fallback
+  try {
+    const url = `${LEGACY_BASE_URL}/details/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY_ANDROID}&fields=place_id,name,formatted_address,geometry,types,rating,user_ratings_total,photos,opening_hours,price_level,website,formatted_phone_number,reviews&language=${language}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.result) {
+      return transformLegacyPlaceDetailsResponse(data.result);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Legacy API details also failed:', error);
+    return null;
   }
 }
 
 /**
- * Get place details using the new Places API (New)
- * Updated to match latest Google Places API documentation
+ * Get place summaries using the new Places API
+ * Uses generativeSummary field which is available for US-based places
+ * @param {string} placeId - Google Place ID
+ * @param {string} language - Language code
+ * @returns {Promise<Object|null>} Summaries or null if not available
  */
-async function getPlaceDetailsNew(placeId, language = 'en') {
+export async function getPlaceSummaries(placeId, language = 'en') {
   try {
-    const url = `${NEW_BASE_URL}/places/${placeId}`;
+    // Get generative summary from place details (US-based places only)
+    const detailsUrl = `${NEW_BASE_URL}/places/${placeId}`;
+    const fieldMask = 'generativeSummary,editorialSummary,reviews';
     
-    // Conservative field mask with only essential fields that are definitely available
-    const fieldMask = [
-      'id',
-      'displayName',
-      'types',
-      'rating',
-      'userRatingCount',
-      'priceLevel',
-      'photos',
-      'location',
-      'formattedAddress',
-      'primaryType',
-      'websiteUri',
-      'regularOpeningHours',
-      'reviews',
-      'editorialSummary',
-      'attributions'
-    ].join(',');
-    
-    console.log('New API details request:', {
-      url,
-      placeId,
-      fieldMask
-    });
-    
-    const response = await fetch(url, {
+    const response = await fetch(detailsUrl, {
       headers: {
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
         'X-Goog-FieldMask': fieldMask
@@ -300,147 +344,27 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.warn(`New Places API details request failed: ${response.status} ${response.statusText}`);
-      console.warn('Error response:', errorText);
-      throw new Error(`New Places API details request failed: ${response.status} ${response.statusText}`);
+      throw new Error(`Place summaries request failed: ${response.status}`);
     }
 
-    const place = await response.json();
-    console.log('New API details response:', place);
-
-    return {
-      placeId: place.id,
-      name: place.displayName?.text || 'Unknown Place',
-      address: place.formattedAddress,
-      shortAddress: place.shortFormattedAddress || place.formattedAddress,
-      latitude: place.location?.latitude,
-      longitude: place.location?.longitude,
-      types: place.types || [],
-      primaryType: place.primaryType || place.types?.[0] || 'point_of_interest',
-      primaryTypeDisplayName: place.primaryTypeDisplayName || place.primaryType || place.types?.[0] || 'point_of_interest',
-      rating: place.rating,
-      userRatingsTotal: place.userRatingCount,
-      priceLevel: place.priceLevel,
-      website: place.websiteUri,
-      phoneNumber: place.nationalPhoneNumber || place.internationalPhoneNumber || null,
-      openingHours: place.regularOpeningHours?.weekdayDescriptions || [],
-      currentOpeningHours: place.currentOpeningHours?.weekdayDescriptions || [],
-      isOpen: place.currentOpeningHours?.openNow || place.regularOpeningHours?.openNow || false,
-      photos: place.photos?.map(photo => ({
-        photoReference: photo.name,
-        width: photo.widthPx,
-        height: photo.heightPx
-      })) || [],
-      reviews: place.reviews?.slice(0, 3).map(review => ({
-        authorName: review.authorAttribution?.displayName,
-        rating: review.rating,
-        text: review.text?.text,
-        time: review.publishTime,
-        profilePhoto: review.authorAttribution?.photoUri
-      })) || [],
-      editorialSummary: place.editorialSummary?.text,
-      attributions: place.attributions,
-      utcOffsetMinutes: place.utcOffsetMinutes || null
-    };
-
-  } catch (error) {
-    console.warn('New Places API details failed, falling back to legacy:', error);
-    return await getPlaceDetailsLegacy(placeId, language);
-  }
-}
-
-/**
- * Get place details using the legacy Places API (fallback)
- */
-async function getPlaceDetailsLegacy(placeId, language = 'en') {
-  const url = `${LEGACY_BASE_URL}/details/json` +
-    `?place_id=${placeId}` +
-    `&key=${GOOGLE_MAPS_API_KEY_ANDROID}` +
-    `&language=${language}` +
-    `&fields=place_id,name,formatted_address,geometry,types,rating,user_ratings_total,photos,opening_hours,price_level,website,formatted_phone_number,reviews`;
-
-  try {
-    const response = await fetch(url);
     const data = await response.json();
-
-    if (data.status !== 'OK') {
-      throw new Error(`Legacy Places API details request failed: ${data.status}`);
-    }
-
-    const place = data.result;
-
-    return {
-      placeId: place.place_id,
-      name: place.name,
-      address: place.formatted_address,
-      latitude: place.geometry?.location?.lat,
-      longitude: place.geometry?.location?.lng,
-      types: place.types || [],
-      primaryType: place.types?.[0] || 'point_of_interest',
-      rating: place.rating,
-      userRatingsTotal: place.user_ratings_total,
-      priceLevel: place.price_level,
-      website: place.website,
-      phoneNumber: place.formatted_phone_number,
-      openingHours: place.opening_hours?.weekday_text || [],
-      isOpen: place.opening_hours?.open_now,
-      photos: place.photos?.map(photo => ({
-        photoReference: photo.photo_reference,
-        width: photo.width,
-        height: photo.height
-      })) || [],
-      reviews: place.reviews?.slice(0, 3).map(review => ({
-        authorName: review.author_name,
-        rating: review.rating,
-        text: review.text,
-        time: review.time,
-        profilePhoto: review.profile_photo_url
-      })) || []
-    };
-
-  } catch (error) {
-    console.warn('Legacy Places API details failed:', error);
-    throw error;
-  }
-}
-
-/**
- * Get AI-powered place summaries using the new Places API
- * @param {string} placeId - Google Place ID
- * @param {string} language - Language code
- * @returns {Promise<Object|null>} AI summaries or null if not available
- */
-export async function getPlaceSummaries(placeId, language = 'en') {
-  try {
-    const url = `${NEW_BASE_URL}/places/${placeId}`;
     
-    const response = await fetch(url, {
-      headers: {
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
-        'X-Goog-FieldMask': 'generativeSummary,editorialSummary'
-      }
-    });
-
-    if (!response.ok) {
-      console.warn(`AI summaries request failed: ${response.status} ${response.statusText}`);
-      // Try to get response text for debugging
-      const errorText = await response.text();
-      console.warn('Error response:', errorText);
+    // Check if we have any meaningful summary content
+    const hasGenerativeSummary = data.generativeSummary?.overview?.text;
+    const hasEditorialSummary = data.editorialSummary?.text;
+    const hasReviews = data.reviews && data.reviews.length > 0;
+    
+    if (!hasGenerativeSummary && !hasEditorialSummary && !hasReviews) {
       return null;
     }
 
-    const data = await response.json();
-    console.log('AI summaries response:', data);
-    
-    // Return both generative summary and editorial summary if available
     return {
-      generativeSummary: data.generativeSummary || null,
-      editorialSummary: data.editorialSummary || null
+      generativeSummary: data.generativeSummary,
+      editorialSummary: data.editorialSummary,
+      topReview: hasReviews ? data.reviews[0] : null
     };
-
   } catch (error) {
-    console.warn('Failed to get AI summaries:', error);
+    console.warn('Failed to get place summaries:', error.message);
     return null;
   }
 }
@@ -493,6 +417,33 @@ export async function testAPIConnectivity() {
   }
 
   return results;
+}
+
+/**
+ * Test place summaries with a well-known place
+ * This helps determine if the feature is working or if it's a data availability issue
+ */
+export async function testAISummaries() {
+  // Test with a real place that should have summaries (US-based)
+  const testPlaceId = 'ChIJ1eOF7HLTD4gRry3xPjk8DkU'; // Sushi Nova - Lincoln Park (Chicago)
+  const testPlaceId2 = 'ChIJURDKN2eAhYARN0AMzUEaiKo'; // User's suggested place
+  
+  try {
+    // Test with Sushi Nova (Chicago)
+    const chicagoSummary = await getPlaceSummaries(testPlaceId, 'en');
+    
+    // Test with user's suggested place
+    const userPlaceSummary = await getPlaceSummaries(testPlaceId2, 'en');
+    
+    return {
+      chicago: chicagoSummary,
+      userPlace: userPlaceSummary,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Place summaries test failed:', error);
+    throw error;
+  }
 }
 
 /**

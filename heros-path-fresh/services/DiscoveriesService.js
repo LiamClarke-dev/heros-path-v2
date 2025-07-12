@@ -121,116 +121,64 @@ function coordsToBoundingCircle(coords) {
 }
 
 /**
- * Fetch places of specified types around the bounding circle of your route.
+ * Get place suggestions for a route using user preferences
+ * @param {Array} routeCoords - Array of coordinate objects
+ * @param {Object} preferences - User discovery preferences
+ * @param {string} language - Language code
+ * @returns {Promise<Array>} Array of suggested places
  */
-export async function getSuggestionsForRoute(
-  routeCoords,
-  { type, maxResults = 20, language = 'en', usePreferences = true } = {}
-) {
-  if (!routeCoords?.length) return [];
-
-  const { centerLat, centerLng, radius } = coordsToBoundingCircle(routeCoords);
-  const apiKey = GOOGLE_MAPS_API_KEY_ANDROID;
-  const lang = encodeURIComponent(language);
-  const loc = `${centerLat},${centerLng}`;
-  
-  let allResults = [];
-  
-  // If a specific type is requested, use that but still apply preferences and rating filters
-  if (type && type !== 'all') {
-    const results = await fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lang, maxResults);
-    allResults = results;
-    
-    // Apply rating filter even for specific types
-    const minRating = await getMinRatingPreference();
-    allResults = allResults.filter(place => !place.rating || place.rating >= minRating);
-    console.log(`⭐ Filtered by rating (${minRating}+): ${allResults.length}`);
-    
-    // Apply user preferences filter even for specific types
-    if (usePreferences) {
-      const preferences = await getUserDiscoveryPreferences();
-      allResults = allResults.filter(place => {
-        // If place has no types, include it (fallback)
-        if (!place.types || place.types.length === 0) return true;
-        
-        // Check if any of the place's types are enabled in user preferences
-        return place.types.some(placeType => preferences[placeType] === true);
-      });
-      console.log(`🎯 Filtered by preferences: ${allResults.length}`);
-    }
-  } else if (usePreferences) {
-    // Get user preferences and fetch places for enabled types
-    const preferences = await getUserDiscoveryPreferences();
-    const enabledTypes = Object.keys(preferences).filter(key => preferences[key]);
-    
-    console.log('🔍 Discovery Preferences:', preferences);
-    console.log('✅ Enabled Types:', enabledTypes);
-    
-    if (enabledTypes.length === 0) {
-      console.log('⚠️ No place types enabled, returning empty results');
-      return [];
-    }
-    
-    // Fetch places for each enabled type
-    const resultsPerType = Math.max(1, Math.floor(maxResults / enabledTypes.length));
-    
-    for (const placeType of enabledTypes) {
-      try {
-        const results = await fetchPlacesByType(centerLat, centerLng, radius, placeType, apiKey, lang, resultsPerType);
-        console.log(`📍 Fetched ${results.length} ${placeType} places`);
-        allResults = [...allResults, ...results];
-      } catch (error) {
-        console.warn(`Failed to fetch ${placeType} places:`, error);
-      }
-    }
-    
-    // Deduplicate places before filtering
-    allResults = deduplicatePlaces(allResults);
-    console.log(`🔗 Deduplicated results: ${allResults.length}`);
-    
-    // Filter by minimum rating
-    const minRating = await getMinRatingPreference();
-    allResults = allResults.filter(place => !place.rating || place.rating >= minRating);
-    console.log(`⭐ Filtered by rating (${minRating}+): ${allResults.length}`);
-    
-    // Filter by user preferences (check if any of the place's types match enabled preferences)
-    allResults = allResults.filter(place => {
-      // If place has no types, include it (fallback)
-      if (!place.types || place.types.length === 0) return true;
-      
-      // Check if any of the place's types are enabled in user preferences
-      return place.types.some(placeType => preferences[placeType] === true);
-    });
-    console.log(`🎯 Filtered by preferences: ${allResults.length}`);
-    
-    // Shuffle and limit results
-    allResults = shuffleArray(allResults).slice(0, maxResults);
-    console.log(`🎯 Total results after filtering: ${allResults.length}`);
-  } else {
-    // Fallback: fetch general points of interest
-    const results = await fetchPlacesByType(centerLat, centerLng, radius, 'point_of_interest', apiKey, lang, maxResults);
-    allResults = results;
+export async function getSuggestionsForRoute(routeCoords, preferences, language = 'en') {
+  if (!routeCoords || routeCoords.length === 0) {
+    return [];
   }
 
-  return allResults;
+  try {
+    // Get enabled place types from preferences
+    const enabledTypes = Object.keys(preferences).filter(type => preferences[type]);
+    
+    if (enabledTypes.length === 0) {
+      return [];
+    }
+
+    // Calculate route center
+    const center = calculateRouteCenter(routeCoords);
+    const radius = 500; // 500m radius
+
+    // Fetch places for each enabled type
+    const allPlaces = [];
+    for (const type of enabledTypes) {
+      const places = await fetchPlacesByType(type, center, radius);
+      allPlaces.push(...places);
+    }
+
+    // Deduplicate and filter results
+    const deduplicated = deduplicatePlaces(allPlaces);
+    const filtered = filterPlacesByPreferences(deduplicated, preferences);
+    
+    return filtered;
+  } catch (error) {
+    console.error('Failed to get route suggestions:', error);
+    return [];
+  }
 }
 
 /**
- * Fetch places of a specific type from Google Places API
- * Now uses the new Places API with automatic fallback to legacy
+ * Fetch places by type using the new Places API service
+ * @param {string} type - Place type
+ * @param {Object} location - Location object with lat/lng
+ * @param {number} radius - Search radius
+ * @returns {Promise<Array>} Array of places
  */
-async function fetchPlacesByType(centerLat, centerLng, radius, type, apiKey, lang, maxResults) {
+async function fetchPlacesByType(type, location, radius = 500) {
   try {
-    // Use the new Places API service with automatic fallback
-    const places = await searchNearbyPlaces(centerLat, centerLng, radius, type, {
-      maxResults,
-      language: lang,
-      useNewAPI: true // Will automatically fallback to legacy if new API fails
+    const places = await searchNearbyPlaces(location.latitude, location.longitude, radius, type, {
+      maxResults: 1,
+      useNewAPI: true
     });
-
+    
     return places;
-  } catch (err) {
-    console.warn(`fetchPlacesByType failed for ${type}:`, err);
+  } catch (error) {
+    console.error(`Failed to fetch ${type} places:`, error);
     return [];
   }
 }
