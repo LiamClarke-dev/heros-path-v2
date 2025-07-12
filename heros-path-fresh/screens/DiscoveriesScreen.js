@@ -57,7 +57,15 @@ export default function DiscoveriesScreen() {
   useEffect(() => {
     if (!selectedRoute?.coords) return;
     setLoading(true);
-    getSuggestionsForRoute(selectedRoute.coords, { type: filterType, language })
+    
+    // Use the new preferences system when no specific filter is selected
+    const options = { 
+      type: filterType, 
+      language,
+      usePreferences: !filterType // Use preferences when no specific type is selected
+    };
+    
+    getSuggestionsForRoute(selectedRoute.coords, options)
       .then(setSuggestions)
       .finally(() => setLoading(false));
   }, [selectedRoute, filterType, language]);
@@ -65,12 +73,21 @@ export default function DiscoveriesScreen() {
   const handleSave = async place => {
     const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
     if (saved.find(p => p.placeId === place.placeId)) return;
+    
+    // Ensure the place has location data for map pins
+    const placeWithLocation = {
+      ...place,
+      latitude: place.latitude || null,
+      longitude: place.longitude || null,
+    };
+    
     await AsyncStorage.setItem(
       'savedPlaces',
-      JSON.stringify([...saved, place])
+      JSON.stringify([...saved, placeWithLocation])
     );
     setSuggestions(s => s.filter(p => p.placeId !== place.placeId));
   };
+  
   const handleDismiss = id =>
     setSuggestions(s => s.filter(p => p.placeId !== id));
 

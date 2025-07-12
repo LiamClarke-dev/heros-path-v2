@@ -1,26 +1,27 @@
 // screens/MapScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet,
   View,
-  Alert,
-  TouchableOpacity,
-  Image,
   Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Image,
+  StatusBar,
 } from 'react-native';
-import MapView, { Polyline, Marker } from 'react-native-maps';
+import MapView, { Polyline, Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StatusBar } from 'expo-status-bar';
 import { useIsFocused } from '@react-navigation/native';
-import { snapToRoads } from '../services/DiscoveriesService';
-import { Colors, Spacing, Typography, Layout } from '../styles/theme';
-// import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from '@env';
-import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from "../config";
-// Add import for vector icons
 import { MaterialIcons } from '@expo/vector-icons';
+import { Colors, Spacing, Typography } from '../styles/theme';
+import { snapToRoads } from '../services/DiscoveriesService';
 
 const ROUTES_STORAGE_KEY = '@saved_routes';
+const SAVED_PLACES_KEY = 'savedPlaces';
+const SHOW_SAVED_PLACES_KEY = '@show_saved_places';
+
+// Link sprites
 const SPRITES = {
   idle: require('../assets/link_sprites/link_idle.gif'),
   up: require('../assets/link_sprites/link_walk_up.gif'),
@@ -32,13 +33,12 @@ const SPRITES = {
 function getDirection([prev, curr]) {
   const dx = curr.longitude - prev.longitude;
   const dy = curr.latitude - prev.latitude;
-  return Math.abs(dx) > Math.abs(dy)
-    ? dx > 0
-      ? 'right'
-      : 'left'
-    : dy > 0
-    ? 'up'
-    : 'down';
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  
+  if (angle >= -45 && angle < 45) return 'right';
+  if (angle >= 45 && angle < 135) return 'up';
+  if (angle >= 135 || angle < -135) return 'left';
+  return 'down';
 }
 
 export default function MapScreen({ navigation, route }) {
@@ -49,6 +49,8 @@ export default function MapScreen({ navigation, route }) {
   const [savedRoutes, setSavedRoutes] = useState([]);
   const [currentPosition, setCurrentPosition] = useState(null);
   const [previewRoute, setPreviewRoute] = useState(null);
+  const [savedPlaces, setSavedPlaces] = useState([]);
+  const [showSavedPlaces, setShowSavedPlaces] = useState(true);
 
   const locationSubscriber = useRef(null);
   const mapRef = useRef(null);
@@ -62,6 +64,21 @@ export default function MapScreen({ navigation, route }) {
            setSavedRoutes(raw);
          })
          .catch(err => console.error('Failed to load journeys', err));
+       
+       // Load saved places
+       AsyncStorage.getItem(SAVED_PLACES_KEY)
+         .then(stored => {
+           const places = stored ? JSON.parse(stored) : [];
+           setSavedPlaces(places);
+         })
+         .catch(err => console.error('Failed to load saved places', err));
+       
+       // Load show saved places preference
+       AsyncStorage.getItem(SHOW_SAVED_PLACES_KEY)
+         .then(stored => {
+           setShowSavedPlaces(stored !== 'false'); // Default to true
+         })
+         .catch(() => setShowSavedPlaces(true));
      }   }, [isFocused]);
 
    useEffect(() => {
@@ -116,6 +133,12 @@ export default function MapScreen({ navigation, route }) {
     }
   };
 
+  const toggleSavedPlaces = async () => {
+    const newValue = !showSavedPlaces;
+    setShowSavedPlaces(newValue);
+    await AsyncStorage.setItem(SHOW_SAVED_PLACES_KEY, newValue.toString());
+  };
+
   const toggleTracking = async () => {
     if (!tracking) {
       setPreviewRoute(null);
@@ -150,10 +173,11 @@ export default function MapScreen({ navigation, route }) {
         setSavedRoutes(newSaved);
         await AsyncStorage.setItem('lastRoute', JSON.stringify(newEntry));
 
-        // Snap to roads for the live path
+        // Snap to roads for the live path and hide raw coords
         try {
           const snapped = await snapToRoads(rawCoords);
           setRoadCoords(snapped);
+          setRawCoords([]); // Hide raw polyline after completion
         } catch (e) {
           console.warn('Road snapping failed:', e);
         }
@@ -171,6 +195,42 @@ export default function MapScreen({ navigation, route }) {
       <Polyline key={journey.id} coordinates={journey.coords} strokeColor="rgba(0,0,255,0.3)" strokeWidth={4} />
     ));
 
+  const renderSavedPlaces = () => {
+    if (!showSavedPlaces) return null;
+    
+    return savedPlaces
+      .filter(place => place.latitude && place.longitude)
+      .map(place => (
+        <Marker
+          key={place.placeId}
+          coordinate={{
+            latitude: place.latitude,
+            longitude: place.longitude,
+          }}
+          pinColor={Colors.primary}
+        >
+          <Callout>
+            <View style={styles.calloutContainer}>
+              <Text style={styles.calloutTitle}>{place.name}</Text>
+              {place.category && (
+                <Text style={styles.calloutCategory}>
+                  {place.category.replace('_', ' ')}
+                </Text>
+              )}
+              {place.rating && (
+                <Text style={styles.calloutRating}>
+                  ★ {place.rating} ({place.userRatingsTotal || 0} reviews)
+                </Text>
+              )}
+              {place.description && (
+                <Text style={styles.calloutDescription}>{place.description}</Text>
+              )}
+            </View>
+          </Callout>
+        </Marker>
+      ));
+  };
+
   // Sprite logic
   let spriteSource = SPRITES.idle;
   if (tracking && rawCoords.length >= 2) {
@@ -180,7 +240,8 @@ export default function MapScreen({ navigation, route }) {
     spriteSource = SPRITES.down;
   }
 
-  const pathToRender = roadCoords.length > 0 ? roadCoords : rawCoords;
+  // Only show raw coords while tracking, otherwise show road coords
+  const pathToRender = tracking ? rawCoords : roadCoords;
 
   return (
     <View style={styles.container}>
@@ -208,16 +269,34 @@ export default function MapScreen({ navigation, route }) {
           <Marker coordinate={currentPosition} anchor={{ x: 0.5, y: 0.9 }}>
             <Image source={spriteSource} style={styles.sprite} />
           </Marker>
+          {renderSavedPlaces()}
         </MapView>
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Loading your location…</Text>
         </View>
       )}
-      {/* Locate button: bottom right, standard icon */}
-      <TouchableOpacity style={styles.locateButton} onPress={locateMe}>
-        <MaterialIcons name="my-location" size={28} color={Colors.primary} />
-      </TouchableOpacity>
+      
+      {/* Control buttons */}
+      <View style={styles.buttonContainer}>
+        {/* Locate button */}
+        <TouchableOpacity style={styles.locateButton} onPress={locateMe}>
+          <MaterialIcons name="my-location" size={28} color={Colors.primary} />
+        </TouchableOpacity>
+        
+        {/* Toggle saved places button */}
+        <TouchableOpacity 
+          style={[styles.toggleButton, showSavedPlaces && styles.toggleButtonActive]} 
+          onPress={toggleSavedPlaces}
+        >
+          <MaterialIcons 
+            name={showSavedPlaces ? "place" : "place-outline"} 
+            size={24} 
+            color={showSavedPlaces ? Colors.background : Colors.primary} 
+          />
+        </TouchableOpacity>
+      </View>
+      
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
           style={[styles.trackButton, tracking ? styles.trackButtonActive : styles.trackButtonInactive]}
@@ -236,20 +315,95 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
   sprite: { width: 16, height: 32 },
-  locateButton: {
+  buttonContainer: {
     position: 'absolute',
-    bottom: 100,
-    right: 20,
-    backgroundColor: Colors.background,
-    padding: Spacing.sm,
-    borderRadius: Layout.borderRadius * 2,
-    elevation: 4,
-    zIndex: 10,
+    right: Spacing.md,
+    bottom: 120,
+    alignItems: 'center',
   },
-  locateText: { fontSize: 20 },
-  trackButtonContainer: { position: 'absolute', bottom: 100, alignSelf: 'center' },
-  trackButton: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Layout.borderRadius * 3, elevation: 4 },
-  trackButtonInactive: { backgroundColor: Colors.primary },
-  trackButtonActive: { backgroundColor: Colors.swipeDismiss },
-  trackButtonText: { color: Colors.background, fontSize: Typography.body.fontSize, fontWeight: Typography.body.fontWeight },
+  locateButton: {
+    backgroundColor: Colors.background,
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginBottom: Spacing.sm,
+  },
+  toggleButton: {
+    backgroundColor: Colors.background,
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.primary,
+  },
+  trackButtonContainer: {
+    position: 'absolute',
+    bottom: Spacing.lg,
+    left: Spacing.lg,
+    right: Spacing.lg,
+  },
+  trackButton: {
+    padding: Spacing.lg,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  trackButtonActive: {
+    backgroundColor: '#FF3B30',
+  },
+  trackButtonInactive: {
+    backgroundColor: Colors.primary,
+  },
+  trackButtonText: {
+    ...Typography.h3,
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  calloutContainer: {
+    width: 200,
+    padding: Spacing.sm,
+  },
+  calloutTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  calloutCategory: {
+    ...Typography.body,
+    color: Colors.primary,
+    fontSize: 12,
+    marginBottom: 4,
+    textTransform: 'capitalize',
+  },
+  calloutRating: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  calloutDescription: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    fontSize: 12,
+  },
 });

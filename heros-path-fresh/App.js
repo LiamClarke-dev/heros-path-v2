@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View, Text, StyleSheet, Alert } from 'react-native';
+import { RootSiblingParent } from 'react-native-root-siblings';
 import MapScreen from './screens/MapScreen';
 import PastJourneysScreen from './screens/PastJourneysScreen';
 import DiscoveriesScreen from './screens/DiscoveriesScreen';
@@ -126,9 +127,11 @@ function AppContent() {
 
 export default function App() {
   return (
-    <UserProvider>
-      <AppContent />
-    </UserProvider>
+    <RootSiblingParent>
+      <UserProvider>
+        <AppContent />
+      </UserProvider>
+    </RootSiblingParent>
   );
 }
 

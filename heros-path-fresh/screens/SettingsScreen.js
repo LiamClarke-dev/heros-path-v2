@@ -15,8 +15,10 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Spacing, Typography } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
+import { PLACE_TYPES } from '../constants/PlaceTypes';
 
 const LANG_KEY = '@user_language';
+const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
 const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'ja', label: '日本語' },
@@ -27,17 +29,36 @@ export default function SettingsScreen() {
   const { user, userProfile, profileLoading, updateProfile, signOutUser } = useUser();
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);
+  const [discoveryPreferences, setDiscoveryPreferences] = useState({});
   const [editForm, setEditForm] = useState({
     displayName: '',
     bio: '',
     location: '',
   });
 
-  // Load saved language on mount
+  // Load saved language and discovery preferences on mount
   useEffect(() => {
     AsyncStorage.getItem(LANG_KEY)
       .then(val => {
         if (val) setLanguage(val);
+      })
+      .catch(() => {/* ignore */});
+    
+    AsyncStorage.getItem(DISCOVERY_PREFERENCES_KEY)
+      .then(val => {
+        if (val) {
+          setDiscoveryPreferences(JSON.parse(val));
+        } else {
+          // Default: enable all place types
+          const defaultPrefs = {};
+          PLACE_TYPES.forEach(type => {
+            if (type.key !== 'all') {
+              defaultPrefs[type.key] = true;
+            }
+          });
+          setDiscoveryPreferences(defaultPrefs);
+          AsyncStorage.setItem(DISCOVERY_PREFERENCES_KEY, JSON.stringify(defaultPrefs));
+        }
       })
       .catch(() => {/* ignore */});
   }, []);
@@ -57,6 +78,16 @@ export default function SettingsScreen() {
   const selectLanguage = async (code) => {
     setLanguage(code);
     await AsyncStorage.setItem(LANG_KEY, code);
+  };
+
+  // Handle discovery preference toggle
+  const toggleDiscoveryPreference = async (placeType) => {
+    const newPrefs = {
+      ...discoveryPreferences,
+      [placeType]: !discoveryPreferences[placeType]
+    };
+    setDiscoveryPreferences(newPrefs);
+    await AsyncStorage.setItem(DISCOVERY_PREFERENCES_KEY, JSON.stringify(newPrefs));
   };
 
   // Handle profile editing
@@ -200,6 +231,28 @@ export default function SettingsScreen() {
         </View>
       )}
 
+      {/* Discovery Preferences Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Discovery Preferences</Text>
+        <Text style={styles.sectionDescription}>
+          Choose which types of places you'd like to discover during your walks:
+        </Text>
+        
+        {PLACE_TYPES.filter(type => type.key !== 'all').map(({ key, label }) => (
+          <View key={key} style={styles.preferenceItem}>
+            <View style={styles.preferenceRow}>
+              <Text style={styles.preferenceLabel}>{label}</Text>
+              <Switch
+                value={discoveryPreferences[key] || false}
+                onValueChange={() => toggleDiscoveryPreference(key)}
+                trackColor={{ false: Colors.tabInactive + '50', true: Colors.primary + '50' }}
+                thumbColor={discoveryPreferences[key] ? Colors.primary : Colors.tabInactive}
+              />
+            </View>
+          </View>
+        ))}
+      </View>
+
       {/* Preferences Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Preferences</Text>
@@ -267,6 +320,12 @@ const styles = StyleSheet.create({
     ...Typography.h2,
     color: Colors.text,
     marginBottom: Spacing.md,
+  },
+  sectionDescription: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    marginBottom: Spacing.md,
+    fontStyle: 'italic',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -381,10 +440,16 @@ const styles = StyleSheet.create({
   preferenceItem: {
     marginBottom: Spacing.md,
   },
+  preferenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
   preferenceLabel: {
     ...Typography.body,
     color: Colors.text,
-    marginBottom: Spacing.sm,
+    flex: 1,
     fontWeight: '600',
   },
   languageOptions: {
