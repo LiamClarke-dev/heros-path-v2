@@ -10,26 +10,59 @@ import {
   Modal,
   Linking,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useIsFocused } from '@react-navigation/native';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
+import { useUser } from '../contexts/UserContext';
+import DiscoveryService from '../services/DiscoveryService';
 
 export default function SavedPlacesScreen() {
+  const { user, migrationStatus } = useUser();
   const [allPlaces, setAllPlaces] = useState([]);
   const [filterType, setFilterType] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const isFocused = useIsFocused();
 
   const loadSavedPlaces = async () => {
+    if (!user) {
+      setAllPlaces([]);
+      return;
+    }
+
     try {
-      const json = await AsyncStorage.getItem('savedPlaces');
-      const places = json ? JSON.parse(json) : [];
-      setAllPlaces(places);
+      setLoading(true);
+      const result = await DiscoveryService.getSavedPlaces(user.uid);
+      
+      if (result.success) {
+        // Transform Firestore discoveries to match existing UI expectations
+        const places = result.discoveries.map(discovery => ({
+          placeId: discovery.placeId,
+          name: discovery.placeName || discovery.placeData?.name,
+          category: discovery.placeType,
+          combinedTypes: discovery.placeData?.types || [],
+          rating: discovery.placeData?.rating,
+          userRatingsTotal: discovery.placeData?.user_ratings_total,
+          description: discovery.placeData?.formatted_address,
+          thumbnail: discovery.placeData?.photos?.[0]?.photo_reference 
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${discovery.placeData.photos[0].photo_reference}&key=YOUR_API_KEY`
+            : null,
+          // Preserve original place data for compatibility
+          ...discovery.placeData
+        }));
+        
+        setAllPlaces(places);
+      } else {
+        setAllPlaces([]);
+      }
     } catch (error) {
       console.error('Failed to load saved places:', error);
+      setAllPlaces([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,14 +73,44 @@ export default function SavedPlacesScreen() {
   }, [isFocused]);
 
   const handleRemove = async placeId => {
-    const updated = allPlaces.filter(p => p.placeId !== placeId);
-    await AsyncStorage.setItem('savedPlaces', JSON.stringify(updated));
-    setAllPlaces(updated);
+    if (!user) return;
+
+    try {
+      // Find the discovery to remove
+      const discoveryToRemove = allPlaces.find(p => p.placeId === placeId);
+      if (discoveryToRemove) {
+        // Update the discovery to mark it as not saved
+        await DiscoveryService.updateDiscovery(user.uid, discoveryToRemove.id, {
+          saved: false
+        });
+        // Reload the list
+        await loadSavedPlaces();
+      }
+    } catch (error) {
+      console.error('Failed to remove saved place:', error);
+    }
   };
 
   const places = filterType
     ? allPlaces.filter(p => p.category === filterType)
     : allPlaces;
+
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.emptyText}>Please sign in to view saved places.</Text>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading saved places...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -219,6 +282,11 @@ const styles = StyleSheet.create({
   listContent: { paddingVertical: Spacing.sm },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { ...Typography.body, textAlign: 'center', color: Colors.text },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
   card: {
     flexDirection: 'row',
     backgroundColor: Colors.background,
