@@ -62,12 +62,19 @@ class JourneyService {
   async getUserJourneys(userId) {
     try {
       const journeysRef = this.getUserJourneysRef(userId);
-      const q = query(journeysRef, orderBy('createdAt', 'desc'));
+      const q = query(journeysRef);
       const querySnapshot = await getDocs(q);
       
       const journeys = [];
       querySnapshot.forEach((doc) => {
         journeys.push(doc.data());
+      });
+      
+      // Sort in memory instead of using orderBy to avoid index requirements
+      journeys.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+        return dateB - dateA; // Descending order
       });
       
       return { success: true, journeys };

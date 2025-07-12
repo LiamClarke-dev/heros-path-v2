@@ -85,8 +85,18 @@ export default function DiscoveriesScreen({ navigation, route }) {
       }
     } catch (error) {
       console.error('Error loading dismissed and saved places:', error);
-      setDismissedPlaces([]);
-      setSavedPlaces([]);
+      
+      // Fallback to AsyncStorage if Firestore fails
+      try {
+        const dismissed = JSON.parse(await AsyncStorage.getItem('dismissedPlaces')) || [];
+        const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
+        setDismissedPlaces(dismissed);
+        setSavedPlaces(saved);
+      } catch (fallbackError) {
+        console.error('Fallback to AsyncStorage also failed:', fallbackError);
+        setDismissedPlaces([]);
+        setSavedPlaces([]);
+      }
     }
   };
 
@@ -273,7 +283,30 @@ export default function DiscoveriesScreen({ navigation, route }) {
       }
     } catch (error) {
       console.error('Error loading saved routes:', error);
-      setSavedRoutes([]);
+      
+      // Fallback to AsyncStorage if Firestore fails
+      try {
+        const stored = await AsyncStorage.getItem('savedRoutes');
+        const raw = stored ? JSON.parse(stored) : [];
+        const journeys = raw
+          .map(j => j.id ? j : {
+            id: String(Date.now()),
+            coords: j,
+            date: new Date().toISOString(),
+          })
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        setSavedRoutes(journeys);
+        
+        // Set selected route from navigation params or default to first journey
+        if (route.params?.selectedRoute) {
+          setSelectedRoute(route.params.selectedRoute);
+        } else if (journeys.length) {
+          setSelectedRoute(journeys[0]);
+        }
+      } catch (fallbackError) {
+        console.error('Fallback to AsyncStorage also failed:', fallbackError);
+        setSavedRoutes([]);
+      }
     }
   };
 
