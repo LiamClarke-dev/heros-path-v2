@@ -20,6 +20,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries } from '../services/DiscoveriesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
+import { useFocusEffect } from '@react-navigation/native';
 
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
@@ -36,7 +37,7 @@ export default function DiscoveriesScreen() {
   const [aiSummaries, setAiSummaries]             = useState({});
   const [loadingSummaries, setLoadingSummaries]   = useState({});
 
-  useEffect(() => {
+  const loadSavedRoutes = () => {
     AsyncStorage.getItem(ROUTES_KEY)
       .then(json => {
         const raw = json ? JSON.parse(json) : [];
@@ -51,7 +52,18 @@ export default function DiscoveriesScreen() {
         if (journeys.length) setSelectedRoute(journeys[0]);
       })
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    loadSavedRoutes();
   }, []);
+
+  // Refresh routes when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadSavedRoutes();
+    }, [])
+  );
 
   useEffect(() => {
     AsyncStorage.getItem(LANGUAGE_KEY)

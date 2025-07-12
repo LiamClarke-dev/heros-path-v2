@@ -18,6 +18,7 @@ import { Colors, Spacing, Typography } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { testPlacesAPIMigration } from '../services/DiscoveriesService';
+import { useNavigation } from '@react-navigation/native';
 
 const LANG_KEY = '@user_language';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -28,6 +29,7 @@ const LANGUAGES = [
 ];
 
 export default function SettingsScreen() {
+  const navigation = useNavigation();
   const { user, userProfile, profileLoading, updateProfile, signOutUser } = useUser();
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);
