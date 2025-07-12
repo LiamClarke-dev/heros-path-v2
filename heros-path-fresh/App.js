@@ -10,6 +10,7 @@ import DiscoveriesScreen from './screens/DiscoveriesScreen';
 import SavedPlacesScreen from './screens/SavedPlacesScreen';
 import SocialScreen from './screens/SocialScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import DiscoveryPreferencesScreen from './screens/DiscoveryPreferencesScreen';
 import SignInScreen from './screens/SignInScreen';
 import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
@@ -17,6 +18,7 @@ import { Colors, Spacing, Typography } from './styles/theme';
 
 const Drawer = createDrawerNavigator();
 const AuthStack = createStackNavigator();
+const MainStack = createStackNavigator();
 
 function AuthStackScreen() {
   return (
@@ -24,6 +26,92 @@ function AuthStackScreen() {
       <AuthStack.Screen name="SignIn" component={SignInScreen} />
       <AuthStack.Screen name="EmailAuth" component={EmailAuthScreen} />
     </AuthStack.Navigator>
+  );
+}
+
+function MainStackScreen() {
+  return (
+    <MainStack.Navigator>
+      <MainStack.Screen 
+        name="DrawerHome" 
+        component={DrawerNavigator}
+        options={{ headerShown: false }}
+      />
+      <MainStack.Screen 
+        name="DiscoveryPreferences" 
+        component={DiscoveryPreferencesScreen}
+        options={{ 
+          headerShown: false,
+          presentation: 'modal'
+        }}
+      />
+    </MainStack.Navigator>
+  );
+}
+
+function DrawerNavigator() {
+  return (
+    <Drawer.Navigator 
+      initialRouteName="Map"
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: Colors.primary,
+        },
+        headerTintColor: Colors.background,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Drawer.Screen 
+        name="Map" 
+        component={MapScreen}
+        options={{
+          title: 'Hero\'s Path',
+          drawerLabel: 'Map',
+        }}
+      />
+      <Drawer.Screen 
+        name="PastJourneys" 
+        component={PastJourneysScreen}
+        options={{
+          title: 'Past Journeys',
+          drawerLabel: 'Past Journeys',
+        }}
+      />
+      <Drawer.Screen 
+        name="Discoveries" 
+        component={DiscoveriesScreen}
+        options={{
+          title: 'Discoveries',
+          drawerLabel: 'Discoveries',
+        }}
+      />
+      <Drawer.Screen 
+        name="SavedPlaces" 
+        component={SavedPlacesScreen}
+        options={{
+          title: 'Saved Places',
+          drawerLabel: 'Saved Places',
+        }}
+      />
+      <Drawer.Screen 
+        name="Social" 
+        component={SocialScreen}
+        options={{
+          title: 'Social',
+          drawerLabel: 'Social',
+        }}
+      />
+      <Drawer.Screen 
+        name="Settings" 
+        component={SettingsScreen}
+        options={{
+          title: 'Settings',
+          drawerLabel: 'Settings',
+        }}
+      />
+    </Drawer.Navigator>
   );
 }
 
@@ -57,67 +145,7 @@ function AppContent() {
   return (
     <NavigationContainer>
       {user ? (
-        <Drawer.Navigator 
-          initialRouteName="Map"
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: Colors.primary,
-            },
-            headerTintColor: Colors.background,
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        >
-          <Drawer.Screen 
-            name="Map" 
-            component={MapScreen}
-            options={{
-              title: 'Hero\'s Path',
-              drawerLabel: 'Map',
-            }}
-          />
-          <Drawer.Screen 
-            name="PastJourneys" 
-            component={PastJourneysScreen}
-            options={{
-              title: 'Past Journeys',
-              drawerLabel: 'Past Journeys',
-            }}
-          />
-          <Drawer.Screen 
-            name="Discoveries" 
-            component={DiscoveriesScreen}
-            options={{
-              title: 'Discoveries',
-              drawerLabel: 'Discoveries',
-            }}
-          />
-          <Drawer.Screen 
-            name="SavedPlaces" 
-            component={SavedPlacesScreen}
-            options={{
-              title: 'Saved Places',
-              drawerLabel: 'Saved Places',
-            }}
-          />
-          <Drawer.Screen 
-            name="Social" 
-            component={SocialScreen}
-            options={{
-              title: 'Social',
-              drawerLabel: 'Social',
-            }}
-          />
-          <Drawer.Screen 
-            name="Settings" 
-            component={SettingsScreen}
-            options={{
-              title: 'Settings',
-              drawerLabel: 'Settings',
-            }}
-          />
-        </Drawer.Navigator>
+        <MainStackScreen />
       ) : (
         <AuthStackScreen />
       )}

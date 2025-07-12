@@ -27,11 +27,61 @@ Hero's Path is a React Native/Expo app that lets users track their walks with a 
 ### Dev Dependencies
 * @babel/core 7.20.0
 
-## Git Workflow & Branching Strategy
+## Git Workflow & Development Strategy
 
-### Branching Best Practices
+### 🎯 **Optimized Development Workflow**
 
-**After configuration fixes are complete, use feature branches for major development:**
+**Our strategy balances cost control with proper testing:**
+
+#### **When to Use Expo Go (Free, Instant Testing):**
+- ✅ **JavaScript logic** (discovery preferences, settings UI)
+- ✅ **React Native components** (most UI changes)
+- ✅ **AsyncStorage** (saving preferences)
+- ✅ **Basic navigation** (drawer, screens)
+- ✅ **Firebase integration** (authentication, database)
+
+#### **When to Build Development Version (~$5, Required):**
+- 🔄 **Native dependencies** (like `react-native-root-toast`)
+- 🔄 **App.js structural changes** (adding wrappers, providers)
+- 🔄 **Custom native modules**
+- 🔄 **Advanced map features** (new markers, callouts)
+- 🔄 **Before merging to main** (final validation)
+
+#### **Branch Strategy:**
+```bash
+main (stable, ready for production)
+├── feature/discovery-preferences-and-map-enhancements (current)
+├── feature/social-features
+├── feature/advanced-analytics
+└── feature/final-polish
+```
+
+#### **Development Workflow:**
+```bash
+# 1. Create feature branch
+git checkout -b feature/new-feature
+
+# 2. Develop JavaScript features in Expo Go
+npx expo start
+# Test in Expo Go app
+
+# 3. Build when adding native features
+eas build --platform ios --profile development
+
+# 4. Test thoroughly in development build
+
+# 5. Merge to main when validated
+git checkout main
+git merge feature/new-feature
+git push origin main
+```
+
+#### **Cost Optimization:**
+- **Expo Go testing**: Free, instant iteration
+- **Development builds**: Only when needed (~$5 each)
+- **TestFlight builds**: Only for final validation (~$10)
+
+### **Branching Best Practices**
 
 #### When to Create Branches:
 - ✅ New features (e.g., `feature/user-profiles`, `feature/social-sharing`)
@@ -53,27 +103,10 @@ refactor/auth-system      # Code refactoring
 docs/readme-update        # Documentation
 ```
 
-#### Feature Development Workflow:
-```bash
-# Start a new feature
-git checkout -b feature/user-profiles
-# ... work on feature ...
-git add .
-git commit -m "feat: add user profile creation"
-git push origin feature/user-profiles
-
-# When ready, merge back to main
-git checkout main
-git merge feature/user-profiles
-git push origin main
-
-# Clean up
-git branch -d feature/user-profiles
-```
-
 #### Current Status:
 - Configuration and environment setup: ✅ Complete (commit to main)
 - **Next phase:** Use feature branches for all major feature development
+- **Development workflow:** Optimized for cost control and rapid iteration
 
 ## Project Structure
 
@@ -133,24 +166,35 @@ heros-path-fresh/
 * **EAS:** Profiles in `eas.json` for development (internal/dev-client), preview, production
 
 ### Environment Variables
-* **Storage:** Environment variables stored in EAS and injected at build time 'config.js' Environment variables are injected by EAS build system. For local development, these will be undefined and you'll need to use .env file
+* **Storage:** Environment variables stored in EAS and injected at build time
 * **Configuration:** `config.js` contains environment variable mapping
 * **Local Development:** `.env` file for local development (not committed to Git)
 * **EAS Dashboard:** Set environment variables for each profile at https://expo.dev/accounts/[your-account]/projects/[your-project]/environment-variables
 
 ### Build Commands
 ```bash
-# Development build
-eas build --platform ios --profile development --branch feature/email-auth
-# or for Android
-eas build --platform android --profile development --branch feature/email-auth
+# For JavaScript-only features (test in Expo Go first)
+npx expo start
+# Test in Expo Go app
 
-# Start development server
+# For native features (build required)
+eas build --platform ios --profile development
+# or for Android
+eas build --platform android --profile development
+# or for both platforms
+eas build --platform all --profile development
+
+# Start development server with dev client
 npx expo start --dev-client
 
 # Clear cache and restart
 npx expo start -c
 ```
+
+### Testing Strategy
+* **Expo Go:** Use for JavaScript logic, UI components, and basic functionality
+* **Development Build:** Use for native features, App.js changes, and final validation
+* **TestFlight:** Use for wider beta testing and App Store validation
 
 ## Authentication
 
@@ -230,6 +274,10 @@ service cloud.firestore {
 * User profile creation and editing
 * Testing email/password and Google OAuth flows
 * Firestore collection scaffolding and security rules
+* **Discovery preferences system** (user-selectable place types)
+* **Enhanced map features** (saved places pins with callouts)
+* **Toast notifications** (properly configured with RootSiblingParent)
+* **Optimized development workflow** (cost-effective testing strategy)
 
 ### 🔄 In Progress
 * User profile management (avatar upload, privacy settings)
