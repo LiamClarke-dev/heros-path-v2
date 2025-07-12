@@ -162,7 +162,12 @@ function coordsToBoundingCircle(coords) {
  */
 export async function getSuggestionsForRoute(routeCoords, preferences, language = 'en', userId = null) {
   const startTime = Date.now();
-  Logger.debug('DISCOVERIES_SERVICE', `Getting suggestions for route with ${routeCoords?.length || 0} coordinates`, { userId, enabledTypesCount: Object.keys(preferences).filter(type => preferences[type]).length });
+  Logger.debug('DISCOVERIES_SERVICE', `Getting suggestions for route with ${routeCoords?.length || 0} coordinates`, { 
+    userId, 
+    enabledTypesCount: Object.keys(preferences).filter(type => preferences[type]).length,
+    preferencesKeys: Object.keys(preferences),
+    language
+  });
   
   if (!routeCoords || routeCoords.length === 0) {
     Logger.debug('DISCOVERIES_SERVICE', 'No route coordinates provided, returning empty array');
@@ -275,16 +280,35 @@ function filterPlacesByPreferences(places, preferences = {}) {
  * @returns {Promise<Array>} Array of places
  */
 async function fetchPlacesByType(type, location, radius = 500) {
-  Logger.debug('DISCOVERIES_SERVICE', `Fetching places for type: ${type}`, { location, radius });
+  Logger.debug('DISCOVERIES_SERVICE', `Fetching places for type: ${type}`, { 
+    location, 
+    radius,
+    locationType: typeof location,
+    hasLatitude: !!location?.latitude,
+    hasLongitude: !!location?.longitude
+  });
   
   try {
-    Logger.debug('DISCOVERIES_SERVICE', `Making API call for type: ${type}`);
-    const places = await searchNearbyPlaces(location.latitude, location.longitude, radius, type, {
-      maxResults: 1,
-      useNewAPI: true
+    Logger.debug('DISCOVERIES_SERVICE', `Making API call for type: ${type}`, {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      radius,
+      type
     });
     
-    Logger.debug('DISCOVERIES_SERVICE', `API returned ${places.length} places for type: ${type}`);
+    const options = {
+      maxResults: 1,
+      useNewAPI: true
+    };
+    
+    Logger.debug('DISCOVERIES_SERVICE', `Calling searchNearbyPlaces with options:`, options);
+    
+    const places = await searchNearbyPlaces(location.latitude, location.longitude, radius, type, options);
+    
+    Logger.debug('DISCOVERIES_SERVICE', `API returned ${places.length} places for type: ${type}`, {
+      placesCount: places.length,
+      firstPlace: places[0] ? { name: places[0].name, placeId: places[0].placeId } : null
+    });
     return places;
   } catch (error) {
     Logger.error('DISCOVERIES_SERVICE', `Error fetching places for type: ${type}`, error);

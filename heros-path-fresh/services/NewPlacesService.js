@@ -20,13 +20,13 @@ export async function searchNearbyPlaces(latitude, longitude, radius, type, opti
   try {
     if (useNewAPI) {
       Logger.debug('NEW_PLACES_SERVICE', `Using NEW API for ${type}`);
-      const result = await searchNearbyPlacesNew(latitude, longitude, radius, type, maxResults, apiKey);
+      const result = await searchNearbyPlacesNew(latitude, longitude, radius, type, maxResults, apiKey, options);
       const duration = Date.now() - startTime;
       Logger.apiCall('NEW_PLACES_SERVICE', 'places:searchNearby', 'POST', true, duration, { type, count: result.length });
       return result;
     } else {
       Logger.debug('NEW_PLACES_SERVICE', `Using LEGACY API for ${type}`);
-      const result = await searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey);
+      const result = await searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey, options);
       const duration = Date.now() - startTime;
       Logger.apiCall('NEW_PLACES_SERVICE', 'nearbysearch', 'GET', true, duration, { type, count: result.length });
       return result;
@@ -42,7 +42,9 @@ export async function searchNearbyPlaces(latitude, longitude, radius, type, opti
  * Search nearby places using the new Places API (New)
  * Updated to match latest Google Places API documentation
  */
-async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResults, apiKey) {
+async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResults, apiKey, options = {}) {
+  Logger.debug('NEW_PLACES_SERVICE', 'searchNearbyPlacesNew called', { latitude, longitude, radius, type, maxResults, hasOptions: !!options });
+  
   const {
     language = 'en',
     minRating = 0,
@@ -134,14 +136,16 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResul
   } catch (error) {
     Logger.apiCall('NEW_PLACES_SERVICE', 'places:searchNearby', 'POST', false, 0, { url, type, maxResults, error: error.message });
     // Fallback to legacy API
-    return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey);
+    return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey, options);
   }
 }
 
 /**
  * Search nearby places using the legacy Places API (fallback)
  */
-async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey) {
+async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey, options = {}) {
+  Logger.debug('NEW_PLACES_SERVICE', 'searchNearbyPlacesLegacy called', { latitude, longitude, radius, type, maxResults, hasOptions: !!options });
+  
   const {
     language = 'en',
     minRating = 0,

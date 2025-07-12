@@ -471,6 +471,13 @@ export default function DiscoveriesScreen({ navigation, route }) {
     
     const loadJourneyDiscoveries = async () => {
       Logger.debug('DISCOVERIES_SCREEN', 'loadJourneyDiscoveries called');
+      Logger.debug('DISCOVERIES_SCREEN', 'Selected route info:', {
+        id: selectedRoute?.id,
+        name: selectedRoute?.name,
+        coordsLength: selectedRoute?.coords?.length,
+        coordsType: typeof selectedRoute?.coords
+      });
+      
       try {
         // First, load existing discoveries from Firestore for this journey
         Logger.debug('DISCOVERIES_SCREEN', 'Loading existing discoveries from Firestore for journey:', selectedRoute.id);
@@ -531,12 +538,29 @@ export default function DiscoveriesScreen({ navigation, route }) {
           if (isNewJourney) {
             Logger.debug('DISCOVERIES_SCREEN', 'New journey detected - making API calls for initial discoveries');
             Logger.debug('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
-            newSuggestions = await getSuggestionsForRoute(
-              selectedRoute.coords, 
-              filteredPreferences, 
-              language, 
-              user.uid
-            );
+            Logger.debug('DISCOVERIES_SCREEN', 'Parameters for getSuggestionsForRoute:', {
+              coordsLength: selectedRoute.coords?.length,
+              coordsType: typeof selectedRoute.coords,
+              preferences: filteredPreferences,
+              language,
+              userId: user.uid
+            });
+            
+            try {
+              newSuggestions = await getSuggestionsForRoute(
+                selectedRoute.coords, 
+                filteredPreferences, 
+                language, 
+                user.uid
+              );
+              Logger.debug('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully', {
+                newSuggestionsCount: newSuggestions?.length || 0
+              });
+            } catch (apiError) {
+              Logger.error('DISCOVERIES_SCREEN', 'Error in getSuggestionsForRoute', apiError);
+              newSuggestions = [];
+            }
+            
             allSuggestions = [...firestoreSuggestions, ...newSuggestions];
           } else {
             Logger.debug('DISCOVERIES_SCREEN', 'Existing journey with discoveries - skipping API calls to save performance');
@@ -546,12 +570,29 @@ export default function DiscoveriesScreen({ navigation, route }) {
           // No existing discoveries, make API calls
           Logger.debug('DISCOVERIES_SCREEN', 'No existing discoveries found - making API calls');
           Logger.debug('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
-          newSuggestions = await getSuggestionsForRoute(
-            selectedRoute.coords, 
-            filteredPreferences, 
-            language, 
-            user.uid
-          );
+          Logger.debug('DISCOVERIES_SCREEN', 'Parameters for getSuggestionsForRoute (no existing discoveries):', {
+            coordsLength: selectedRoute.coords?.length,
+            coordsType: typeof selectedRoute.coords,
+            preferences: filteredPreferences,
+            language,
+            userId: user.uid
+          });
+          
+          try {
+            newSuggestions = await getSuggestionsForRoute(
+              selectedRoute.coords, 
+              filteredPreferences, 
+              language, 
+              user.uid
+            );
+            Logger.debug('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully (no existing discoveries)', {
+              newSuggestionsCount: newSuggestions?.length || 0
+            });
+          } catch (apiError) {
+            Logger.error('DISCOVERIES_SCREEN', 'Error in getSuggestionsForRoute (no existing discoveries)', apiError);
+            newSuggestions = [];
+          }
+          
           allSuggestions = newSuggestions;
         }
         
@@ -991,18 +1032,38 @@ export default function DiscoveriesScreen({ navigation, route }) {
           </View>
         )}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={() => (
-          <View style={styles.completionContainer}>
-            <MaterialIcons name="check-circle" size={64} color={Colors.primary} />
-            <Text style={styles.completionTitle}>Congratulations!</Text>
-            <Text style={styles.completionText}>
-              There are no more places to review on this journey.
-            </Text>
-            <Text style={styles.completionSubtext}>
-              Get out there and explore to discover more!
-            </Text>
-          </View>
-        )}
+        ListEmptyComponent={() => {
+          // Check if this journey has any discoveries at all
+          const hasAnyDiscoveries = selectedRoute?.totalDiscoveriesCount > 0;
+          
+          if (!hasAnyDiscoveries) {
+            return (
+              <View style={styles.completionContainer}>
+                <MaterialIcons name="explore" size={64} color={Colors.tabInactive} />
+                <Text style={styles.completionTitle}>No Discoveries Found</Text>
+                <Text style={styles.completionText}>
+                  This journey didn't find any new places to review.
+                </Text>
+                <Text style={styles.completionSubtext}>
+                  Try walking in a different area or check your discovery preferences.
+                </Text>
+              </View>
+            );
+          }
+          
+          return (
+            <View style={styles.completionContainer}>
+              <MaterialIcons name="check-circle" size={64} color={Colors.primary} />
+              <Text style={styles.completionTitle}>Congratulations!</Text>
+              <Text style={styles.completionText}>
+                There are no more places to review on this journey.
+              </Text>
+              <Text style={styles.completionSubtext}>
+                Get out there and explore to discover more!
+              </Text>
+            </View>
+          );
+        }}
         renderItem={({ item }) => (
           <Swipeable
             renderLeftActions={() => (
