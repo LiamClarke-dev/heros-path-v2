@@ -17,6 +17,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
+import { testPlacesAPIMigration } from '../services/DiscoveriesService';
 
 const LANG_KEY = '@user_language';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -31,6 +32,8 @@ export default function SettingsScreen() {
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);
   const [discoveryPreferences, setDiscoveryPreferences] = useState({});
+  const [migrationStatus, setMigrationStatus] = useState(null);
+  const [testingMigration, setTestingMigration] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: '',
     bio: '',
@@ -127,6 +130,19 @@ export default function SettingsScreen() {
         }
       ]
     );
+  };
+
+  // Test Places API migration
+  const handleTestMigration = async () => {
+    setTestingMigration(true);
+    try {
+      const status = await testPlacesAPIMigration();
+      setMigrationStatus(status);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to test API migration. Please try again.');
+    } finally {
+      setTestingMigration(false);
+    }
   };
 
   if (profileLoading) {
@@ -272,6 +288,86 @@ export default function SettingsScreen() {
       ))}
     </View>
         </View>
+      </View>
+
+      {/* API Migration Testing Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>API Migration Status</Text>
+        <Text style={styles.sectionDescription}>
+          Test the Google Places API migration from Legacy to New API:
+        </Text>
+        
+        <TouchableOpacity 
+          style={[styles.editButton, testingMigration && styles.disabledButton]} 
+          onPress={handleTestMigration}
+          disabled={testingMigration}
+        >
+          {testingMigration ? (
+            <ActivityIndicator size="small" color={Colors.background} />
+          ) : (
+            <Text style={styles.editButtonText}>Test API Migration</Text>
+          )}
+        </TouchableOpacity>
+
+        {migrationStatus && (
+          <View style={styles.migrationStatus}>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>New API:</Text>
+              <View style={[
+                styles.statusIndicator, 
+                migrationStatus.newAPI ? styles.statusSuccess : styles.statusError
+              ]}>
+                <Text style={styles.statusText}>
+                  {migrationStatus.newAPI ? '✅ Working' : '❌ Failed'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Legacy API:</Text>
+              <View style={[
+                styles.statusIndicator, 
+                migrationStatus.legacyAPI ? styles.statusSuccess : styles.statusError
+              ]}>
+                <Text style={styles.statusText}>
+                  {migrationStatus.legacyAPI ? '✅ Working' : '❌ Failed'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Status:</Text>
+              <Text style={[
+                styles.statusText,
+                migrationStatus.migrationStatus === 'READY' ? styles.statusSuccess : 
+                migrationStatus.migrationStatus === 'FALLBACK' ? styles.statusWarning :
+                styles.statusError
+              ]}>
+                {migrationStatus.migrationStatus}
+              </Text>
+            </View>
+
+            {migrationStatus.recommendation && (
+              <View style={styles.recommendationContainer}>
+                <Text style={styles.recommendationText}>{migrationStatus.recommendation}</Text>
+              </View>
+            )}
+
+            {migrationStatus.newAPIError && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorLabel}>New API Error:</Text>
+                <Text style={styles.errorText}>{migrationStatus.newAPIError}</Text>
+              </View>
+            )}
+
+            {migrationStatus.legacyAPIError && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorLabel}>Legacy API Error:</Text>
+                <Text style={styles.errorText}>{migrationStatus.legacyAPIError}</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Account Section */}
@@ -497,5 +593,71 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.background,
     fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  migrationStatus: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.tabInactive + '20',
+    borderRadius: 8,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  statusLabel: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+  },
+  statusIndicator: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  statusSuccess: {
+    backgroundColor: '#4CAF50' + '30',
+  },
+  statusWarning: {
+    backgroundColor: '#FF9800' + '30',
+  },
+  statusError: {
+    backgroundColor: '#F44336' + '30',
+  },
+  statusText: {
+    ...Typography.body,
+    fontWeight: '600',
+  },
+  recommendationContainer: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    backgroundColor: Colors.primary + '20',
+    borderRadius: 4,
+  },
+  recommendationText: {
+    ...Typography.body,
+    color: Colors.text,
+    fontStyle: 'italic',
+  },
+  errorContainer: {
+    marginTop: Spacing.sm,
+    padding: Spacing.sm,
+    backgroundColor: '#F44336' + '20',
+    borderRadius: 4,
+  },
+  errorLabel: {
+    ...Typography.body,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  errorText: {
+    ...Typography.body,
+    color: Colors.text + '80',
+    fontSize: 12,
   },
 });
