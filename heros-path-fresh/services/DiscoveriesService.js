@@ -3,7 +3,7 @@ import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS, GOOGLE_ROADS_API_
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getEnhancedPlaceDetails } from './EnhancedPlacesService';
-import { searchNearbyPlaces, getPlaceDetails, testAPIConnectivity } from './NewPlacesService';
+import { searchNearbyPlaces, getPlaceDetails, getPlaceSummaries, testAPIConnectivity } from './NewPlacesService';
 
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -472,14 +472,23 @@ export async function getPlaceDetailsWithSummaries(placeId, language = 'en') {
     // First try the new API service
     const placeDetails = await getPlaceDetails(placeId, language, true);
     
-    // If successful, return the details
+    // Get AI summaries separately
+    const summaries = await getPlaceSummaries(placeId, language);
+    
+    // Combine place details with summaries
     if (placeDetails) {
-      return placeDetails;
+      return {
+        ...placeDetails,
+        summaries: summaries
+      };
     }
     
     // Fallback to enhanced place details from the old service
     const enhancedDetails = await getEnhancedPlaceDetails(placeId, language);
-    return enhancedDetails;
+    return {
+      ...enhancedDetails,
+      summaries: summaries
+    };
   } catch (error) {
     console.warn('Failed to get place details with summaries:', error);
     // Return basic details if enhanced details fail

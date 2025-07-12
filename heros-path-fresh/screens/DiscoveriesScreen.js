@@ -315,7 +315,10 @@ export default function DiscoveriesScreen() {
                 <View style={styles.summaryContainer}>
                   <Text style={styles.summaryTitle}>AI Summary</Text>
                   <Text style={styles.summaryText}>
-                    {aiSummaries[item.placeId].overview?.text || aiSummaries[item.placeId].text || 'Summary available'}
+                    {aiSummaries[item.placeId].generativeSummary?.overview?.text || 
+                     aiSummaries[item.placeId].generativeSummary?.text ||
+                     aiSummaries[item.placeId].editorialSummary?.text ||
+                     'Summary available'}
                   </Text>
                 </View>
               )}
