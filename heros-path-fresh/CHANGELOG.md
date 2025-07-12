@@ -18,6 +18,37 @@
 - **Status Updates**: Real-time with no additional database queries
 - **Data Integrity**: 100% reliable across all operations
 
+### 🚨 **NEW: Comprehensive Account Cleanup Feature**
+
+#### **Problem Solved**
+Users with old journey data and location data were experiencing errors and wanted to completely purge their account to start fresh. The existing "Delete All Journeys" button only cleaned up journey-related data, leaving saved locations, dismissed locations, and other user data intact.
+
+#### **Solution Implemented**
+- **Complete Data Purge**: New `purgeAllUserData()` function in JourneyService
+- **Firestore Cleanup**: Deletes all journeys, discoveries, dismissed places, and clears user profile data
+- **AsyncStorage Cleanup**: Removes all app preferences, settings, and cached data
+- **User-Friendly Interface**: New "🚨 PURGE EVERYTHING" button in PastJourneysScreen
+- **Comprehensive Logging**: Detailed logging of all cleanup operations
+
+#### **Data Cleaned**
+- ✅ All journeys and associated route data
+- ✅ All discoveries (including saved places)
+- ✅ All dismissed places
+- ✅ All user preferences and discovery settings
+- ✅ All AsyncStorage keys (language, preferences, cached data, etc.)
+- ✅ User profile data (cleared but document preserved for auth)
+
+#### **Safety Features**
+- **Double Confirmation**: Requires explicit user confirmation with detailed warning
+- **Comprehensive Warning**: Lists exactly what will be deleted
+- **Cannot Be Undone**: Clear warning that action is permanent
+- **Detailed Results**: Shows exactly what was deleted after completion
+
+#### **Development Use**
+- **Development Button**: Available in PastJourneysScreen for testing
+- **Production Cleanup**: Should be removed before production deployment
+- **User Support**: Can be used to help users with data issues
+
 ---
 
 ## [v1.0.0-beta] - 12 July 2025

@@ -32,7 +32,9 @@ import {
   where,
   getDocs,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch,
+  doc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import Logger from '../utils/Logger';
@@ -556,15 +558,94 @@ export default function DiscoveriesScreen({ navigation, route }) {
               Logger.debug('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully', {
                 newSuggestionsCount: newSuggestions?.length || 0
               });
+              
+              // Save new discoveries to Firestore so they persist
+              if (newSuggestions && newSuggestions.length > 0) {
+                Logger.debug('DISCOVERIES_SCREEN', 'Saving new discoveries to Firestore', {
+                  count: newSuggestions.length
+                });
+                
+                try {
+                  // Save each discovery using the existing DiscoveryService
+                  for (const place of newSuggestions) {
+                    const discoveryData = {
+                      journeyId: selectedRoute.id,
+                      placeId: place.placeId,
+                      placeName: place.name,
+                      placeType: place.types?.[0] || 'unknown',
+                      location: {
+                        lat: place.latitude || place.geometry?.location?.lat,
+                        lng: place.longitude || place.geometry?.location?.lng,
+                      },
+                      discoveredAt: new Date(),
+                      dismissed: false,
+                      saved: false,
+                      placeData: {
+                        name: place.name,
+                        types: place.types || [],
+                        rating: place.rating,
+                        photos: place.photos || [],
+                        formatted_address: place.formatted_address,
+                        ...Object.fromEntries(
+                          Object.entries(place).filter(([_, value]) => value !== undefined)
+                        )
+                      }
+                    };
+                    
+                    await DiscoveryService.createDiscovery(user.uid, discoveryData);
+                  }
+                  
+                  Logger.debug('DISCOVERIES_SCREEN', 'Successfully saved new discoveries to Firestore');
+                  
+                  // Reload discoveries from Firestore to get the saved data
+                  const updatedJourneyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
+                  if (updatedJourneyDiscoveries.success && updatedJourneyDiscoveries.discoveries) {
+                    const unreviewed = updatedJourneyDiscoveries.discoveries.filter(
+                      discovery => !discovery.saved && !discovery.dismissed
+                    );
+                    
+                    const updatedFirestoreSuggestions = unreviewed.map(discovery => ({
+                      placeId: discovery.placeId,
+                      name: discovery.placeData?.name || discovery.placeName || 'Unknown Place',
+                      types: discovery.placeData?.types || [discovery.placeType || 'unknown'],
+                      rating: discovery.placeData?.rating,
+                      photos: discovery.placeData?.photos || [],
+                      formatted_address: discovery.placeData?.formatted_address,
+                      latitude: discovery.location?.lat,
+                      longitude: discovery.location?.lng,
+                      category: discovery.placeType || 'unknown',
+                      fromFirestore: true,
+                      discoveryId: discovery.id
+                    }));
+                    
+                    allSuggestions = updatedFirestoreSuggestions;
+                  }
+                } catch (saveError) {
+                  Logger.error('DISCOVERIES_SCREEN', 'Error saving new discoveries to Firestore', saveError);
+                  // Continue with the suggestions even if saving fails
+                  allSuggestions = [...firestoreSuggestions, ...newSuggestions];
+                }
+              } else {
+                allSuggestions = [...firestoreSuggestions, ...newSuggestions];
+              }
             } catch (apiError) {
               Logger.error('DISCOVERIES_SCREEN', 'Error in getSuggestionsForRoute', apiError);
               newSuggestions = [];
+              allSuggestions = firestoreSuggestions;
             }
-            
-            allSuggestions = [...firestoreSuggestions, ...newSuggestions];
           } else {
             Logger.debug('DISCOVERIES_SCREEN', 'Existing journey with discoveries - skipping API calls to save performance');
             Logger.debug('DISCOVERIES_SCREEN', 'Found', journeyDiscoveries.discoveries.length, 'existing discoveries');
+        
+        // Log the final suggestions that will be set
+        Logger.filter('DISCOVERIES_SCREEN', 'SUGGESTIONS_LOADED', 'existing', {
+          totalSuggestions: allSuggestions.length,
+          suggestions: allSuggestions.map(s => ({
+            name: s.name,
+            category: s.category,
+            types: s.types
+          }))
+        });
           }
         } else {
           // No existing discoveries, make API calls
@@ -588,15 +669,98 @@ export default function DiscoveriesScreen({ navigation, route }) {
             Logger.debug('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully (no existing discoveries)', {
               newSuggestionsCount: newSuggestions?.length || 0
             });
+            
+                          // Save new discoveries to Firestore so they persist
+              if (newSuggestions && newSuggestions.length > 0) {
+                Logger.debug('DISCOVERIES_SCREEN', 'Saving new discoveries to Firestore (no existing discoveries)', {
+                  count: newSuggestions.length
+                });
+                
+                try {
+                  // Save each discovery using the existing DiscoveryService
+                  for (const place of newSuggestions) {
+                    const discoveryData = {
+                      journeyId: selectedRoute.id,
+                      placeId: place.placeId,
+                      placeName: place.name,
+                      placeType: place.types?.[0] || 'unknown',
+                      location: {
+                        lat: place.latitude || place.geometry?.location?.lat,
+                        lng: place.longitude || place.geometry?.location?.lng,
+                      },
+                      discoveredAt: new Date(),
+                      dismissed: false,
+                      saved: false,
+                      placeData: {
+                        name: place.name,
+                        types: place.types || [],
+                        rating: place.rating,
+                        photos: place.photos || [],
+                        formatted_address: place.formatted_address,
+                        ...Object.fromEntries(
+                          Object.entries(place).filter(([_, value]) => value !== undefined)
+                        )
+                      }
+                    };
+                    
+                    await DiscoveryService.createDiscovery(user.uid, discoveryData);
+                  }
+                  
+                  Logger.debug('DISCOVERIES_SCREEN', 'Successfully saved new discoveries to Firestore (no existing discoveries)');
+                  
+                  // Reload discoveries from Firestore to get the saved data
+                  const updatedJourneyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
+                  if (updatedJourneyDiscoveries.success && updatedJourneyDiscoveries.discoveries) {
+                    const unreviewed = updatedJourneyDiscoveries.discoveries.filter(
+                      discovery => !discovery.saved && !discovery.dismissed
+                    );
+                    
+                    const updatedFirestoreSuggestions = unreviewed.map(discovery => ({
+                      placeId: discovery.placeId,
+                      name: discovery.placeData?.name || discovery.placeName || 'Unknown Place',
+                      types: discovery.placeData?.types || [discovery.placeType || 'unknown'],
+                      rating: discovery.placeData?.rating,
+                      photos: discovery.placeData?.photos || [],
+                      formatted_address: discovery.placeData?.formatted_address,
+                      latitude: discovery.location?.lat,
+                      longitude: discovery.location?.lng,
+                      category: discovery.placeType || 'unknown',
+                      fromFirestore: true,
+                      discoveryId: discovery.id
+                    }));
+                    
+                    allSuggestions = updatedFirestoreSuggestions;
+                  }
+                } catch (saveError) {
+                  Logger.error('DISCOVERIES_SCREEN', 'Error saving new discoveries to Firestore (no existing discoveries)', saveError);
+                  // Continue with the suggestions even if saving fails
+                  allSuggestions = newSuggestions;
+                }
+              } else {
+                allSuggestions = newSuggestions;
+              }
           } catch (apiError) {
             Logger.error('DISCOVERIES_SCREEN', 'Error in getSuggestionsForRoute (no existing discoveries)', apiError);
             newSuggestions = [];
+            allSuggestions = [];
           }
-          
-          allSuggestions = newSuggestions;
         }
         
         Logger.debug('DISCOVERIES_SCREEN', 'Total suggestions:', allSuggestions.length, '(Firestore:', allSuggestions.filter(s => s.fromFirestore).length, 'API:', allSuggestions.filter(s => !s.fromFirestore).length, ')');
+        
+        // Log the suggestions being set
+        Logger.filter('DISCOVERIES_SCREEN', 'SETTING_SUGGESTIONS', 'all', {
+          totalSuggestions: allSuggestions.length,
+          firestoreCount: allSuggestions.filter(s => s.fromFirestore).length,
+          apiCount: allSuggestions.filter(s => !s.fromFirestore).length,
+          suggestions: allSuggestions.map(s => ({
+            name: s.name,
+            category: s.category,
+            types: s.types,
+            fromFirestore: s.fromFirestore
+          }))
+        });
+        
         setSuggestions(allSuggestions);
         
         // Show toast notification for new discoveries
@@ -888,10 +1052,176 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
 
 
+  // Define place type categories and their relationships
+  const PLACE_CATEGORIES = {
+    // Food & Drink - Primary category
+    food_drink: {
+      primary: ['restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway'],
+      types: {
+        restaurant: ['restaurant', 'japanese_restaurant', 'italian_restaurant', 'pizza_restaurant', 'seafood_restaurant', 'steak_house', 'mexican_restaurant', 'chinese_restaurant', 'indian_restaurant', 'thai_restaurant', 'korean_restaurant', 'vietnamese_restaurant', 'french_restaurant', 'greek_restaurant', 'mediterranean_restaurant', 'american_restaurant'],
+        cafe: ['cafe', 'coffee_shop', 'tea_house', 'bubble_tea_shop'],
+        bar: ['bar', 'pub', 'night_club', 'wine_bar', 'cocktail_bar', 'beer_garden'],
+        bakery: ['bakery', 'donut_shop', 'patisserie', 'bread_shop'],
+        meal_takeaway: ['meal_takeaway', 'fast_food_restaurant']
+      }
+    },
+    // Shopping - Primary category
+    shopping: {
+      primary: ['shopping_mall', 'store', 'convenience_store'],
+      types: {
+        shopping_mall: ['shopping_mall', 'department_store'],
+        store: ['store', 'clothing_store', 'jewelry_store', 'book_store', 'electronics_store', 'home_goods_store'],
+        convenience_store: ['convenience_store']
+      }
+    },
+    // Entertainment & Culture - Primary category
+    entertainment_culture: {
+      primary: ['museum', 'art_gallery', 'night_club', 'tourist_attraction', 'zoo', 'stadium', 'concert_hall', 'movie_theater'],
+      types: {
+        museum: ['museum'],
+        art_gallery: ['art_gallery'],
+        night_club: ['night_club'],
+        tourist_attraction: ['tourist_attraction', 'historical_landmark', 'historical_place', 'monument', 'memorial'],
+        zoo: ['zoo'],
+        stadium: ['stadium'],
+        concert_hall: ['concert_hall', 'theater', 'auditorium'],
+        movie_theater: ['movie_theater']
+      }
+    },
+    // Health & Wellness - Primary category
+    health_wellness: {
+      primary: ['gym', 'pharmacy'],
+      types: {
+        gym: ['gym', 'fitness_center', 'yoga_studio', 'spa', 'beauty_salon'],
+        pharmacy: ['pharmacy']
+      }
+    },
+    // Services & Utilities - Primary category
+    services_utilities: {
+      primary: ['bank', 'atm', 'gas_station'],
+      types: {
+        bank: ['bank'],
+        atm: ['atm'],
+        gas_station: ['gas_station']
+      }
+    },
+    // Outdoors & Recreation - Primary category
+    outdoors_recreation: {
+      primary: ['park', 'lodging'],
+      types: {
+        park: ['park', 'plaza', 'playground', 'natural_feature', 'beach', 'mountain'],
+        lodging: ['lodging', 'hotel', 'motel', 'hostel', 'resort', 'bed_and_breakfast', 'campground']
+      }
+    }
+  };
+
+  // Define mixed-use place categories that should be excluded from cross-category filtering
+  const MIXED_USE_CATEGORIES = {
+    // Multi-purpose buildings
+    multi_purpose: ['shopping_mall', 'condominium_complex', 'convenience_store', 'hotel', 'airport'],
+    // Cultural venues that often have food/drink
+    cultural_with_food: ['museum', 'art_gallery', 'tourist_attraction', 'historical_landmark', 'historical_place'],
+    // Entertainment venues that often have food/drink
+    entertainment_with_food: ['stadium', 'concert_hall', 'movie_theater', 'theater', 'auditorium'],
+    // Places that are primarily one category but commonly offer services from another
+    hybrid_places: ['cafe', 'bar', 'night_club', 'restaurant']
+  };
+
+  // Helper function to get allowed types for a filter
+  const getAllowedTypesForFilter = (filterType) => {
+    // Find which category this filter belongs to
+    for (const [categoryKey, category] of Object.entries(PLACE_CATEGORIES)) {
+      if (category.types[filterType]) {
+        return category.types[filterType];
+      }
+    }
+    // Fallback to single type if not found in categories
+    return [filterType];
+  };
+
+  // Helper function to check if a place is a mixed-use place
+  const isMixedUsePlace = (placeCategory, placeTypes) => {
+    // Check if it's in any mixed-use category
+    for (const category of Object.values(MIXED_USE_CATEGORIES)) {
+      if (category.includes(placeCategory)) {
+        return true;
+      }
+    }
+    
+    // Check for cross-category contamination
+    const placeCategoryGroup = getCategoryGroup(placeCategory);
+    const hasCrossCategoryTypes = placeTypes.some(type => {
+      const typeGroup = getCategoryGroup(type);
+      return typeGroup && typeGroup !== placeCategoryGroup;
+    });
+    
+    return hasCrossCategoryTypes;
+  };
+
+  // Helper function to get the category group for a place type
+  const getCategoryGroup = (placeType) => {
+    for (const [categoryKey, category] of Object.entries(PLACE_CATEGORIES)) {
+      for (const [subCategory, types] of Object.entries(category.types)) {
+        if (types.includes(placeType)) {
+          return categoryKey;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Filter suggestions based on selected type
+  const filteredSuggestions = filterType && filterType !== 'all' 
+    ? suggestions.filter(place => {
+        // Handle both new API and legacy API place type structures
+        const placeTypes = place.types || [];
+        const placeCategory = place.category || place.placeType || 'unknown';
+        
+        // Get the specific types for this filter
+        const allowedTypes = getAllowedTypesForFilter(filterType);
+        
+        // Check if the place's primary category matches any of the allowed types
+        const primaryMatch = allowedTypes.includes(placeCategory);
+        
+        // Check if any of the place's types match the allowed types
+        const typeMatch = placeTypes.some(type => allowedTypes.includes(type));
+        
+        // Check if this is a mixed-use place that should be excluded from cross-category filtering
+        const isMixedUse = isMixedUsePlace(placeCategory, placeTypes);
+        
+        // A place matches if:
+        // 1. Its primary category matches the filter, OR
+        // 2. It has matching types AND is not a mixed-use place
+        const matches = primaryMatch || (typeMatch && !isMixedUse);
+        
+        // Comprehensive debug logging for all filter types
+        Logger.filter('DISCOVERIES_SCREEN', 'FILTERING_PLACE', filterType, {
+          placeName: place.name,
+          placeTypes,
+          placeCategory,
+          allowedTypes,
+          primaryMatch,
+          typeMatch,
+          isMixedUse,
+          categoryGroup: getCategoryGroup(placeCategory),
+          matches
+        });
+        
+        return matches;
+      })
+    : suggestions;
+
+  // Log filter results
+  Logger.filter('DISCOVERIES_SCREEN', 'FILTER_RESULTS', filterType || 'all', {
+    totalSuggestions: suggestions.length,
+    filteredCount: filteredSuggestions.length,
+    filterType: filterType || 'all'
+  });
+
   return (
     <View style={styles.container}>
       <FlatList
-        data={suggestions}
+        data={filteredSuggestions}
         keyExtractor={item => item.placeId}
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -900,7 +1230,12 @@ export default function DiscoveriesScreen({ navigation, route }) {
             {/* Enhanced Header with Discovery Management */}
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
-                <Text style={styles.headerTitle}>Total Discoveries ({suggestions.length})</Text>
+                <Text style={styles.headerTitle}>
+                  {filterType && filterType !== 'all' 
+                    ? `${PLACE_TYPES.find(t => t.key === filterType)?.label || 'Filtered'} Discoveries (${filteredSuggestions.length}/${suggestions.length})`
+                    : `Total Discoveries (${suggestions.length})`
+                  }
+                </Text>
                 <View style={styles.headerStats}>
                   <Text style={styles.headerStatText}>Saved: {savedPlaces?.length || 0}</Text>
                   <Text style={styles.headerStatText}>Dismissed: {dismissedPlaces.length}</Text>
@@ -994,6 +1329,10 @@ export default function DiscoveriesScreen({ navigation, route }) {
                         <TouchableOpacity
                           style={styles.modalItem}
                           onPress={() => {
+                            Logger.filter('DISCOVERIES_SCREEN', 'FILTER_CHANGED', 'all', {
+                              previousFilter: filterType,
+                              newFilter: 'all'
+                            });
                             setFilterType(null);
                             setTypeDropdownVisible(false);
                           }}
@@ -1007,6 +1346,11 @@ export default function DiscoveriesScreen({ navigation, route }) {
                              key={key}
                              style={styles.modalItem}
                              onPress={() => {
+                               Logger.filter('DISCOVERIES_SCREEN', 'FILTER_CHANGED', key, {
+                                 previousFilter: filterType,
+                                 newFilter: key,
+                                 filterLabel: label
+                               });
                                setFilterType(key);
                                setTypeDropdownVisible(false);
                              }}

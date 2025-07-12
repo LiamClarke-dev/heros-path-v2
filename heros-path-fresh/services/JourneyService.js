@@ -14,6 +14,8 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Logger from '../utils/Logger';
 
 class JourneyService {
   // Get user's journeys collection reference
@@ -300,6 +302,118 @@ class JourneyService {
       return { success: true, deletedCount: journeyIds.length };
     } catch (error) {
       console.error('Error deleting all journeys:', error);
+      throw error;
+    }
+  }
+
+  // 🚨 COMPREHENSIVE ACCOUNT CLEANUP - PURGE ALL USER DATA
+  async purgeAllUserData(userId) {
+    const startTime = Date.now();
+    Logger.warn('JOURNEY_SERVICE', '🚨 STARTING COMPREHENSIVE ACCOUNT CLEANUP', { userId });
+    
+    try {
+      // 1. DELETE ALL JOURNEYS AND ASSOCIATED DATA
+      Logger.info('JOURNEY_SERVICE', 'Step 1: Deleting all journeys and associated data', { userId });
+      const journeysResult = await this.deleteAllJourneys(userId);
+      
+      // 2. DELETE ALL DISCOVERIES (including saved places)
+      Logger.info('JOURNEY_SERVICE', 'Step 2: Deleting all discoveries', { userId });
+      const discoveriesRef = collection(db, 'journeys', userId, 'discoveries');
+      const discoveriesQuery = query(discoveriesRef);
+      const discoveriesSnap = await getDocs(discoveriesQuery);
+      
+      if (!discoveriesSnap.empty) {
+        const deleteBatch = writeBatch(db);
+        discoveriesSnap.forEach(doc => {
+          deleteBatch.delete(doc.ref);
+        });
+        await deleteBatch.commit();
+        Logger.info('JOURNEY_SERVICE', `Deleted ${discoveriesSnap.size} discoveries`, { userId });
+      }
+      
+      // 3. DELETE ALL DISMISSED PLACES
+      Logger.info('JOURNEY_SERVICE', 'Step 3: Deleting all dismissed places', { userId });
+      const dismissedRef = collection(db, 'journeys', userId, 'dismissed');
+      const dismissedQuery = query(dismissedRef);
+      const dismissedSnap = await getDocs(dismissedQuery);
+      
+      if (!dismissedSnap.empty) {
+        const deleteBatch = writeBatch(db);
+        dismissedSnap.forEach(doc => {
+          deleteBatch.delete(doc.ref);
+        });
+        await deleteBatch.commit();
+        Logger.info('JOURNEY_SERVICE', `Deleted ${dismissedSnap.size} dismissed places`, { userId });
+      }
+      
+      // 4. CLEAR ALL ASYNCSTORAGE DATA
+      Logger.info('JOURNEY_SERVICE', 'Step 4: Clearing all AsyncStorage data', { userId });
+      const asyncStorageKeys = [
+        '@user_language',
+        '@discovery_preferences',
+        '@discovery_min_rating',
+        '@saved_routes',
+        '@show_saved_places',
+        '@explored_segments',
+        '@dismissal_preference',
+        '@discovery_onboarding_shown',
+        'savedRoutes',
+        'savedPlaces',
+        'dismissedPlaces',
+        'lastRoute',
+        'dismissedPlaces',
+        'savedPlaces'
+      ];
+      
+      // Clear all AsyncStorage keys
+      await Promise.all(
+        asyncStorageKeys.map(key => AsyncStorage.removeItem(key))
+      );
+      Logger.info('JOURNEY_SERVICE', `Cleared ${asyncStorageKeys.length} AsyncStorage keys`, { userId });
+      
+      // 5. CLEAR USER PROFILE DATA (if exists)
+      Logger.info('JOURNEY_SERVICE', 'Step 5: Clearing user profile data', { userId });
+      try {
+        const userProfileRef = doc(db, 'users', userId);
+        const userProfileSnap = await getDoc(userProfileRef);
+        
+        if (userProfileSnap.exists()) {
+          // Clear profile data but keep the document for auth purposes
+          await updateDoc(userProfileRef, {
+            displayName: null,
+            bio: null,
+            location: null,
+            preferences: null,
+            lastCleaned: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          Logger.info('JOURNEY_SERVICE', 'Cleared user profile data', { userId });
+        }
+      } catch (profileError) {
+        Logger.warn('JOURNEY_SERVICE', 'Failed to clear user profile data', { userId, error: profileError.message });
+      }
+      
+      const duration = Date.now() - startTime;
+      Logger.warn('JOURNEY_SERVICE', '✅ COMPREHENSIVE ACCOUNT CLEANUP COMPLETE', { 
+        userId, 
+        duration,
+        deletedJourneys: journeysResult.deletedCount,
+        deletedDiscoveries: discoveriesSnap.size,
+        deletedDismissed: dismissedSnap.size,
+        clearedStorageKeys: asyncStorageKeys.length
+      });
+      
+      return {
+        success: true,
+        deletedJourneys: journeysResult.deletedCount,
+        deletedDiscoveries: discoveriesSnap.size,
+        deletedDismissed: dismissedSnap.size,
+        clearedStorageKeys: asyncStorageKeys.length,
+        duration
+      };
+      
+    } catch (error) {
+      Logger.error('JOURNEY_SERVICE', '❌ COMPREHENSIVE ACCOUNT CLEANUP FAILED', { userId, error: error.message });
       throw error;
     }
   }
