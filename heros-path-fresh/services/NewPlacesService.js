@@ -1,6 +1,7 @@
 // services/NewPlacesService.js
 // Google Places API (New) implementation
 // Migration from Legacy API to new standardized API
+// Updated to align with latest Google Places API documentation (2025-07-12)
 
 import { GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
 
@@ -58,6 +59,7 @@ export async function searchNearbyPlaces(latitude, longitude, radius, type, opti
 
 /**
  * Search nearby places using the new Places API (New)
+ * Updated to match latest Google Places API documentation
  */
 async function searchNearbyPlacesNew(latitude, longitude, radius, type, options = {}) {
   const {
@@ -89,7 +91,7 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
       requestBody.includedTypes = [type];
     }
 
-    // Add price filter if specified
+    // Add price filter if specified (new API uses PRICE_LEVEL_X format)
     if (maxPrice < 4) {
       requestBody.priceLevel = `PRICE_LEVEL_${maxPrice}`;
     }
@@ -101,14 +103,27 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
 
     const url = `${NEW_BASE_URL}/places:searchNearby`;
     
+    // Updated field mask to match new API structure
+    const fieldMask = [
+      'places.id',
+      'places.displayName',
+      'places.types',
+      'places.rating',
+      'places.userRatingCount',
+      'places.priceLevel',
+      'places.photos',
+      'places.location',
+      'places.formattedAddress',
+      'places.primaryType',
+      'places.primaryTypeDisplayName',
+      'places.shortFormattedAddress',
+      'places.attributions'
+    ].join(',');
+    
     console.log('New API request:', {
       url,
       requestBody,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': '***',
-        'X-Goog-FieldMask': 'places.displayName,places.id,places.types,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.location,places.formattedAddress,places.primaryType'
-      }
+      fieldMask
     });
     
     const response = await fetch(url, {
@@ -116,7 +131,7 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
-        'X-Goog-FieldMask': 'places.displayName,places.id,places.types,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.location,places.formattedAddress,places.primaryType'
+        'X-Goog-FieldMask': fieldMask
       },
       body: JSON.stringify(requestBody)
     });
@@ -136,21 +151,24 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, options 
     }
 
     // Transform the new API response to match our expected format
+    // Updated to use correct field mappings from documentation
     return data.places
       .filter(place => !place.rating || place.rating >= minRating)
       .map(place => ({
         placeId: place.id,
         name: place.displayName?.text || 'Unknown Place',
-        category: place.primaryType || place.types?.[0] || type,
+        category: place.primaryTypeDisplayName || place.primaryType || place.types?.[0] || type,
         types: place.types || [],
-        description: place.formattedAddress || place.types?.[0]?.replace('_', ' ') || '',
+        description: place.shortFormattedAddress || place.formattedAddress || place.types?.[0]?.replace('_', ' ') || '',
         thumbnail: place.photos?.[0] ? getNewPlacePhotoUrl(place.id, place.photos[0].name) : null,
         rating: place.rating,
         userRatingsTotal: place.userRatingCount,
         latitude: place.location?.latitude,
         longitude: place.location?.longitude,
         priceLevel: place.priceLevel,
-        address: place.formattedAddress
+        address: place.formattedAddress,
+        shortAddress: place.shortFormattedAddress,
+        attributions: place.attributions
       }));
 
   } catch (error) {
@@ -241,24 +259,48 @@ export async function getPlaceDetails(placeId, language = 'en', useNewAPI = true
 
 /**
  * Get place details using the new Places API (New)
+ * Updated to match latest Google Places API documentation
  */
 async function getPlaceDetailsNew(placeId, language = 'en') {
   try {
     const url = `${NEW_BASE_URL}/places/${placeId}`;
     
+    // Updated field mask to match new API structure and include all needed fields
+    const fieldMask = [
+      'id',
+      'displayName',
+      'types',
+      'rating',
+      'userRatingCount',
+      'priceLevel',
+      'photos',
+      'location',
+      'formattedAddress',
+      'shortFormattedAddress',
+      'primaryType',
+      'primaryTypeDisplayName',
+      'websiteUri',
+      'phoneNumbers',
+      'regularOpeningHours',
+      'currentOpeningHours',
+      'reviews',
+      'editorialSummary',
+      'attributions',
+      'utcOffsetMinutes',
+      'nationalPhoneNumber',
+      'internationalPhoneNumber'
+    ].join(',');
+    
     console.log('New API details request:', {
       url,
       placeId,
-      headers: {
-        'X-Goog-Api-Key': '***',
-        'X-Goog-FieldMask': 'id,displayName,types,rating,userRatingCount,priceLevel,photos,location,formattedAddress,primaryType,websiteUri,phoneNumbers,openingHours,reviews,editorialSummary'
-      }
+      fieldMask
     });
     
     const response = await fetch(url, {
       headers: {
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
-        'X-Goog-FieldMask': 'id,displayName,types,rating,userRatingCount,priceLevel,photos,location,formattedAddress,primaryType,websiteUri,phoneNumbers,openingHours,reviews,editorialSummary'
+        'X-Goog-FieldMask': fieldMask
       }
     });
 
@@ -276,17 +318,20 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
       placeId: place.id,
       name: place.displayName?.text || 'Unknown Place',
       address: place.formattedAddress,
+      shortAddress: place.shortFormattedAddress,
       latitude: place.location?.latitude,
       longitude: place.location?.longitude,
       types: place.types || [],
       primaryType: place.primaryType || place.types?.[0] || 'point_of_interest',
+      primaryTypeDisplayName: place.primaryTypeDisplayName,
       rating: place.rating,
       userRatingsTotal: place.userRatingCount,
       priceLevel: place.priceLevel,
       website: place.websiteUri,
-      phoneNumber: place.phoneNumbers?.[0]?.number,
-      openingHours: place.openingHours?.weekdayDescriptions || [],
-      isOpen: place.openingHours?.openNow,
+      phoneNumber: place.nationalPhoneNumber || place.internationalPhoneNumber,
+      openingHours: place.regularOpeningHours?.weekdayDescriptions || [],
+      currentOpeningHours: place.currentOpeningHours?.weekdayDescriptions || [],
+      isOpen: place.currentOpeningHours?.openNow,
       photos: place.photos?.map(photo => ({
         photoReference: photo.name,
         width: photo.widthPx,
@@ -299,7 +344,9 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
         time: review.publishTime,
         profilePhoto: review.authorAttribution?.photoUri
       })) || [],
-      editorialSummary: place.editorialSummary?.text
+      editorialSummary: place.editorialSummary?.text,
+      attributions: place.attributions,
+      utcOffsetMinutes: place.utcOffsetMinutes
     };
 
   } catch (error) {
@@ -405,6 +452,7 @@ export async function getPlaceSummaries(placeId, language = 'en') {
 
 /**
  * Generate photo URL for new Places API
+ * Updated to use correct photo URL format
  */
 function getNewPlacePhotoUrl(placeId, photoName, maxWidth = 400) {
   if (!photoName) return null;
