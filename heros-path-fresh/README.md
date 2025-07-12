@@ -79,11 +79,7 @@ git branch -d feature/user-profiles
 
 ```
 heros-path-fresh/
-<<<<<<< HEAD
 ├── App.js                   # Root navigation (drawer + auth stack)
-=======
-├── App.js                   # Root drawer navigator + gesture-handler setup
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 ├── index.js                 # Entry point
 ├── app.json                 # Expo config with environment variable mapping
 ├── eas.json                 # EAS build configuration
@@ -92,10 +88,6 @@ heros-path-fresh/
 ├── config.js                # Environment variables configuration
 ├── firebase.js              # Firebase initialization
 ├── GoogleService-Info.plist # iOS Firebase configuration
-<<<<<<< HEAD
-=======
-├── setup-env-vars.bat       # Environment variable setup script
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 ├── .gitignore
 ├── screens/
 │   ├── MapScreen.js
@@ -104,12 +96,8 @@ heros-path-fresh/
 │   ├── SavedPlacesScreen.js
 │   ├── SocialScreen.js
 │   ├── SettingsScreen.js
-<<<<<<< HEAD
 │   ├── SignInScreen.js
 │   └── EmailAuthScreen.js   # Email/password sign in/up
-=======
-│   └── SignInScreen.js
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 ├── contexts/
 │   ├── UserContext.js       # User authentication and profile management
 │   └── ExplorationContext.js # Exploration state management
@@ -145,24 +133,17 @@ heros-path-fresh/
 * **EAS:** Profiles in `eas.json` for development (internal/dev-client), preview, production
 
 ### Environment Variables
-* **Storage:** Environment variables stored in EAS and injected at build time
-* **Configuration:** `app.json` contains environment variable mapping
+* **Storage:** Environment variables stored in EAS and injected at build time 'config.js' Environment variables are injected by EAS build system. For local development, these will be undefined and you'll need to use .env file
+* **Configuration:** `config.js` contains environment variable mapping
 * **Local Development:** `.env` file for local development (not committed to Git)
-<<<<<<< HEAD
 * **EAS Dashboard:** Set environment variables for each profile at https://expo.dev/accounts/[your-account]/projects/[your-project]/environment-variables
-=======
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 
 ### Build Commands
 ```bash
 # Development build
-<<<<<<< HEAD
 eas build --platform ios --profile development --branch feature/email-auth
 # or for Android
 eas build --platform android --profile development --branch feature/email-auth
-=======
-eas build --platform ios --profile development
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 
 # Start development server
 npx expo start --dev-client
@@ -171,7 +152,6 @@ npx expo start --dev-client
 npx expo start -c
 ```
 
-<<<<<<< HEAD
 ## Authentication
 
 ### Google OAuth
@@ -229,8 +209,6 @@ service cloud.firestore {
 - If a secret is accidentally committed, use [BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) to scrub it from history.
 - `.env` is in `.gitignore` and should never be tracked by git.
 
-=======
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 ## Current Status
 
 ### ✅ Completed Features
@@ -248,25 +226,15 @@ service cloud.firestore {
 * Painted-streets overlay
 * Firebase authentication setup
 * Google OAuth integration (configuration complete)
-<<<<<<< HEAD
 * Email/password authentication (sign up & sign in)
 * User profile creation and editing
+* Testing email/password and Google OAuth flows
+* Firestore collection scaffolding and security rules
 
 ### 🔄 In Progress
-* Firestore collection scaffolding and security rules
-* Testing email/password and Google OAuth flows
 * User profile management (avatar upload, privacy settings)
 
 ### 📋 Backlog
-=======
-
-### 🔄 In Progress
-* Environment variable injection in development builds
-* Google OAuth flow testing
-
-### 📋 Backlog
-* User profile management
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 * Social feed, friends, privacy controls
 * Settings toggles (categories, ratings, goals)
 * Unexplored-first route suggestions
@@ -275,10 +243,6 @@ service cloud.firestore {
 ## Next Features Roadmap
 
 ### 1. User Profile Management
-<<<<<<< HEAD
-=======
-* User profile creation and editing
->>>>>>> 33bbfabfe6ce848bffb49b99f789b4cbe1047b45
 * Avatar upload and management
 * Profile privacy settings
 

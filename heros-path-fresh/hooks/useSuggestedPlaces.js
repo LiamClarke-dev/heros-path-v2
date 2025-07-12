@@ -49,6 +49,9 @@ export default function useSuggestedPlaces(selectedType, language = 'en') {
         const opts = {};
         if (selectedType && selectedType !== 'all') {
           opts.type = selectedType;
+          opts.usePreferences = false; // Don't use preferences when specific type is selected
+        } else {
+          opts.usePreferences = true; // Use preferences when no specific type is selected
         }
         opts.language = language;
 
@@ -58,10 +61,12 @@ export default function useSuggestedPlaces(selectedType, language = 'en') {
         if (isMounted.current && !didCancel) {
           setPlaces(newPlaces);
           const count = newPlaces.length;
-          const message = `${count} new suggestion${count === 1 ? '' : 's'} — view in Discoveries`;
-          Toast.show(message, {
-            duration: Toast.durations.LONG,
-          });
+          if (count > 0) {
+            const message = `${count} new suggestion${count === 1 ? '' : 's'} — view in Discoveries`;
+            Toast.show(message, {
+              duration: Toast.durations.LONG,
+            });
+          }
         }
       } catch (error) {
         console.warn('useSuggestedPlaces error:', error);
