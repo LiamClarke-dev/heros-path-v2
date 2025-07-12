@@ -418,7 +418,7 @@ export async function getPlaceSummaries(placeId, language = 'en') {
     const response = await fetch(url, {
       headers: {
         'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
-        'X-Goog-FieldMask': 'summaries,editorialSummary'
+        'X-Goog-FieldMask': 'generativeSummary,editorialSummary'
       }
     });
 
@@ -433,9 +433,9 @@ export async function getPlaceSummaries(placeId, language = 'en') {
     const data = await response.json();
     console.log('AI summaries response:', data);
     
-    // Return both summaries and editorial summary if available
+    // Return both generative summary and editorial summary if available
     return {
-      summaries: data.summaries || null,
+      generativeSummary: data.generativeSummary || null,
       editorialSummary: data.editorialSummary || null
     };
 
