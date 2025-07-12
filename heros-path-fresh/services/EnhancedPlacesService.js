@@ -27,81 +27,9 @@ export async function getEnhancedPlaceDetails(placeId, language = 'en') {
   }
 }
 
-/**
- * Get basic place details using the new Places API
- */
-async function getPlaceDetails(placeId, language = 'en') {
-  const url = `${BASE_URL}/details/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY_ANDROID}&language=${language}&fields=place_id,name,formatted_address,geometry,types,rating,user_ratings_total,photos,opening_hours,price_level,website,formatted_phone_number,reviews`;
-  
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.status !== 'OK') {
-      throw new Error(`Place details failed: ${data.status}`);
-    }
-    
-    const place = data.result;
-    
-    return {
-      placeId: place.place_id,
-      name: place.name,
-      address: place.formatted_address,
-      latitude: place.geometry?.location?.lat,
-      longitude: place.geometry?.location?.lng,
-      types: place.types || [],
-      primaryType: place.types?.[0] || 'point_of_interest',
-      rating: place.rating,
-      userRatingsTotal: place.user_ratings_total,
-      priceLevel: place.price_level,
-      website: place.website,
-      phoneNumber: place.formatted_phone_number,
-      openingHours: place.opening_hours?.weekday_text || [],
-      isOpen: place.opening_hours?.open_now,
-      photos: place.photos?.map(photo => ({
-        photoReference: photo.photo_reference,
-        width: photo.width,
-        height: photo.height,
-        htmlAttributions: photo.html_attributions
-      })) || [],
-      reviews: place.reviews?.slice(0, 3).map(review => ({
-        authorName: review.author_name,
-        rating: review.rating,
-        text: review.text,
-        time: review.time,
-        profilePhoto: review.profile_photo_url
-      })) || []
-    };
-  } catch (error) {
-    console.warn('Failed to get place details:', error);
-    throw error;
-  }
-}
 
-/**
- * Get AI-powered place summaries
- * Note: This requires the new Places API (New) which may not be available in all regions
- */
-async function getPlaceSummaries(placeId, language = 'en') {
-  try {
-    // This would use the new Places API (New) endpoint
-    // For now, we'll return null as this feature may not be available yet
-    const url = `https://places.googleapis.com/v1/places/${placeId}?fields=summaries&languageCode=${language}`;
-    const response = await fetch(url, {
-      headers: {
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
-        'X-Goog-FieldMask': 'summaries'
-      }
-    });
-    const data = await response.json();
-    console.log(data);
-    return data;
-    // return null;
-  } catch (error) {
-    console.warn('AI summaries not available:', error);
-    return null;
-  }
-}
+
+
 
 /**
  * Get nearby places with enhanced filtering and sorting
