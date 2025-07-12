@@ -152,7 +152,18 @@ class JourneyService {
       };
     } catch (error) {
       console.error('Error getting journey stats:', error);
-      throw error;
+      // Return empty stats instead of throwing for better UX
+      return {
+        success: false,
+        stats: {
+          totalJourneys: 0,
+          totalDistance: 0,
+          totalDuration: 0,
+          averageDistance: 0,
+          averageDuration: 0,
+        },
+        error: error.message
+      };
     }
   }
 }

@@ -91,14 +91,23 @@ class DataMigrationService {
       for (const place of savedPlaces) {
         try {
           // Transform place data to match Firestore discovery structure
+          const lat = place.geometry?.location?.lat || place.lat;
+          const lng = place.geometry?.location?.lng || place.lng;
+          
+          // Skip places without valid coordinates
+          if (lat === undefined || lng === undefined || lat === null || lng === null) {
+            console.warn(`Skipping place ${place.name} - missing coordinates`);
+            continue;
+          }
+          
           const discoveryData = {
             journeyId: null, // These are standalone saved places
             placeId: place.place_id || place.placeId,
             placeName: place.name,
             placeType: place.types?.[0] || 'unknown',
             location: {
-              lat: place.geometry?.location?.lat || place.lat,
-              lng: place.geometry?.location?.lng || place.lng,
+              lat: lat,
+              lng: lng,
             },
             discoveredAt: new Date(),
             dismissed: false,
@@ -255,8 +264,8 @@ class DataMigrationService {
           success: true,
           hasMigrated: true,
           stats: {
-            journeys: journeyStats.stats,
-            discoveries: discoveryStats.stats
+            journeys: journeyStats.success ? journeyStats.stats : { totalJourneys: 0, totalDistance: 0, totalDuration: 0, averageDistance: 0, averageDuration: 0 },
+            discoveries: discoveryStats.success ? discoveryStats.stats : { totalDiscoveries: 0, savedCount: 0, dismissedCount: 0, placeTypes: {}, saveRate: 0, dismissRate: 0 }
           },
           message: 'Migration completed'
         };

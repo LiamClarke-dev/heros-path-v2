@@ -351,6 +351,10 @@ journeys/{userId}/dismissed/{placeId}    # User's dismissed places
 
 ### Firestore Security Rules (Updated)
 
+**⚠️ IMPORTANT: You must update your Firestore security rules in the Firebase Console for the app to work!**
+
+Go to Firebase Console → Firestore Database → Rules and replace the existing rules with:
+
 ```javascript
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -376,6 +380,14 @@ service cloud.firestore {
   }
 }
 ```
+
+**Steps to update:**
+1. Go to [Firebase Console](https://console.firebase.google.com)
+2. Select your project
+3. Click "Firestore Database" in the sidebar
+4. Click the "Rules" tab
+5. Replace the existing rules with the code above
+6. Click "Publish"
 
 ### Benefits of This Structure
 
