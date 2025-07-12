@@ -25,7 +25,7 @@ export async function getEnhancedPlaceDetails(placeId, language = 'en') {
   } catch (error) {
     console.warn('Failed to get enhanced place details:', error);
     // Fallback to basic details only
-    return await getPlaceDetails(placeId, language, false);
+    return await getPlaceDetails(placeId, { language, useNewAPI: false });
   }
 }
 

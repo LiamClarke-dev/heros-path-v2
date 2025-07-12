@@ -395,7 +395,7 @@ export default function MapScreen({ navigation, route }) {
           onPress={toggleSavedPlaces}
         >
           <MaterialIcons 
-            name={showSavedPlaces ? "place" : "place-outline"} 
+            name="place" 
             size={24} 
             color={showSavedPlaces ? Colors.background : Colors.primary} 
           />

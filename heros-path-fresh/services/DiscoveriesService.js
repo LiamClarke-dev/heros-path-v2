@@ -4,6 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getEnhancedPlaceDetails } from './EnhancedPlacesService';
 import { searchNearbyPlaces, getPlaceDetails, getPlaceSummaries, testAPIConnectivity } from './NewPlacesService';
+import { 
+  collection,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import Logger from '../utils/Logger';
 
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -152,8 +160,12 @@ function coordsToBoundingCircle(coords) {
  * @param {string} language - Language code
  * @returns {Promise<Array>} Array of suggested places
  */
-export async function getSuggestionsForRoute(routeCoords, preferences, language = 'en') {
+export async function getSuggestionsForRoute(routeCoords, preferences, language = 'en', userId = null) {
+  const startTime = Date.now();
+  Logger.debug('DISCOVERIES_SERVICE', `Getting suggestions for route with ${routeCoords?.length || 0} coordinates`, { userId, enabledTypesCount: Object.keys(preferences).filter(type => preferences[type]).length });
+  
   if (!routeCoords || routeCoords.length === 0) {
+    Logger.debug('DISCOVERIES_SERVICE', 'No route coordinates provided, returning empty array');
     return [];
   }
 
@@ -162,6 +174,7 @@ export async function getSuggestionsForRoute(routeCoords, preferences, language 
     const enabledTypes = Object.keys(preferences).filter(type => preferences[type]);
     
     if (enabledTypes.length === 0) {
+      Logger.debug('DISCOVERIES_SERVICE', 'No enabled place types, returning empty array');
       return [];
     }
 
@@ -172,17 +185,55 @@ export async function getSuggestionsForRoute(routeCoords, preferences, language 
     // Fetch places for each enabled type
     const allPlaces = [];
     for (const type of enabledTypes) {
+      Logger.debug('DISCOVERIES_SERVICE', `Fetching places for type: ${type}`);
       const places = await fetchPlacesByType(type, center, radius);
+      Logger.debug('DISCOVERIES_SERVICE', `Got ${places.length} places for type: ${type}`);
       allPlaces.push(...places);
     }
 
+    Logger.debug('DISCOVERIES_SERVICE', `Total places before deduplication: ${allPlaces.length}`);
+
     // Deduplicate and filter results
     const deduplicated = deduplicatePlaces(allPlaces);
-    const filtered = filterPlacesByPreferences(deduplicated, preferences);
+    Logger.debug('DISCOVERIES_SERVICE', `Places after deduplication: ${deduplicated.length}`);
     
-    return filtered;
+    const filtered = filterPlacesByPreferences(deduplicated, preferences);
+    Logger.debug('DISCOVERIES_SERVICE', `Places after filtering: ${filtered.length}`);
+    
+    // Filter out places that have already been reviewed (saved or dismissed)
+    let finalPlaces = filtered;
+    if (userId) {
+      try {
+        Logger.debug('DISCOVERIES_SERVICE', `Filtering out already reviewed places for user: ${userId}`);
+        // Get user's reviewed places
+        const [savedResult, dismissedResult] = await Promise.all([
+          getSavedPlaces(userId),
+          getDismissedPlaces(userId)
+        ]);
+        
+        const savedPlaceIds = new Set(savedResult.discoveries?.map(p => p.placeId) || []);
+        const dismissedPlaceIds = new Set(dismissedResult.dismissedPlaces?.map(p => p.placeId) || []);
+        
+        finalPlaces = filtered.filter(place => 
+          !savedPlaceIds.has(place.placeId) && !dismissedPlaceIds.has(place.placeId)
+        );
+        
+        Logger.debug('DISCOVERIES_SERVICE', `Places after filtering reviewed: ${finalPlaces.length}`);
+      } catch (error) {
+        Logger.warn('DISCOVERIES_SERVICE', 'Failed to filter reviewed places, using all places', { error: error.message });
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    Logger.performance('DISCOVERIES_SERVICE', 'getSuggestionsForRoute', duration, { 
+      routeCoordsCount: routeCoords.length, 
+      enabledTypesCount: enabledTypes.length, 
+      finalPlacesCount: finalPlaces.length 
+    });
+
+    return finalPlaces;
   } catch (error) {
-    console.error('Failed to get route suggestions:', error);
+    Logger.error('DISCOVERIES_SERVICE', 'Error getting suggestions for route', error);
     return [];
   }
 }
@@ -217,22 +268,26 @@ function filterPlacesByPreferences(places, preferences = {}) {
 }
 
 /**
- * Fetch places by type using the new Places API service
+ * Fetch places for a specific type
  * @param {string} type - Place type
- * @param {Object} location - Location object with lat/lng
- * @param {number} radius - Search radius
+ * @param {Object} location - Location object with latitude and longitude
+ * @param {number} radius - Search radius in meters
  * @returns {Promise<Array>} Array of places
  */
 async function fetchPlacesByType(type, location, radius = 500) {
+  Logger.debug('DISCOVERIES_SERVICE', `Fetching places for type: ${type}`, { location, radius });
+  
   try {
+    Logger.debug('DISCOVERIES_SERVICE', `Making API call for type: ${type}`);
     const places = await searchNearbyPlaces(location.latitude, location.longitude, radius, type, {
       maxResults: 1,
       useNewAPI: true
     });
     
+    Logger.debug('DISCOVERIES_SERVICE', `API returned ${places.length} places for type: ${type}`);
     return places;
   } catch (error) {
-    console.error(`Failed to fetch ${type} places:`, error);
+    Logger.error('DISCOVERIES_SERVICE', `Error fetching places for type: ${type}`, error);
     return [];
   }
 }
@@ -247,6 +302,48 @@ function shuffleArray(array) {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+/**
+ * Get saved places for a user
+ */
+async function getSavedPlaces(userId) {
+  try {
+    const discoveriesRef = collection(db, 'journeys', userId, 'discoveries');
+    const q = query(discoveriesRef, where('saved', '==', true));
+    const querySnapshot = await getDocs(q);
+    
+    const savedPlaces = [];
+    querySnapshot.forEach((doc) => {
+      savedPlaces.push(doc.data());
+    });
+    
+    return { success: true, discoveries: savedPlaces };
+  } catch (error) {
+    console.error('Error getting saved places:', error);
+    return { success: false, discoveries: [] };
+  }
+}
+
+/**
+ * Get dismissed places for a user
+ */
+async function getDismissedPlaces(userId) {
+  try {
+    const dismissedRef = collection(db, 'journeys', userId, 'dismissed');
+    const q = query(dismissedRef);
+    const querySnapshot = await getDocs(q);
+    
+    const dismissedPlaces = [];
+    querySnapshot.forEach((doc) => {
+      dismissedPlaces.push(doc.data());
+    });
+    
+    return { success: true, dismissedPlaces };
+  } catch (error) {
+    console.error('Error getting dismissed places:', error);
+    return { success: false, dismissedPlaces: [] };
+  }
 }
 
 /**
@@ -436,7 +533,7 @@ export async function snapToRoads(rawCoords) {
 
   for (let idx = 0; idx < batches.length; idx++) {
     const batch = batches[idx];
-    console.log(`[snapToRoads] batch ${idx + 1}/${batches.length}, length=${batch.length}`);
+    Logger.log(`[snapToRoads] batch ${idx + 1}/${batches.length}, length=${batch.length}`);
 
     const pathParam = batch.map(p => `${p.latitude},${p.longitude}`).join('|');
     const url =
@@ -506,7 +603,7 @@ export { getSuggestionsForRoute as getPassingPlaces };
  * This helps determine which API is working and provides migration guidance
  */
 export async function testPlacesAPIMigration() {
-  console.log('🔍 Testing Google Places API migration status...');
+  Logger.log('🔍 Testing Google Places API migration status...');
   
   try {
     const connectivity = await testAPIConnectivity();
@@ -532,7 +629,7 @@ export async function testPlacesAPIMigration() {
       status.recommendation = 'Both APIs are failing. Check API key configuration and network connectivity.';
     }
     
-    console.log('📊 Migration Status:', status);
+    Logger.log('📊 Migration Status:', status);
     return status;
     
   } catch (error) {

@@ -64,6 +64,33 @@ This is a small piece of code but **CRITICAL** to the app's core value of discov
 - ✅ **All place types** compatible with new API
 - ✅ **Production-ready** with comprehensive error handling
 
+## 🚀 **Latest Updates (12 July 2025)**
+
+### ✅ **Performance Optimization Complete**
+- **Smart Caching**: Only make API calls for new journeys or when user explicitly refreshes
+- **Existing Journey Detection**: Skip API calls when journey already has discoveries in Firestore
+- **Manual Refresh**: Pull-to-refresh functionality for syncing UI state with database
+- **Optimized Undo Operations**: Undo dismiss/save operations no longer trigger API calls
+- **API Call Reduction**: ~95% reduction in API calls for journey reviews
+
+### ✅ **Real-Time Journey Status Tracking**
+- **Automatic Status Updates**: Journey completion status updates immediately when discoveries change
+- **Completion Percentage**: Tracks percentage of reviewed discoveries per journey
+- **UI Status Indicators**: PastJourneysScreen shows "Review" vs "✅ All Reviewed" status
+- **Consistent Data**: Discovery records stay in sync with dismissed/saved collections
+
+### ✅ **Comprehensive Debug Logging System**
+- **Centralized Logger**: `utils/Logger.js` provides consistent logging across the app
+- **Multiple Log Levels**: Debug, Error, Warning, Info, Performance, API, Journey, Discovery, Cache
+- **Easy Production Cleanup**: Set `DEBUG_MODE = false` to disable all debug logs
+- **Performance Tracking**: Built-in performance monitoring for key operations
+
+### ✅ **Improved Data Management**
+- **Comprehensive Journey Deletion**: Deletes journey and all associated data (discoveries, dismissed places)
+- **Soft Delete Option**: Available for future implementation if needed
+- **Development Utilities**: "Delete All Journeys" button for clean slate during development
+- **No Orphaned Data**: Ensures complete cleanup when deleting journeys
+
 ## Tech Stack
 
 * **Expo SDK:** ~53.0.17
@@ -183,6 +210,9 @@ heros-path-fresh/
 ├── GoogleService-Info.plist # iOS Firebase configuration
 ├── .gitignore
 ├── GOOGLE_PLACES_API_MIGRATION_COMPLETE.md  # Complete migration documentation
+├── DEBUG_LOGGING_GUIDE.md   # Debug logging system documentation
+├── DEVELOPMENT_STATUS.md    # Current development status and priorities
+├── CHANGELOG.md             # Recent changes and updates
 ├── screens/
 │   ├── MapScreen.js
 │   ├── PastJourneysScreen.js
@@ -198,361 +228,66 @@ heros-path-fresh/
 │   └── ExplorationContext.js # Exploration state management
 ├── services/
 │   ├── DiscoveriesService.js
+│   ├── DiscoveryService.js  # Discovery CRUD operations
+│   ├── JourneyService.js    # Journey management
+│   ├── NewPlacesService.js  # Google Places API (New + Legacy)
+│   ├── EnhancedPlacesService.js
 │   ├── UserProfileService.js
-│   ├── NewPlacesService.js  # Primary Google Places API service
-│   └── EnhancedPlacesService.js
+│   └── DataMigrationService.js
+├── utils/
+│   └── Logger.js            # Centralized logging system
+├── constants/
+│   └── PlaceTypes.js        # Place type definitions
 ├── hooks/
 │   └── useSuggestedPlaces.js
-├── constants/
-│   └── PlaceTypes.js
 ├── styles/
-│   └── theme.js
-├── assets/
-│   ├── icon.png
-│   ├── adaptive-icon.png
-│   ├── favicon.png
-│   ├── splash-icon.png
-│   └── link_sprites/
-│       ├── link_idle.gif
-│       ├── link_walk_down.gif
-│       ├── link_walk_up.gif
-│       ├── link_walk_right.gif
-│       └── link_walk_left.gif
-└── .expo/                   # Expo development files
+│   └── theme.js             # App-wide styling
+└── assets/
+    ├── icon.png
+    ├── splash-icon.png
+    ├── adaptive-icon.png
+    └── link_sprites/        # Animated Link character sprites
 ```
-
-## Environment & Build Setup
-
-### Development Workflow
-* **Workflow:** Managed Expo with prebuild disabled (CNG)
-* **Metro:** Runs in LAN mode over hotspot; uses `--tunnel` when needed
-* **Client:** Development builds with `expo-dev-client` for native debugging
-* **EAS:** Profiles in `eas.json` for development (internal/dev-client), preview, production
-
-### Environment Variables
-* **Storage:** Environment variables stored in EAS and injected at build time
-* **Configuration:** `config.js` contains environment variable mapping
-* **Local Development:** `.env` file for local development (not committed to Git)
-* **EAS Dashboard:** Set environment variables for each profile at https://expo.dev/accounts/[your-account]/projects/[your-project]/environment-variables
-
-### Build Commands
-```bash
-# For JavaScript-only features (test in Expo Go first)
-npx expo start
-# Test in Expo Go app
-
-# For native features (build required)
-eas build --platform ios --profile development
-# or for Android
-eas build --platform android --profile development
-# or for both platforms
-eas build --platform all --profile development
-
-# Start development server with dev client
-npx expo start --dev-client
-
-# Clear cache and restart
-npx expo start -c
-```
-
-### Testing Strategy
-* **Expo Go:** Use for JavaScript logic, UI components, and basic functionality
-* **Development Build:** Use for native features, App.js changes, and final validation
-* **TestFlight:** Use for wider beta testing and App Store validation
-
-## Authentication
-
-### Google OAuth
-- Google sign-in is available via the main sign-in screen.
-- Make sure Google Cloud Console OAuth credentials and redirect URIs are set up as described in the project wiki.
-
-### Email/Password Authentication
-- Users can sign up or sign in with email/password via the "Sign in with Email" button on the sign-in screen.
-- The `EmailAuthScreen.js` handles both sign up and sign in.
-- All authentication is managed via Firebase Auth.
-
-## Firestore Database Setup
-
-### Enabling Firestore
-1. Go to the Firebase Console and select your project.
-2. Click "Firestore Database" in the sidebar.
-3. Click "Create database" and choose test mode (for development) or production mode (for production).
-4. Choose a region and click "Enable".
-
-### Database Structure (User-Centric Collections)
-
-We use a **user-centric collection structure** for optimal performance and security:
-
-```
-users/{userId}                           # User profiles (existing)
-journeys/{userId}/journeys/{journeyId}   # User's journey routes
-journeys/{userId}/discoveries/{discoveryId}  # User's place discoveries
-journeys/{userId}/dismissed/{placeId}    # User's dismissed places
-```
-
-### Example Document Structure
-
-#### User Profile (`users/{userId}`)
-```javascript
-{
-  displayName: "Liam",
-  email: "liam@example.com",
-  friends: ["user2", "user3"],
-  createdAt: timestamp,
-  updatedAt: timestamp
-}
-```
-
-#### Journey (`journeys/{userId}/journeys/{journeyId}`)
-```javascript
-{
-  name: "Downtown Adventure",
-  startLocation: { lat: 40.7128, lng: -74.0060 },
-  endLocation: { lat: 40.7589, lng: -73.9851 },
-  route: [{ lat: 40.7128, lng: -74.0060 }, ...],
-  distance: 2.5, // kilometers
-  duration: 1800, // seconds
-  createdAt: timestamp,
-  updatedAt: timestamp
-}
-```
-
-#### Discovery (`journeys/{userId}/discoveries/{discoveryId}`)
-```javascript
-{
-  journeyId: "journey123",
-  placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4", // Google Places ID
-  placeName: "Central Park",
-  placeType: "park",
-  location: { lat: 40.7829, lng: -73.9654 },
-  discoveredAt: timestamp,
-  dismissed: false,
-  saved: true,
-  // Inline place data for offline access
-  placeData: {
-    name: "Central Park",
-    types: ["park", "tourist_attraction"],
-    rating: 4.7,
-    photos: [...],
-    // etc.
-  }
-}
-```
-
-#### Dismissed Place (`journeys/{userId}/dismissed/{placeId}`)
-```javascript
-{
-  placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4",
-  dismissedAt: timestamp,
-  dismissedForever: false, // or true for permanent dismissal
-  reason: "not_interested" // optional
-}
-```
-
-### Firestore Security Rules (Updated)
-
-**⚠️ IMPORTANT: You must update your Firestore security rules in the Firebase Console for the app to work!**
-
-Go to Firebase Console → Firestore Database → Rules and replace the existing rules with:
-
-```javascript
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // User profiles
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // User's journeys subcollection
-    match /journeys/{userId}/journeys/{journeyId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // User's discoveries subcollection
-    match /journeys/{userId}/discoveries/{discoveryId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // User's dismissed places subcollection
-    match /journeys/{userId}/dismissed/{placeId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
-
-**Steps to update:**
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project
-3. Click "Firestore Database" in the sidebar
-4. Click the "Rules" tab
-5. Replace the existing rules with the code above
-6. Click "Publish"
-
-### Benefits of This Structure
-
-1. **Scalable**: Each user's data is isolated in their own subcollections
-2. **Fast queries**: No complex joins or filtering needed
-3. **Secure**: Users can only access their own data
-4. **Cost-effective**: Only read/write user's own data
-5. **Offline-friendly**: Place data stored inline with discoveries
-6. **Future-proof**: Easy to add user-specific features
-
-## Secrets & Security
-- **Never commit secrets or API keys to GitHub.**
-- If a secret is accidentally committed, use [BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) to scrub it from history.
-- `.env` is in `.gitignore` and should never be tracked by git.
 
 ## Current Status
 
-### ✅ Completed Features
-* Live map tracking & glowing polyline
-* Animated Link sprite on map
-* Save/Load routes in AsyncStorage
-* Past Journeys screen (list, preview, delete)
-* Basic Discoveries UI with caching & toasts
-* Drawer navigation for all core screens
-* Environment variable configuration
-* Category tabs + filtered Discoveries
-* Custom lists & swipe-to-save/dismiss (SavedPlacesScreen)
-* Side-by-side dropdowns for journey + discovery-type
-* "View on Maps" deep-link for every suggestion
-* Painted-streets overlay
-* Firebase authentication setup
-* Google OAuth integration (configuration complete)
-* Email/password authentication (sign up & sign in)
-* User profile creation and editing
-* Testing email/password and Google OAuth flows
-* Firestore collection scaffolding and security rules
-* **Discovery preferences system** (user-selectable place types with grouped categories)
-* **Enhanced map features** (saved places pins with callouts)
-* **Toast notifications** (properly configured with RootSiblingParent)
-* **Optimized development workflow** (cost-effective testing strategy)
-* **Improved deduplication** (using place_id as primary method)
-* **Rating filtering** (minimum rating preferences)
-* **AI summaries integration** (working with proper disclosure)
-* **Discovery preferences screen** (dedicated modal with organized categories)
-* **✅ Google Places API Migration** (fully complete with automatic fallback)
-* **✅ Migration Testing Interface** (real-time API connectivity testing)
-* **✅ New Places API Service** (unified interface with field masking)
-* **✅ Production-ready logging** (clean, essential error handling)
+### **Working Features**
+- ✅ User authentication (Google Sign-In)
+- ✅ Journey tracking with GPS
+- ✅ Place discovery using Google Places API (New API with Legacy fallback)
+- ✅ Save/dismiss places with real-time status updates
+- ✅ Journey completion tracking
+- ✅ Performance-optimized discovery loading
+- ✅ Comprehensive debug logging
+- ✅ Data cleanup and management
 
-### 🔄 In Progress
-* User profile management (avatar upload, privacy settings)
+### **Known Issues**
+- ⚠️ Route discovery algorithm still uses center point instead of path-based search (noted above)
+- ⚠️ Some edge cases in journey status updates may need monitoring
 
-### 📋 Backlog
-* Social feed, friends, privacy controls
-* Settings toggles (categories, ratings, goals)
-* Unexplored-first route suggestions
-* Coverage percentage visualization
+### **Development Notes**
+- **Debug Mode**: Currently enabled for development. Set `DEBUG_MODE = false` in `utils/Logger.js` for production
+- **API Costs**: Optimized to minimize Google Places API calls
+- **Data Structure**: Firestore collections: `journeys/{userId}/journeys`, `discoveries`, `dismissed`
 
-## Next Features Roadmap
+## Production Checklist
 
-### Phase 1: Gamification Foundation (2-3 weeks)
-**Street Coverage Tracking System**
-* GPS coordinate to street mapping
-* Binary street state: walked/unwalked
-* Visual: Blue polylines for walked streets (extends existing saved routes)
-* Coverage percentage calculation
-* Local storage for coverage data
+### **Before Deploying**
+1. Set `DEBUG_MODE = false` in `utils/Logger.js`
+2. Remove "🗑️ DELETE ALL JOURNEYS (DEV)" button from PastJourneysScreen
+3. Test journey completion status with real data
+4. Verify API call optimization is working
+5. Check that undo operations work correctly
 
-**Achievement System**
-* "First Street": Walk your first new street
-* "Explorer": Walk 10 different streets
-* "Neighborhood Master": Complete 80% of neighborhood
-* "Consistent Walker": Walk 7 days in a row
-* Achievement notifications and progress tracking
+### **Monitoring**
+- Watch for journey status inconsistencies
+- Monitor Google Places API usage
+- Check for orphaned data in Firestore
+- Verify real-time updates are working
 
-### Phase 2: Smart Routing System (3-4 weeks)
-**Destination Selection**
-* Google Places search bar with autocomplete
-* Saved places/discoveries picker
-* Destination pin on map
+---
 
-**Route Types**
-* **Fastest Route**: Direct path via Google Maps Directions API
-* **Exploration Route**: Avoids previously walked streets, respects max detour time
-* **Discovery Route**: Avoids walked streets + considers discovery preferences
-
-**Exploration Settings**
-* Max detour time (5, 10, 15, 20 minutes)
-* Exploration vs. discovery preference weighting
-* Route optimization algorithms
-
-### Phase 3: Visual Enhancements (2-3 weeks)
-**Map Overlays**
-* Neighborhood boundaries and completion indicators
-* Achievement markers and special street highlights
-* Progress visualization
-
-**UI Polish**
-* Enhanced theme system with platform-specific styling
-* Achievement badges and progress indicators
-* Improved map controls and interactions
-
-### Phase 4: Advanced Features (Future)
-**Social Features**
-* Friends list and activity sharing
-* Neighborhood leaderboards
-* Route sharing and recommendations
-
-**Analytics & Insights**
-* Walking patterns and statistics
-* Discovery analytics
-* Personal walking insights
-
-**Premium Features**
-* Advanced exploration algorithms
-* Detailed neighborhood analytics
-* Custom achievement creation
-* Route sharing with friends
-
-## Technical Architecture & Decisions
-
-### Platform Strategy
-* **Primary Platform:** iOS (React Native with platform-specific styling)
-* **Secondary Platform:** Android (cross-platform compatibility)
-* **Future Consideration:** Native SwiftUI app for iOS (separate project)
-* **Current Approach:** React Native with enhanced iOS styling
-
-### Data Architecture
-* **Local Storage:** AsyncStorage for user preferences and cached data
-* **Cloud Storage:** Firebase Firestore for user profiles and social features
-* **API Integration:** Google Places API for discoveries and routing (see `GOOGLE_PLACES_API_MIGRATION_COMPLETE.md`)
-* **Real-time Updates:** Firebase real-time listeners for social features
-
-### Key Technical Decisions
-* **Deduplication Strategy:** Place_id primary, location/name fallback
-* **Discovery Preferences:** Grouped categories with rating filtering
-* **Map Visualization:** Blue polylines for walked streets (simple binary state)
-* **Routing Algorithm:** Exploration-first with discovery preferences integration
-* **Achievement System:** Street-based milestones with progress tracking
-
-### Performance Considerations
-* **Lazy Loading:** AI summaries loaded on-demand
-* **Caching Strategy:** Discovery results cached with preference-based filtering
-* **Map Optimization:** Polylines rendered efficiently with proper key management
-* **Memory Management:** Proper cleanup of location subscribers and map references
-
-## Development Notes
-
-### Personal Preferences
-* **Language:** JavaScript only—no TypeScript
-* **Testing:** iOS first (device), then Android
-* **Debugging:** Clear Metro cache, check network connectivity
-
-### Common Issues & Solutions
-* **Black screen:** Usually indicates JavaScript error or missing environment variables
-* **OAuth redirect errors:** Check Google Cloud Console redirect URIs
-* **Environment variables not loading:** Rebuild development client after config changes
-* **Metro connection issues:** Ensure phone and computer are on same WiFi network
-
-## Why These Features Matter
-
-* Keeps users engaged by making each walk feel fresh
-* Empowers personalization—users see only what they care about
-* Turns routine walks into discovery adventures
-* Provides clear goals and progress, driving daily usage
-
-With these features in place, Hero's Path will move from simply tracking walks to becoming an indispensable exploration companion.
+**Last Updated**: 12 July 2025  
+**Current Branch**: `feature/discovery-preferences-and-map-enhancements`  
+**Next Developer**: Check `DEVELOPMENT_STATUS.md` for current priorities
 

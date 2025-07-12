@@ -8,12 +8,16 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../contexts/UserContext';
 import JourneyService from '../services/JourneyService';
+import DiscoveryService from '../services/DiscoveryService';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function PastJourneysScreen({ navigation }) {
   const [journeys, setJourneys] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [journeyStatuses, setJourneyStatuses] = useState({});
   const { user, migrationStatus } = useUser();
 
   useEffect(() => {
@@ -24,6 +28,7 @@ export default function PastJourneysScreen({ navigation }) {
   async function loadJourneys() {
     if (!user) {
       setJourneys([]);
+      setJourneyStatuses({});
       return;
     }
 
@@ -33,24 +38,42 @@ export default function PastJourneysScreen({ navigation }) {
       
       if (result.success) {
         // Transform Firestore data to match existing UI expectations
-        const transformedJourneys = result.journeys.map(journey => ({
-          id: journey.id,
-          coords: journey.route || [],
-          date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
-          name: journey.name,
-          distance: journey.distance,
-          duration: journey.duration,
-          startLocation: journey.startLocation,
-          endLocation: journey.endLocation,
-        }));
+        const transformedJourneys = result.journeys.map(journey => {
+          const date = journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date();
+          return {
+            id: journey.id,
+            coords: journey.route || [],
+            date: date.toISOString(), // Convert to string for serialization
+            dateObj: date, // Keep as object for display purposes
+            name: journey.name,
+            distance: journey.distance,
+            duration: journey.duration,
+            startLocation: journey.startLocation,
+            endLocation: journey.endLocation,
+            // Use the new completion status fields from Firestore
+            isCompleted: journey.isCompleted || false,
+            reviewedDiscoveriesCount: journey.reviewedDiscoveriesCount || 0,
+            totalDiscoveriesCount: journey.totalDiscoveriesCount || 0,
+            completionPercentage: journey.completionPercentage || 0,
+          };
+        });
         
         setJourneys(transformedJourneys);
+        
+        // Create journey statuses from the Firestore data
+        const statuses = {};
+        transformedJourneys.forEach(journey => {
+          statuses[journey.id] = journey.isCompleted || false;
+        });
+        setJourneyStatuses(statuses);
       } else {
         setJourneys([]);
+        setJourneyStatuses({});
       }
     } catch (error) {
       console.error('Error loading journeys:', error);
       setJourneys([]);
+      setJourneyStatuses({});
     } finally {
       setLoading(false);
     }
@@ -80,8 +103,33 @@ export default function PastJourneysScreen({ navigation }) {
     );
   };
 
+  const deleteAllJourneys = async () => {
+    Alert.alert(
+      'Delete ALL Journeys?',
+      'This will permanently delete ALL your journeys and all associated data (discoveries, dismissed places, etc.). This action cannot be undone.\n\nAre you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'DELETE ALL',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await JourneyService.deleteAllJourneys(user.uid);
+              Alert.alert('Success', `Deleted ${result.deletedCount} journeys and all associated data.`);
+              // Reload journeys to reflect the change
+              await loadJourneys();
+            } catch (error) {
+              console.error('Error deleting all journeys:', error);
+              Alert.alert('Error', 'Failed to delete all journeys');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderItem = ({ item, index }) => {
-    const d = new Date(item.date);
+    const d = item.dateObj || new Date(item.date);
     const dateStr = d.toLocaleDateString(undefined, {
       year: 'numeric', month: 'short', day: 'numeric'
     });
@@ -92,16 +140,16 @@ export default function PastJourneysScreen({ navigation }) {
     // Use journey name if available, otherwise generate label
     const label = item.name || `Journey #${index+1} – ${dateStr} at ${timeStr}`;
 
-    // Check if journey has discoveries (completion status)
-    // TODO: Integrate with DiscoveryService to check if journey has discoveries
-    const isCompleted = false; // Will be replaced with real logic when we check discoveries
+    // Get completion status from pre-computed state
+    const isCompleted = journeyStatuses[item.id] || false;
+    const isLoadingStatus = !(item.id in journeyStatuses);
 
     return (
       <View style={styles.item}>
         <TouchableOpacity
           style={styles.info}
           onPress={() =>
-            navigation.navigate('Map', { routeToDisplay: item })
+            navigation.navigate('Map', { routeToDisplay: { ...item, dateObj: undefined } })
           }
         >
           <View style={styles.infoRow}>
@@ -113,18 +161,18 @@ export default function PastJourneysScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.reviewButton, isCompleted && styles.reviewButtonCompleted]}
           onPress={() =>
-            navigation.navigate('Discoveries', { selectedRoute: item })
+            navigation.navigate('Discoveries', { selectedRoute: { ...item, dateObj: undefined } })
           }
         >
           <Text style={[styles.reviewText, isCompleted && styles.reviewTextCompleted]}>
-            {isCompleted ? '🔍 Reviewed' : '🔍 Review'}
+            {isLoadingStatus ? '...' : (isCompleted ? '✅ All Reviewed' : '🔍 Review')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => deleteJourney(item.id)}
         >
-          <Text style={styles.deleteText}>🗑️</Text>
+          <MaterialIcons name="more-vert" size={20} color="#666" />
         </TouchableOpacity>
       </View>
     );
@@ -135,6 +183,14 @@ export default function PastJourneysScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Temporary development button - REMOVE BEFORE PRODUCTION */}
+      <TouchableOpacity
+        style={styles.deleteAllButton}
+        onPress={deleteAllJourneys}
+      >
+        <Text style={styles.deleteAllButtonText}>🗑️ DELETE ALL JOURNEYS (DEV)</Text>
+      </TouchableOpacity>
+      
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -259,5 +315,18 @@ const styles = StyleSheet.create({
   deleteText: {
     fontSize: 16,
     color: '#d32f2f',
+  },
+  deleteAllButton: {
+    backgroundColor: '#ff9800',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  deleteAllButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

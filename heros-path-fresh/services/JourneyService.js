@@ -10,7 +10,8 @@ import {
   orderBy,
   getDocs,
   serverTimestamp,
-  writeBatch 
+  writeBatch,
+  where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -67,7 +68,11 @@ class JourneyService {
       
       const journeys = [];
       querySnapshot.forEach((doc) => {
-        journeys.push(doc.data());
+        const journeyData = doc.data();
+        // Filter out soft-deleted journeys
+        if (!journeyData.isDeleted) {
+          journeys.push(journeyData);
+        }
       });
       
       // Sort in memory instead of using orderBy to avoid index requirements
@@ -100,14 +105,111 @@ class JourneyService {
     }
   }
 
-  // Delete a journey
+  // Delete a journey and all associated data
   async deleteJourney(userId, journeyId) {
     try {
+      console.log(`🗑️ [JOURNEY_SERVICE] Starting comprehensive deletion of journey: ${journeyId}`);
+      
+      // 1. Get all discoveries for this journey first
+      const discoveriesRef = collection(db, 'journeys', userId, 'discoveries');
+      const discoveriesQuery = query(discoveriesRef, where('journeyId', '==', journeyId));
+      const discoveriesSnap = await getDocs(discoveriesQuery);
+      
+      console.log(`🗑️ [JOURNEY_SERVICE] Found ${discoveriesSnap.size} discoveries to process`);
+      
+      // 2. Separate saved discoveries from regular discoveries
+      const savedDiscoveries = [];
+      const regularDiscoveries = [];
+      
+      discoveriesSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.saved === true) {
+          savedDiscoveries.push(doc);
+        } else {
+          regularDiscoveries.push(doc);
+        }
+      });
+      
+      console.log(`🗑️ [JOURNEY_SERVICE] Found ${savedDiscoveries.length} saved places to update`);
+      console.log(`🗑️ [JOURNEY_SERVICE] Found ${regularDiscoveries.length} regular discoveries to delete`);
+      
+      // 3. Get dismissed places that reference this journey
+      const dismissedRef = collection(db, 'journeys', userId, 'dismissed');
+      const dismissedQuery = query(dismissedRef, where('journeyId', '==', journeyId));
+      const dismissedSnap = await getDocs(dismissedQuery);
+      
+      console.log(`🗑️ [JOURNEY_SERVICE] Found ${dismissedSnap.size} dismissed places to delete`);
+      
+      // 4. First batch: Delete journey, regular discoveries, and dismissed places
+      const deleteBatch = writeBatch(db);
+      
+      // Delete the journey record
       const journeyRef = doc(db, 'journeys', userId, 'journeys', journeyId);
-      await deleteDoc(journeyRef);
+      deleteBatch.delete(journeyRef);
+      
+      // Delete regular discoveries
+      regularDiscoveries.forEach(doc => {
+        deleteBatch.delete(doc.ref);
+      });
+      
+      // Delete dismissed places
+      dismissedSnap.forEach(doc => {
+        deleteBatch.delete(doc.ref);
+      });
+      
+      // Execute deletion batch
+      await deleteBatch.commit();
+      
+      // 5. Second batch: Update saved discoveries (separate operation to avoid Firebase error)
+      if (savedDiscoveries.length > 0) {
+        const updateBatch = writeBatch(db);
+        
+        savedDiscoveries.forEach(doc => {
+          updateBatch.update(doc.ref, { 
+            journeyId: null,
+            updatedAt: serverTimestamp()
+          });
+        });
+        
+        await updateBatch.commit();
+      }
+      
+      console.log(`🗑️ [JOURNEY_SERVICE] Successfully deleted journey ${journeyId} and all associated data`);
       return { success: true };
     } catch (error) {
       console.error('Error deleting journey:', error);
+      throw error;
+    }
+  }
+
+  // Soft delete a journey (mark as deleted but keep data)
+  async softDeleteJourney(userId, journeyId) {
+    try {
+      const journeyRef = doc(db, 'journeys', userId, 'journeys', journeyId);
+      await updateDoc(journeyRef, {
+        deletedAt: serverTimestamp(),
+        isDeleted: true,
+        updatedAt: serverTimestamp()
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error soft deleting journey:', error);
+      throw error;
+    }
+  }
+
+  // Restore a soft-deleted journey
+  async restoreJourney(userId, journeyId) {
+    try {
+      const journeyRef = doc(db, 'journeys', userId, 'journeys', journeyId);
+      await updateDoc(journeyRef, {
+        deletedAt: null,
+        isDeleted: false,
+        updatedAt: serverTimestamp()
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error restoring journey:', error);
       throw error;
     }
   }
@@ -171,6 +273,34 @@ class JourneyService {
         },
         error: error.message
       };
+    }
+  }
+
+  // Delete all journeys for a user (for development/clean slate)
+  async deleteAllJourneys(userId) {
+    try {
+      console.log(`🗑️ [JOURNEY_SERVICE] Starting deletion of ALL journeys for user: ${userId}`);
+      
+      // Get all journeys first
+      const journeysResult = await this.getUserJourneys(userId);
+      if (!journeysResult.success || journeysResult.journeys.length === 0) {
+        console.log(`🗑️ [JOURNEY_SERVICE] No journeys found to delete`);
+        return { success: true, deletedCount: 0 };
+      }
+      
+      const journeyIds = journeysResult.journeys.map(j => j.id);
+      console.log(`🗑️ [JOURNEY_SERVICE] Found ${journeyIds.length} journeys to delete:`, journeyIds);
+      
+      // Delete each journey with full cleanup
+      for (const journeyId of journeyIds) {
+        await this.deleteJourney(userId, journeyId);
+      }
+      
+      console.log(`🗑️ [JOURNEY_SERVICE] Successfully deleted all ${journeyIds.length} journeys`);
+      return { success: true, deletedCount: journeyIds.length };
+    } catch (error) {
+      console.error('Error deleting all journeys:', error);
+      throw error;
     }
   }
 }
