@@ -134,6 +134,32 @@ This is a small piece of code but **CRITICAL** to the app's core value of discov
 - **UI State Synchronization**: All screens stay in sync with Firestore data
 - **✅ VERIFIED**: Undo operations restore places to suggestions, journey status updates correctly
 
+## 🆕 **UI & Navigation Refactor (July 2025)**
+
+### **Modern, Slim UI**
+- All screens now use shared UI primitives: `Card`, `ListItem`, `AppButton`, `SectionHeader`, and `Divider` for a consistent, modern look.
+- UI elements are slimmer, with reduced padding, font size, and spacing for a sleeker feel.
+- SettingsScreen theme and map style pickers are less squashed and more visually balanced.
+
+### **Navigation Structure**
+- Navigation is now modular: Drawer for top-level, Stack for flows, Tab for sub-sections (e.g., Discoveries).
+- All navigation logic is in `navigation/AppNavigator.js`.
+
+### **Google Maps API Key Setup (EAS/Expo)**
+- **Do NOT hardcode API keys.**
+- In `app.json`, reference your iOS key securely:
+  ```json
+  "ios": {
+    // ...
+    "config": {
+      "googleMapsApiKey": "${GOOGLE_MAPS_API_KEY_IOS}"
+    }
+  }
+  ```
+- Set `GOOGLE_MAPS_API_KEY_IOS` in your EAS dashboard (for cloud builds) or `.env` (for local builds).
+- This ensures your key is never committed to source control and is injected at build time.
+- See [Expo docs](https://docs.expo.dev/build-reference/variables/) for more info.
+
 ## Tech Stack
 
 * **Expo SDK:** ~53.0.17

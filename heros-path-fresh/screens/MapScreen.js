@@ -25,6 +25,8 @@ import PingAnimation from '../components/PingAnimation';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import Logger from '../utils/Logger';
+import SectionHeader from '../components/ui/SectionHeader';
+import AppButton from '../components/ui/AppButton';
 
 const { width, height } = Dimensions.get('window');
 
@@ -397,6 +399,7 @@ export default function MapScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
+      <SectionHeader title="Map" />
       {backgroundPermissionWarning && (
         <TouchableOpacity 
           style={[styles.permissionWarning, { backgroundColor: colors.warning }]} 

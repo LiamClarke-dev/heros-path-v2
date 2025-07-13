@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import { signUpWithEmail, signInWithEmail } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
+import SectionHeader from '../components/ui/SectionHeader';
+import AppButton from '../components/ui/AppButton';
 
 export default function EmailAuthScreen() {
   const [email, setEmail] = useState('');
@@ -44,7 +46,7 @@ export default function EmailAuthScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Email Sign In / Sign Up</Text>
+      <SectionHeader title="Email Authentication" />
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -61,9 +63,9 @@ export default function EmailAuthScreen() {
         onChangeText={setPassword}
       />
       <View style={styles.buttonRow}>
-        <Button title="Sign Up" onPress={handleSignUp} disabled={loading} />
+        <AppButton title="Sign Up" onPress={handleSignUp} disabled={loading} />
         <View style={{ width: 16 }} />
-        <Button title="Sign In" onPress={handleSignIn} disabled={loading} />
+        <AppButton title="Sign In" onPress={handleSignIn} disabled={loading} />
       </View>
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>

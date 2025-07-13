@@ -14,6 +14,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../styles/theme';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getUserDiscoveryPreferences, resetDiscoveryPreferences } from '../services/DiscoveriesService';
+import SectionHeader from '../components/ui/SectionHeader';
+import AppButton from '../components/ui/AppButton';
 
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
 const MIN_RATING_KEY = '@discovery_min_rating';
@@ -210,21 +212,7 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Discovery Preferences</Text>
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={resetToDefaults}
-        >
-          <MaterialIcons name="refresh" size={24} color={Colors.primary} />
-        </TouchableOpacity>
-      </View>
+      <SectionHeader title="Discovery Preferences" />
 
       {renderRatingSelector()}
 
