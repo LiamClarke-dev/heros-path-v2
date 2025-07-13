@@ -14,7 +14,274 @@ import { db } from '../firebase';
 import Logger from '../utils/Logger';
 
 const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
+const NEW_BASE_URL = 'https://places.googleapis.com/v1';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
+
+/**
+ * Encode GPS coordinates to Google's polyline format
+ * @param {Array} coordinates - Array of {latitude, longitude} objects
+ * @returns {string} Encoded polyline string
+ */
+function encodePolyline(coordinates) {
+  if (!coordinates || coordinates.length === 0) {
+    return '';
+  }
+
+  let polyline = '';
+  let prevLat = 0;
+  let prevLng = 0;
+
+  coordinates.forEach(coord => {
+    const lat = Math.round(coord.latitude * 1e5);
+    const lng = Math.round(coord.longitude * 1e5);
+    
+    const dLat = lat - prevLat;
+    const dLng = lng - prevLng;
+    
+    polyline += encodeNumber(dLat);
+    polyline += encodeNumber(dLng);
+    
+    prevLat = lat;
+    prevLng = lng;
+  });
+
+  return polyline;
+}
+
+/**
+ * Encode a number for polyline format
+ * @param {number} num - Number to encode
+ * @returns {string} Encoded string
+ */
+function encodeNumber(num) {
+  let encoded = '';
+  let value = num < 0 ? ~(num << 1) : (num << 1);
+  
+  while (value >= 0x20) {
+    encoded += String.fromCharCode(((value & 0x1f) | 0x20) + 63);
+    value >>= 5;
+  }
+  
+  encoded += String.fromCharCode(value + 63);
+  return encoded;
+}
+
+/**
+ * Build search query from user preferences
+ * @param {Object} preferences - User discovery preferences
+ * @returns {string} Search query string
+ */
+function buildSearchQuery(preferences) {
+  const enabledTypes = Object.keys(preferences).filter(type => preferences[type]);
+  const typeNames = enabledTypes.map(type => {
+    // Convert place type keys to readable names
+    const typeMap = {
+      restaurant: 'restaurant',
+      cafe: 'cafe',
+      bar: 'bar',
+      park: 'park',
+      museum: 'museum',
+      library: 'library',
+      store: 'store',
+      shopping_mall: 'shopping mall',
+      tourist_attraction: 'tourist attraction',
+      art_gallery: 'art gallery',
+      movie_theater: 'movie theater',
+      gym: 'gym',
+      hospital: 'hospital',
+      bank: 'bank',
+      post_office: 'post office',
+      gas_station: 'gas station',
+      pharmacy: 'pharmacy',
+      school: 'school',
+      university: 'university',
+      church: 'church',
+      mosque: 'mosque',
+      temple: 'temple',
+      synagogue: 'synagogue'
+    };
+    return typeMap[type] || type;
+  });
+  return typeNames.join(' ');
+}
+
+/**
+ * Search Along Route using Google Places API
+ * @param {Array} routeCoords - Array of coordinate objects
+ * @param {Object} preferences - User discovery preferences
+ * @param {string} language - Language code
+ * @returns {Promise<Array>} Array of suggested places
+ */
+async function searchAlongRoute(routeCoords, preferences, language = 'en') {
+  const startTime = Date.now();
+  Logger.debug('DISCOVERIES_SERVICE', `Starting SAR for route with ${routeCoords?.length || 0} coordinates`, { 
+    enabledTypesCount: Object.keys(preferences).filter(type => preferences[type]).length,
+    language
+  });
+
+  if (!routeCoords || routeCoords.length === 0) {
+    Logger.debug('DISCOVERIES_SERVICE', 'No route coordinates provided for SAR');
+    return [];
+  }
+
+  try {
+    // Encode route coordinates to polyline
+    const encodedPolyline = encodePolyline(routeCoords);
+    if (!encodedPolyline) {
+      Logger.warn('DISCOVERIES_SERVICE', 'Failed to encode polyline for SAR');
+      return [];
+    }
+
+    // Build search query from preferences
+    const searchQuery = buildSearchQuery(preferences);
+    if (!searchQuery.trim()) {
+      Logger.debug('DISCOVERIES_SERVICE', 'No enabled place types for SAR');
+      return [];
+    }
+
+    // Get API key (use Android key as fallback)
+    const apiKey = GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+    if (!apiKey) {
+      Logger.error('DISCOVERIES_SERVICE', 'No Google Places API key available for SAR');
+      return [];
+    }
+
+    // Make SAR API call
+    const response = await fetch(`${NEW_BASE_URL}/places:searchText`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.types,places.rating,places.userRatingCount,places.photos,places.location,places.formattedAddress,places.primaryType'
+      },
+      body: JSON.stringify({
+        textQuery: searchQuery,
+        searchAlongRouteParameters: {
+          polyline: { encodedPolyline }
+        },
+        maxResultCount: 50,
+        languageCode: language
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      Logger.error('DISCOVERIES_SERVICE', `SAR API call failed: ${response.status}`, { error: errorText });
+      
+      // Fallback to center-point method
+      Logger.warn('DISCOVERIES_SERVICE', 'Falling back to center-point method');
+      return await getSuggestionsForRouteFallback(routeCoords, preferences, language);
+    }
+
+    const data = await response.json();
+    const places = data.places || [];
+
+    Logger.debug('DISCOVERIES_SERVICE', `SAR returned ${places.length} places`);
+
+    // Transform places to match our expected format
+    const transformedPlaces = places.map(place => ({
+      placeId: place.id,
+      name: place.displayName?.text || 'Unknown Place',
+      types: place.types || [],
+      primaryType: place.primaryType || place.types?.[0] || 'unknown',
+      rating: place.rating || null,
+      userRatingsTotal: place.userRatingCount || 0,
+      location: {
+        lat: place.location?.latitude || 0,
+        lng: place.location?.longitude || 0
+      },
+      formatted_address: place.formattedAddress || '',
+      photos: place.photos || [],
+      source: 'sar'
+    }));
+
+    // Apply additional filtering and deduplication
+    const filteredPlaces = filterPlacesByPreferences(transformedPlaces, preferences);
+    const deduplicatedPlaces = deduplicatePlaces(filteredPlaces);
+
+    const duration = Date.now() - startTime;
+    Logger.performance('DISCOVERIES_SERVICE', 'searchAlongRoute', duration, { 
+      routeCoordsCount: routeCoords.length,
+      placesFound: places.length,
+      placesAfterFiltering: filteredPlaces.length,
+      placesAfterDeduplication: deduplicatedPlaces.length
+    });
+
+    return deduplicatedPlaces;
+
+  } catch (error) {
+    Logger.error('DISCOVERIES_SERVICE', 'SAR failed, falling back to center-point method', error);
+    
+    // Fallback to center-point method
+    return await getSuggestionsForRouteFallback(routeCoords, preferences, language);
+  }
+}
+
+/**
+ * Fallback to center-point method if SAR fails
+ * @param {Array} routeCoords - Array of coordinate objects
+ * @param {Object} preferences - User discovery preferences
+ * @param {string} language - Language code
+ * @returns {Promise<Array>} Array of suggested places
+ */
+async function getSuggestionsForRouteFallback(routeCoords, preferences, language = 'en') {
+  Logger.debug('DISCOVERIES_SERVICE', 'Using fallback center-point method');
+  
+  if (!routeCoords || routeCoords.length === 0) {
+    return [];
+  }
+
+  try {
+    // Get enabled place types from preferences
+    const enabledTypes = Object.keys(preferences).filter(type => preferences[type]);
+    
+    if (enabledTypes.length === 0) {
+      return [];
+    }
+
+    // Calculate route center (original method)
+    const center = calculateRouteCenter(routeCoords);
+    const radius = 500; // 500m radius
+    
+    Logger.debug('DISCOVERIES_SERVICE', 'Fallback center-point calculation', {
+      center,
+      routeCoordsCount: routeCoords.length,
+      enabledTypes
+    });
+    
+    // Validate center coordinates
+    if (!center.latitude || !center.longitude || 
+        center.latitude === 0 || center.longitude === 0 ||
+        Math.abs(center.latitude) > 90 || Math.abs(center.longitude) > 180) {
+      Logger.error('DISCOVERIES_SERVICE', 'Invalid center coordinates in fallback', { center });
+      return [];
+    }
+
+    // Fetch places for each enabled type
+    const allPlaces = [];
+    for (const type of enabledTypes) {
+      Logger.debug('DISCOVERIES_SERVICE', `Fetching places for type: ${type}`, { center, radius });
+      const places = await fetchPlacesByType(type, center, radius);
+      Logger.debug('DISCOVERIES_SERVICE', `Got ${places.length} places for type: ${type}`, {
+        samplePlace: places[0] ? {
+          name: places[0].name,
+          placeId: places[0].placeId,
+          location: places[0].location
+        } : null
+      });
+      allPlaces.push(...places);
+    }
+
+    // Apply filtering and deduplication
+    const filteredPlaces = filterPlacesByPreferences(allPlaces, preferences);
+    const deduplicatedPlaces = deduplicatePlaces(filteredPlaces);
+
+    return deduplicatedPlaces;
+  } catch (error) {
+    Logger.error('DISCOVERIES_SERVICE', 'Fallback center-point method also failed', error);
+    return [];
+  }
+}
 
 /**
  * Sync user preferences with available place types
@@ -174,6 +441,26 @@ export async function getSuggestionsForRoute(routeCoords, preferences, language 
     return [];
   }
 
+  // Check if route has enough distance for meaningful discoveries
+  if (routeCoords.length < 3) {
+    Logger.debug('DISCOVERIES_SERVICE', 'Route has less than 3 points, checking distance');
+    
+    if (routeCoords.length === 2) {
+      const distance = calculateDistance(
+        routeCoords[0].latitude, routeCoords[0].longitude,
+        routeCoords[1].latitude, routeCoords[1].longitude
+      );
+      
+      if (distance < 50) { // Less than 50 meters
+        Logger.debug('DISCOVERIES_SERVICE', 'Route distance too small for discoveries', { distance });
+        return [];
+      }
+    } else {
+      Logger.debug('DISCOVERIES_SERVICE', 'Single point route, no discoveries possible');
+      return [];
+    }
+  }
+
   try {
     // Get enabled place types from preferences
     const enabledTypes = Object.keys(preferences).filter(type => preferences[type]);
@@ -183,23 +470,13 @@ export async function getSuggestionsForRoute(routeCoords, preferences, language 
       return [];
     }
 
-    // Calculate route center
-    const center = calculateRouteCenter(routeCoords);
-    const radius = 500; // 500m radius
+    // Use SAR if available, otherwise fallback to center-point
+    const suggestions = await searchAlongRoute(routeCoords, preferences, language);
 
-    // Fetch places for each enabled type
-    const allPlaces = [];
-    for (const type of enabledTypes) {
-      Logger.debug('DISCOVERIES_SERVICE', `Fetching places for type: ${type}`);
-      const places = await fetchPlacesByType(type, center, radius);
-      Logger.debug('DISCOVERIES_SERVICE', `Got ${places.length} places for type: ${type}`);
-      allPlaces.push(...places);
-    }
-
-    Logger.debug('DISCOVERIES_SERVICE', `Total places before deduplication: ${allPlaces.length}`);
+    Logger.debug('DISCOVERIES_SERVICE', `Total places before deduplication: ${suggestions.length}`);
 
     // Deduplicate and filter results
-    const deduplicated = deduplicatePlaces(allPlaces);
+    const deduplicated = deduplicatePlaces(suggestions);
     Logger.debug('DISCOVERIES_SERVICE', `Places after deduplication: ${deduplicated.length}`);
     
     const filtered = filterPlacesByPreferences(deduplicated, preferences);
@@ -621,6 +898,7 @@ export async function getPlaceDetailsWithSummaries(placeId, language = 'en') {
 
 // alias
 export { getSuggestionsForRoute as getPassingPlaces };
+export { searchAlongRoute, getSuggestionsForRouteFallback };
 
 /**
  * Test API connectivity and provide migration status

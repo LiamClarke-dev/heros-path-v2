@@ -2,6 +2,104 @@
 
 ## [Unreleased] - 12 July 2025
 
+### 🎯 **NEW: Ping Animation System & Credit System Fixes**
+
+#### **Problem Solved**
+The ping feature lacked visual feedback, and the credit system had corrupted data causing users to see incorrect credit counts (e.g., 63888002190 credits instead of 50).
+
+#### **Solution Implemented**
+- **Ping Animation System**: Added 4 different animation styles that trigger when ping button is pressed
+- **Credit System Corruption Fix**: Automatic detection and recovery of corrupted credit data
+- **Real-time Stats Updates**: PingStats component now updates in real-time
+- **Animation Timing Fix**: Animations trigger immediately on button press, not after API completion
+
+#### **Animation Options**
+1. **🌊 Ripple Effect**: Expanding circles with rotation (default)
+2. **💫 Pulse Wave**: Simple expanding pulse
+3. **🔄 Radar Sweep**: Rotating radar-like sweep
+4. **✨ Particle Burst**: Particles exploding outward
+
+#### **Technical Implementation**
+- **PingAnimation.js**: New component with 4 animation types and configurable timing
+- **AnimationDemo.js**: Demo component for testing different animation styles
+- **Credit System Recovery**: Automatic detection of corrupted timestamp data
+- **Real-time Updates**: 5-second refresh interval for PingStats
+
+#### **User Experience Improvements**
+- **Immediate Visual Feedback**: Animation starts when button is pressed
+- **No Popup Blocking**: Animation plays before success alert appears
+- **Larger, Faster Animations**: More visible effects with reduced duration
+- **Real-time Credit Display**: Shows actual current credits, not stale data
+
+### 🐛 **FIXED: Google Places API Issues**
+
+#### **Problem Solved**
+Google Places API calls were failing with parameter type errors and missing property access issues.
+
+#### **Issues Fixed**
+1. **Parameter Order Issue**: `searchNearbyPlaces` was called with incorrect parameter order
+2. **Type Parameter Error**: Numbers were being passed as place types instead of strings
+3. **Missing Property Access**: Code was trying to access `.url` property on error responses
+4. **Firebase Storage Errors**: Undefined values in place data causing Firestore rejections
+
+#### **Technical Fixes**
+- **Parameter Validation**: Added number validation for coordinates and radius
+- **Data Cleaning**: Remove undefined values before storing in Firestore
+- **Error Handling**: Fixed catch blocks that referenced undefined variables
+- **API Request Structure**: Corrected request body format for Google Places API v1
+
+#### **Results**
+- ✅ **API calls successful**: All place types returning results
+- ✅ **No more API errors**: No more "Invalid value" or "Property 'url' doesn't exist" errors
+- ✅ **Data storage working**: No more Firebase storage errors
+- ✅ **Credit system working**: Proper credit decrementing (50 → 49 → 48, etc.)
+
+### 🐛 **FIXED: Logger Utility Missing Method**
+
+#### **Problem Solved**
+DiscoveriesScreen was calling `Logger.filter()` but the Logger utility didn't have this method, causing TypeError.
+
+#### **Solution**
+- **Added Missing Method**: Added `filter` method to Logger utility
+- **Consistent Logging**: All Logger methods now available across the app
+
+### 🐛 **FIXED: Single-Point Journey Discovery Issues**
+
+#### **Problem Solved**
+Single-point journeys (testing at computer) were generating random global places instead of local discoveries.
+
+#### **Root Cause**
+- **SAR API Failure**: Search Along Route API fails with single-point routes
+- **Fallback Issues**: Center-point fallback was using invalid coordinates
+- **No Distance Validation**: System didn't check if route had meaningful distance
+
+#### **Solution Implemented**
+- **Minimum Distance Check**: Requires 50+ meters for 2-point routes
+- **Single Point Blocking**: Prevents discoveries for single-point journeys
+- **Coordinate Validation**: Validates center coordinates before API calls
+- **Enhanced Debugging**: Detailed logging for troubleshooting
+
+#### **Technical Implementation**
+```javascript
+// Check if route has enough distance for meaningful discoveries
+if (routeCoords.length < 3) {
+  if (routeCoords.length === 2) {
+    const distance = calculateDistance(routeCoords[0], routeCoords[1]);
+    if (distance < 50) return []; // Less than 50 meters
+  } else {
+    return []; // Single point route
+  }
+}
+```
+
+#### **Results**
+- ✅ **No more random places**: Single-point journeys return empty results
+- ✅ **Better debugging**: Detailed logs show distance calculations
+- ✅ **Proper validation**: Invalid coordinates are caught and logged
+- ✅ **Real testing required**: Users must actually walk for discoveries
+
+---
+
 ### 🚀 **NEW: Location Permission Warning System**
 
 #### **Problem Solved**

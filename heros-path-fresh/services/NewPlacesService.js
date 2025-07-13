@@ -43,7 +43,16 @@ export async function searchNearbyPlaces(latitude, longitude, radius, type, opti
  * Updated to match latest Google Places API documentation
  */
 async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResults, apiKey, options = {}) {
-  Logger.debug('NEW_PLACES_SERVICE', 'searchNearbyPlacesNew called', { latitude, longitude, radius, type, maxResults, hasOptions: !!options });
+  // Ensure parameters are numbers
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  const rad = Number(radius);
+  
+  if (isNaN(lat) || isNaN(lng) || isNaN(rad)) {
+    throw new Error(`Invalid coordinates: latitude=${latitude}, longitude=${longitude}, radius=${radius}`);
+  }
+  
+  Logger.debug('NEW_PLACES_SERVICE', 'searchNearbyPlacesNew called', { latitude: lat, longitude: lng, radius: rad, type, maxResults, hasOptions: !!options });
   
   const {
     language = 'en',
@@ -58,10 +67,10 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResul
       locationRestriction: {
         circle: {
           center: {
-            latitude: latitude,
-            longitude: longitude
+            latitude: lat,
+            longitude: lng
           },
-          radius: radius
+          radius: rad
         }
       },
       maxResultCount: maxResults,
@@ -134,7 +143,7 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResul
     return transformedPlaces;
 
   } catch (error) {
-    Logger.apiCall('NEW_PLACES_SERVICE', 'places:searchNearby', 'POST', false, 0, { url, type, maxResults, error: error.message });
+    Logger.apiCall('NEW_PLACES_SERVICE', 'places:searchNearby', 'POST', false, 0, { type, maxResults, error: error.message });
     // Fallback to legacy API
     return await searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey, options);
   }
@@ -144,7 +153,16 @@ async function searchNearbyPlacesNew(latitude, longitude, radius, type, maxResul
  * Search nearby places using the legacy Places API (fallback)
  */
 async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxResults, apiKey, options = {}) {
-  Logger.debug('NEW_PLACES_SERVICE', 'searchNearbyPlacesLegacy called', { latitude, longitude, radius, type, maxResults, hasOptions: !!options });
+  // Ensure parameters are numbers
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  const rad = Number(radius);
+  
+  if (isNaN(lat) || isNaN(lng) || isNaN(rad)) {
+    throw new Error(`Invalid coordinates: latitude=${latitude}, longitude=${longitude}, radius=${radius}`);
+  }
+  
+  Logger.debug('NEW_PLACES_SERVICE', 'searchNearbyPlacesLegacy called', { latitude: lat, longitude: lng, radius: rad, type, maxResults, hasOptions: !!options });
   
   const {
     language = 'en',
@@ -156,8 +174,8 @@ async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxRe
   // Build URL parameters properly to avoid read-only string issues
   const params = new URLSearchParams({
     key: apiKey,
-    location: `${latitude},${longitude}`,
-    radius: radius.toString(),
+    location: `${lat},${lng}`,
+    radius: rad.toString(),
     language: language,
     type: type
   });
@@ -189,7 +207,7 @@ async function searchNearbyPlacesLegacy(latitude, longitude, radius, type, maxRe
       .map(place => transformLegacyPlaceResponse(place));
 
   } catch (error) {
-    Logger.apiCall('NEW_PLACES_SERVICE', 'nearbysearch', 'GET', false, 0, { url, type, maxResults, error: error.message });
+    Logger.apiCall('NEW_PLACES_SERVICE', 'nearbysearch', 'GET', false, 0, { type, maxResults, error: error.message });
     return [];
   }
 }
@@ -289,7 +307,7 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
     };
 
   } catch (error) {
-    Logger.apiCall('NEW_PLACES_SERVICE', 'places:getDetails', 'GET', false, 0, { url, placeId, error: error.message });
+    Logger.apiCall('NEW_PLACES_SERVICE', 'places:getDetails', 'GET', false, 0, { placeId, error: error.message });
     return await getPlaceDetailsLegacy(placeId, language);
   }
 }
@@ -346,7 +364,7 @@ async function getPlaceDetailsLegacy(placeId, language = 'en') {
     };
 
   } catch (error) {
-    Logger.apiCall('NEW_PLACES_SERVICE', 'places:getDetails', 'GET', false, 0, { url, placeId, error: error.message });
+    Logger.apiCall('NEW_PLACES_SERVICE', 'places:getDetails', 'GET', false, 0, { placeId, error: error.message });
     throw error;
   }
 }
@@ -397,7 +415,7 @@ export async function getPlaceSummaries(placeId, language = 'en') {
       topReview: hasReviews ? data.reviews[0] : null
     };
   } catch (error) {
-    Logger.apiCall('NEW_PLACES_SERVICE', 'places:getSummaries', 'GET', false, 0, { detailsUrl, placeId, error: error.message });
+    Logger.apiCall('NEW_PLACES_SERVICE', 'places:getSummaries', 'GET', false, 0, { placeId, error: error.message });
     return null;
   }
 }

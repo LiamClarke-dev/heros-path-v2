@@ -16,6 +16,8 @@ import {
 import { db } from '../firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Logger from '../utils/Logger';
+import DiscoveryConsolidationService from './DiscoveryConsolidationService';
+import { getUserDiscoveryPreferences } from './DiscoveriesService';
 
 class JourneyService {
   // Get user's journeys collection reference
@@ -415,6 +417,63 @@ class JourneyService {
     } catch (error) {
       Logger.error('JOURNEY_SERVICE', '❌ COMPREHENSIVE ACCOUNT CLEANUP FAILED', { userId, error: error.message });
       throw error;
+    }
+  }
+
+  /**
+   * Consolidate discoveries when a journey ends
+   * @param {string} userId - User ID
+   * @param {string} journeyId - Journey ID
+   * @param {Array} routeCoords - Journey route coordinates
+   * @returns {Promise<Object>} Consolidation result
+   */
+  async consolidateJourneyDiscoveries(userId, journeyId, routeCoords) {
+    try {
+      Logger.info('JOURNEY_SERVICE', 'Starting journey discovery consolidation', { 
+        userId, 
+        journeyId, 
+        routeCoordsCount: routeCoords?.length || 0 
+      });
+
+      // Get user preferences for discovery
+      const preferences = await getUserDiscoveryPreferences();
+      
+      // Consolidate SAR and ping results
+      const result = await DiscoveryConsolidationService.consolidateJourneyDiscoveries(
+        userId, 
+        journeyId, 
+        routeCoords, 
+        preferences
+      );
+
+      if (result.success) {
+        Logger.info('JOURNEY_SERVICE', 'Journey discovery consolidation completed', {
+          userId,
+          journeyId,
+          sarPlaces: result.sarPlaces,
+          pingPlaces: result.pingPlaces,
+          consolidatedPlaces: result.consolidatedPlaces,
+          savedCount: result.savedCount
+        });
+      } else {
+        Logger.error('JOURNEY_SERVICE', 'Journey discovery consolidation failed', {
+          userId,
+          journeyId,
+          error: result.error
+        });
+      }
+
+      return result;
+    } catch (error) {
+      Logger.error('JOURNEY_SERVICE', 'Journey discovery consolidation error', {
+        userId,
+        journeyId,
+        error: error.message
+      });
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 }
