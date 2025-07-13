@@ -1,4 +1,11 @@
-// services/DiscoveryConsolidationService.js
+/**
+ * DiscoveryConsolidationService
+ *
+ * Consolidates and deduplicates discovery data from multiple sources (e.g., SAR and cached locations).
+ * - Merges, deduplicates, and cleans up discovery records.
+ * - Ensures no orphaned or duplicate data in Firestore.
+ * - Typically used after a trip or ping event to reconcile all discoveries.
+ */
 import { 
   collection,
   query,

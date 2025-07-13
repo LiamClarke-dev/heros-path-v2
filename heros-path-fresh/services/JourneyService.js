@@ -1,3 +1,11 @@
+/**
+ * JourneyService
+ *
+ * Manages user journeys (routes, metadata, deletion, etc.).
+ * - Provides CRUD for journeys, deletion of associated data, and status tracking.
+ * - Handles journey completion, undo, and data cleanup.
+ * - Ensures data consistency across journeys and discoveries.
+ */
 // services/JourneyService.js
 import { 
   doc, 

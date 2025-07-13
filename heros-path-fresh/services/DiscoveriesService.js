@@ -1,3 +1,13 @@
+/**
+ * DiscoveriesService
+ *
+ * Orchestrates the Search Along Route (SAR) feature using Google Places API.
+ * - Encodes polylines and builds search queries from user preferences.
+ * - Fetches suggestions along a route, handles fallback to center-point search.
+ * - Deduplicates and syncs preferences.
+ * - Delegates CRUD operations to DiscoveryService.
+ * - May interact with DiscoveryConsolidationService to merge SAR and cached discoveries.
+ */
 // services/DiscoveriesService.js
 import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS, GOOGLE_ROADS_API_KEY } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';

@@ -1,3 +1,11 @@
+/**
+ * DiscoveryService
+ *
+ * Handles CRUD operations for discoveries, dismissed places, and saved places.
+ * - Manages Firestore records and state synchronization.
+ * - Provides undo/redo and data consistency logic.
+ * - Used by DiscoveriesService for all data persistence and retrieval.
+ */
 // services/DiscoveryService.js
 import { 
   doc, 

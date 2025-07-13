@@ -143,7 +143,7 @@ export default function PastJourneysScreen({ navigation }) {
               textStyle={{ fontSize: 14 }}
             />
           }
-          onPress={() => navigation.navigate('DiscoveriesScreen', { journeyId: item.id })}
+          onPress={() => navigation.navigate('Discoveries', { journeyId: item.id })}
         />
       </Card>
     );

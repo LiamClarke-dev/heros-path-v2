@@ -27,6 +27,7 @@ import DiscoveryService from '../services/DiscoveryService';
 import Logger from '../utils/Logger';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
+import Constants from 'expo-constants';
 
 const { width, height } = Dimensions.get('window');
 
@@ -85,6 +86,7 @@ export default function MapScreen({ navigation, route }) {
   const [showPingAnimation, setShowPingAnimation] = useState(false);
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
+  const [mapError, setMapError] = useState(null);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -155,6 +157,13 @@ export default function MapScreen({ navigation, route }) {
       setSpriteState(SPRITE_STATES.IDLE);
     }
   }, [pathToRender]);
+
+  // Log API key and region on mount
+  useEffect(() => {
+    const apiKey = Constants.expoConfig?.ios?.config?.googleMapsApiKey;
+    console.log('MapScreen: Google Maps API Key (iOS):', apiKey);
+    console.log('MapScreen: Current Position:', currentPosition);
+  }, [currentPosition]);
 
   const spriteSource = SPRITE_SOURCES[spriteState];
 
@@ -397,6 +406,27 @@ export default function MapScreen({ navigation, route }) {
     ));
   };
 
+  // Error boundary for MapView
+  function handleMapError(e) {
+    console.error('MapScreen: MapView error:', e?.nativeEvent || e);
+    setMapError(e?.nativeEvent?.message || e?.message || 'Unknown map error');
+  }
+
+  if (mapError) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.text, fontSize: 18, marginBottom: 12 }}>Unable to load map</Text>
+        <Text style={{ color: colors.text, fontSize: 14, marginBottom: 8 }}>{mapError}</Text>
+        <Text style={{ color: colors.text, fontSize: 12, opacity: 0.7 }}>Check your Google Maps API key and permissions.</Text>
+      </View>
+    );
+  }
+
+  // Determine map provider: fallback to Apple Maps on iOS if Google Maps API key is missing
+  const googleMapsApiKey = Constants.expoConfig?.ios?.config?.googleMapsApiKey;
+  const useGoogleMaps = Platform.OS !== 'ios' || (googleMapsApiKey && googleMapsApiKey !== '${GOOGLE_MAPS_API_KEY_IOS}');
+  const mapProvider = useGoogleMaps ? PROVIDER_GOOGLE : undefined; // PROVIDER_DEFAULT is undefined
+
   return (
     <View style={styles.container}>
       <SectionHeader title="Map" />
@@ -417,7 +447,7 @@ export default function MapScreen({ navigation, route }) {
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
+          provider={mapProvider}
           initialRegion={{
             latitude: currentPosition.latitude,
             longitude: currentPosition.longitude,
@@ -425,6 +455,9 @@ export default function MapScreen({ navigation, route }) {
             longitudeDelta: 0.02,
           }}
           customMapStyle={mapStyleArray}
+          region={currentPosition ? { ...currentPosition, latitudeDelta: 0.01, longitudeDelta: 0.01 } : undefined}
+          showsUserLocation={false} // Remove blue dot
+          onError={handleMapError}
         >
           {renderSavedRoutes()}
           {/* ─── show snapped preview if ready, else raw */}
@@ -443,7 +476,7 @@ export default function MapScreen({ navigation, route }) {
             />
           )}
           <Marker coordinate={currentPosition} anchor={{ x: 0.5, y: 0.9 }}>
-            <Image source={spriteSource} style={styles.sprite} />
+            <Image source={spriteSource} style={{ width: 16, height: 32 }} resizeMode="contain" />
           </Marker>
           {renderSavedPlaces()}
         </MapView>
