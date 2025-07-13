@@ -27,6 +27,61 @@ import DiscoveryService from '../services/DiscoveryService';
 import AnimationDemo from '../components/AnimationDemo';
 import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
 
+// --- New UI Components ---
+const SectionCard = ({ children, style }) => {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  return (
+    <View style={[{
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginVertical: 10,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    }, style]}>
+      {children}
+    </View>
+  );
+};
+
+const SettingsButton = ({ onPress, icon, label, style, color, textColor, disabled }) => {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  return (
+    <TouchableOpacity
+      style={[{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        backgroundColor: color || colors.buttonSecondary,
+        marginVertical: 4,
+        opacity: disabled ? 0.5 : 1,
+      }, style]}
+      onPress={onPress}
+      disabled={disabled}
+    >
+      {icon && <MaterialIcons name={icon} size={22} color={textColor || colors.primary} style={{ marginRight: 12 }} />}
+      <Text style={{ color: textColor || colors.text, fontSize: 16 }}>{label}</Text>
+    </TouchableOpacity>
+  );
+};
+
+const SectionHeader = ({ icon, title }) => {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+      {icon && <MaterialIcons name={icon} size={22} color={colors.primary} style={{ marginRight: 8 }} />}
+      <Text style={{ fontWeight: 'bold', fontSize: 18, color: colors.text }}>{title}</Text>
+    </View>
+  );
+};
+
 const LANG_KEY = '@user_language';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
 const LANGUAGES = [
@@ -761,12 +816,11 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView>
-        {/* User Profile Section */}
-        <View style={[styles.section, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>Profile</Text>
-
+    <>
+      <ScrollView style={{ backgroundColor: colors.background, padding: 16 }}>
+        {/* Profile Section */}
+        <SectionCard>
+          <SectionHeader icon="person" title="Profile" />
           <View style={styles.profileHeader}>
             <Image
               source={{ uri: userProfile?.photoURL || 'https://via.placeholder.com/80' }}
@@ -780,7 +834,6 @@ export default function SettingsScreen() {
               )}
             </View>
           </View>
-
           {editingProfile ? (
             <View style={styles.editForm}>
               <TextInput
@@ -819,31 +872,24 @@ export default function SettingsScreen() {
                 onChangeText={(text) => setEditForm(prev => ({ ...prev, location: text }))}
               />
               <View style={styles.editButtons}>
-                <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.buttonSecondary }]} onPress={cancelEditing}>
-                  <Text style={[styles.cancelButtonText, { color: colors.buttonTextSecondary }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.buttonPrimary }]} onPress={saveProfile}>
-                  <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>Save</Text>
-                </TouchableOpacity>
+                <SettingsButton label="Cancel" onPress={cancelEditing} icon="close" color={colors.buttonSecondary} textColor={colors.buttonTextSecondary} />
+                <SettingsButton label="Save" onPress={saveProfile} icon="check" color={colors.buttonPrimary} textColor={colors.buttonText} />
               </View>
             </View>
           ) : (
-            <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.buttonPrimary }]} onPress={startEditing}>
-              <Text style={[styles.editButtonText, { color: colors.buttonText }]}>Edit Profile</Text>
-            </TouchableOpacity>
+            <SettingsButton label="Edit Profile" onPress={startEditing} icon="edit" />
           )}
-
           {userProfile?.bio && (
             <View style={styles.bioContainer}>
               <Text style={styles.bioText}>{userProfile.bio}</Text>
             </View>
           )}
-        </View>
+        </SectionCard>
 
         {/* Stats Section */}
         {userProfile?.stats && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Your Stats</Text>
+          <SectionCard>
+            <SectionHeader icon="trending-up" title="Your Stats" />
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{userProfile.stats.totalWalks || 0}</Text>
@@ -858,149 +904,481 @@ export default function SettingsScreen() {
                 <Text style={styles.statLabel}>Discoveries</Text>
               </View>
             </View>
-          </View>
+          </SectionCard>
         )}
 
         {/* Discovery Preferences Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Discovery Preferences</Text>
+        <SectionCard>
+          <SectionHeader icon="tune" title="Discovery Preferences" />
           <Text style={styles.sectionDescription}>
             Choose which types of places you'd like to discover during your walks:
           </Text>
-
-          <TouchableOpacity
-            style={styles.preferenceLink}
+          <SettingsButton
+            label="Configure Discovery Settings"
             onPress={() => navigation.navigate('DiscoveryPreferences')}
-          >
-            <View style={styles.preferenceLinkContent}>
-              <View style={styles.preferenceLinkLeft}>
-                <MaterialIcons name="tune" size={24} color={colors.primary} />
-                <Text style={styles.preferenceLinkText}>Configure Discovery Settings</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={24} color={colors.text + '60'} />
-            </View>
-          </TouchableOpacity>
-        </View>
+            icon="tune"
+          />
+        </SectionCard>
 
         {/* Preferences Section */}
-        <View style={[styles.section, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>Preferences</Text>
-
+        <SectionCard>
+          <SectionHeader icon="tune" title="Preferences" />
+          {/* Language, Discovery Preferences */}
           <View style={styles.preferenceItem}>
             <Text style={[styles.preferenceLabel, { color: colors.text }]}>Language</Text>
             <View style={styles.languageOptions}>
-        {LANGUAGES.map(({code, label}) => (
-          <TouchableOpacity
-            key={code}
-            style={[
-                    styles.languageOption,
-                    { backgroundColor: colors.buttonSecondary },
-                    language === code && { backgroundColor: colors.buttonPrimary }
-            ]}
-            onPress={() => selectLanguage(code)}
-          >
-            <Text
-              style={[
-                      styles.languageOptionText,
-                      { color: colors.text },
-                      language === code && { color: colors.buttonText, fontWeight: '600' }
-              ]}
-            >
-              {label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+              {LANGUAGES.map(({code, label}) => (
+                <SettingsButton
+                  key={code}
+                  label={label}
+                  onPress={() => selectLanguage(code)}
+                  color={language === code ? colors.buttonPrimary : colors.buttonSecondary}
+                  textColor={language === code ? colors.buttonText : colors.text}
+                  style={{ flex: 1, marginHorizontal: 2 }}
+                />
+              ))}
+            </View>
           </View>
-        </View>
+          <SettingsButton
+            label="Configure Discovery Settings"
+            onPress={() => navigation.navigate('DiscoveryPreferences')}
+            icon="tune"
+          />
+        </SectionCard>
 
-        {/* Theme Selection Section */}
-        <View style={[styles.section, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>UI Theme</Text>
-          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            Choose your app's UI theme and map style.
-          </Text>
-          
+        {/* Theme & Map Style Section */}
+        <SectionCard>
+          <SectionHeader icon="palette" title="Theme & Map Style" />
           <View style={styles.preferenceItem}>
             <Text style={[styles.preferenceLabel, { color: colors.text }]}>Theme</Text>
             <View style={styles.themeOptions}>
               {themeOptions.map((theme) => (
-                <TouchableOpacity
+                <SettingsButton
                   key={theme.type}
-                  style={[
-                    styles.themeOption,
-                    { backgroundColor: colors.buttonSecondary },
-                    currentTheme === theme.type && { backgroundColor: colors.buttonPrimary }
-                  ]}
+                  label={theme.name}
                   onPress={() => handleThemeChange(theme.type)}
-                >
-                  <MaterialIcons 
-                    name={theme.icon} 
-                    size={20} 
-                    color={currentTheme === theme.type ? colors.buttonText : colors.text} 
-                  />
-                  <Text style={[
-                    styles.themeOptionText, 
-                    { color: currentTheme === theme.type ? colors.buttonText : colors.text }
-                  ]}>
-                    {theme.name}
-                  </Text>
-                </TouchableOpacity>
+                  icon={theme.icon}
+                  color={currentTheme === theme.type ? colors.buttonPrimary : colors.buttonSecondary}
+                  textColor={currentTheme === theme.type ? colors.buttonText : colors.text}
+                  style={{ flex: 1, marginHorizontal: 2 }}
+                />
               ))}
             </View>
           </View>
-
           <View style={styles.preferenceItem}>
             <Text style={[styles.preferenceLabel, { color: colors.text }]}>Map Style</Text>
             <View style={styles.mapStyleOptions}>
               {mapStyleOptions.map((mapStyle) => (
-                <TouchableOpacity
+                <SettingsButton
                   key={mapStyle.type}
-                  style={[
-                    styles.mapStyleOption,
-                    { backgroundColor: colors.buttonSecondary },
-                    currentMapStyle === mapStyle.type && { backgroundColor: colors.buttonPrimary }
-                  ]}
+                  label={mapStyle.name}
                   onPress={() => handleMapStyleChange(mapStyle.type)}
-                >
-                  <MaterialIcons 
-                    name={mapStyle.icon} 
-                    size={20} 
-                    color={currentMapStyle === mapStyle.type ? colors.buttonText : colors.text} 
-                  />
-                  <Text style={[
-                    styles.mapStyleOptionText, 
-                    { color: currentMapStyle === mapStyle.type ? colors.buttonText : colors.text }
-                  ]}>
-                    {mapStyle.name}
-                  </Text>
-                </TouchableOpacity>
+                  icon={mapStyle.icon}
+                  color={currentMapStyle === mapStyle.type ? colors.buttonPrimary : colors.buttonSecondary}
+                  textColor={currentMapStyle === mapStyle.type ? colors.buttonText : colors.text}
+                  style={{ flex: 1, marginHorizontal: 2 }}
+                />
               ))}
             </View>
           </View>
-
-          <TouchableOpacity
-            style={[styles.settingItem, { borderBottomColor: colors.border }]}
+          <SettingsButton
+            label="Reset UI and Map Styles to Defaults"
             onPress={handleResetPreferences}
-          >
-            <View style={styles.settingContent}>
-              <MaterialIcons name="settings-backup-restore" size={24} color={colors.primary} />
-              <Text style={[styles.settingText, { color: colors.text }]}>Reset UI and Map Styles to Defaults</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+            icon="settings-backup-restore"
+          />
+        </SectionCard>
 
         {/* Account Section */}
-        <View style={[styles.section, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>Account</Text>
+        <SectionCard>
+          <SectionHeader icon="account-circle" title="Account" />
+          <SettingsButton
+            label="Sign Out"
+            onPress={handleSignOut}
+            icon="logout"
+            color={colors.danger}
+            textColor={colors.buttonText}
+          />
+        </SectionCard>
 
-          <TouchableOpacity style={[styles.dangerButton, { backgroundColor: colors.danger }]} onPress={handleSignOut}>
-            <Text style={[styles.dangerButtonText, { color: colors.buttonText }]}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Developer Tools Section (if user is dev) */}
+        {user && (
+          <SectionCard>
+            <SectionHeader icon="developer-mode" title="Developer Tools" />
+            {developerLoading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>Processing...</Text>
+              </View>
+            )}
+            
+            {/* API Migration Testing */}
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>🌐 API Migration Testing</Text>
+              
+              <TouchableOpacity 
+                style={[styles.settingItem, testingMigration && styles.disabledItem]} 
+                onPress={handleTestMigration}
+                disabled={testingMigration}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="api" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>
+                    {testingMigration ? 'Testing API Migration...' : 'Test Places API Migration'}
+                  </Text>
+                </View>
+                {testingMigration ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+                )}
+              </TouchableOpacity>
 
-        {renderDeveloperSection()}
+              {migrationStatus && (
+                <View style={styles.migrationStatus}>
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>New API:</Text>
+                    <View style={[
+                      styles.statusIndicator,
+                      migrationStatus.newAPI ? styles.statusSuccess : styles.statusError
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {migrationStatus.newAPI ? '✅ Working' : '❌ Failed'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>Legacy API:</Text>
+                    <View style={[
+                      styles.statusIndicator,
+                      migrationStatus.legacyAPI ? styles.statusSuccess : styles.statusError
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {migrationStatus.legacyAPI ? '✅ Working' : '❌ Failed'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>Status:</Text>
+                    <Text style={[
+                      styles.statusText,
+                      migrationStatus.migrationStatus === 'READY' ? styles.statusSuccess :
+                      migrationStatus.migrationStatus === 'FALLBACK' ? styles.statusWarning :
+                      styles.statusError
+                    ]}>
+                      {migrationStatus.migrationStatus}
+                    </Text>
+                  </View>
+
+                  {migrationStatus.recommendation && (
+                    <View style={styles.recommendationContainer}>
+                      <Text style={styles.recommendationText}>{migrationStatus.recommendation}</Text>
+                    </View>
+                  )}
+
+                  {migrationStatus.newAPIError && (
+                    <View style={styles.errorContainer}>
+                      <Text style={styles.errorLabel}>New API Error:</Text>
+                      <Text style={styles.errorText}>{migrationStatus.newAPIError}</Text>
+                    </View>
+                  )}
+
+                  {migrationStatus.legacyAPIError && (
+                    <View style={styles.errorContainer}>
+                      <Text style={styles.errorLabel}>Legacy API Error:</Text>
+                      <Text style={styles.errorText}>{migrationStatus.legacyAPIError}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Data Migration Status */}
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>📊 Data Migration Status</Text>
+              
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={async () => {
+                  try {
+                    const status = await DataMigrationService.checkMigrationStatus(user.uid);
+                    Alert.alert(
+                      'Migration Status',
+                      `Status: ${status.hasMigrated ? '✅ Migrated' : '⏳ Not Migrated'}\n\n` +
+                      `Last Check: ${status.lastChecked ? new Date(status.lastChecked).toLocaleString() : 'Never'}\n` +
+                      `User ID: ${user.uid}`
+                    );
+                  } catch (error) {
+                    Alert.alert('Error', `Failed to check migration status: ${error.message}`);
+                  }
+                }}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="cloud-sync" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>Check Migration Status</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={async () => {
+                  try {
+                    setDeveloperLoading(true);
+                    await triggerMigration();
+                    Alert.alert('Success', 'Migration triggered successfully');
+                  } catch (error) {
+                    Alert.alert('Error', `Failed to trigger migration: ${error.message}`);
+                  } finally {
+                    setDeveloperLoading(false);
+                  }
+                }}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="sync" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>Trigger Data Migration</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {dataMigrationStatus && (
+                <View style={styles.migrationStatusContainer}>
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>Migration Status:</Text>
+                    <View style={[
+                      styles.statusIndicator,
+                      dataMigrationStatus.hasMigrated ? styles.statusSuccess : styles.statusWarning
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {dataMigrationStatus.hasMigrated ? '✅ Complete' : '⏳ Pending'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {!dataMigrationStatus.hasMigrated && dataMigrationStatus.stats && (
+                    <View style={styles.migrationStats}>
+                      <Text style={styles.migrationStatsTitle}>Data to migrate:</Text>
+                      <Text style={styles.migrationStatsText}>
+                        • Journeys: {dataMigrationStatus.stats.journeysCount}
+                      </Text>
+                      <Text style={styles.migrationStatsText}>
+                        • Saved Places: {dataMigrationStatus.stats.savedPlacesCount}
+                      </Text>
+                      <Text style={styles.migrationStatsText}>
+                        • Dismissed Places: {dataMigrationStatus.stats.dismissedPlacesCount}
+                      </Text>
+                    </View>
+                  )}
+
+                  {dataMigrationStatus.migrationResult && (
+                    <View style={styles.migrationResult}>
+                      <Text style={styles.migrationResultTitle}>Last Migration:</Text>
+                      <Text style={styles.migrationResultText}>
+                        {dataMigrationStatus.migrationResult.message}
+                      </Text>
+                      {dataMigrationStatus.migrationResult.results && (
+                        <View style={styles.migrationDetails}>
+                          <Text style={styles.migrationDetailsText}>
+                            Journeys: {dataMigrationStatus.migrationResult.results.journeys.migrated}/{dataMigrationStatus.migrationResult.results.journeys.total}
+                          </Text>
+                          <Text style={styles.migrationDetailsText}>
+                            Saved Places: {dataMigrationStatus.migrationResult.results.savedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.savedPlaces.total}
+                          </Text>
+                          <Text style={styles.migrationDetailsText}>
+                            Dismissed Places: {dataMigrationStatus.migrationResult.results.dismissedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.dismissedPlaces.total}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Data Management */}
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>🗂️ Data Management</Text>
+              
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={fixJourneyStatuses}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="build" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>🔧 Fix Journey Statuses</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.settingItem, styles.dangerItem]} 
+                onPress={deleteAllJourneys}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="delete-forever" size={24} color={colors.error} />
+                  <Text style={[styles.settingText, styles.dangerText]}>🗑️ DELETE ALL JOURNEYS</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.error} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.settingItem, styles.criticalItem]} 
+                onPress={purgeAllAccountData}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="warning" size={24} color={colors.critical} />
+                  <Text style={[styles.settingText, styles.criticalText]}>🚨 PURGE EVERYTHING</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.critical} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Debug Tools */}
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>🔍 Debug Tools</Text>
+              
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={async () => {
+                  try {
+                    const result = await JourneyService.getUserJourneys(user.uid);
+                    if (result.success) {
+                      Alert.alert(
+                        'Your Journey Data', 
+                        `Found ${result.journeys.length} journeys\n\nLatest journey: ${result.journeys[0]?.name || 'None'}\nTotal route points: ${result.journeys.reduce((total, journey) => total + (journey.route?.length || 0), 0)}`
+                      );
+                    } else {
+                      Alert.alert('Error', 'Failed to load your journey data');
+                    }
+                  } catch (error) {
+                    Alert.alert('Error', `Failed to check your journey data: ${error.message}`);
+                  }
+                }}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="storage" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>Check Your Journey Data</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={async () => {
+                  try {
+                    const foregroundStatus = await Location.getForegroundPermissionsAsync();
+                    const backgroundStatus = await Location.getBackgroundPermissionsAsync();
+                    
+                    Alert.alert(
+                      'Location Permissions Status',
+                      `Foreground: ${foregroundStatus.status}\nBackground: ${backgroundStatus.status}\n\nLocation Services: ${foregroundStatus.canAskAgain ? 'Can ask again' : 'Cannot ask again'}`
+                    );
+                  } catch (error) {
+                    Alert.alert('Error', `Failed to check permissions: ${error.message}`);
+                  }
+                }}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="location-on" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>Check Location Permissions</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={async () => {
+                  try {
+                    Alert.alert('Loading...', 'Calculating your journey statistics...');
+                    const result = await FirestoreDataViewer.getUserJourneyStats(user.uid);
+                    if (result.success) {
+                      const { stats } = result;
+                      Alert.alert(
+                        'Your Journey Statistics',
+                        `📊 Your Personal Statistics:\n\n` +
+                        `🗺️ Total Journeys: ${stats.totalJourneys}\n` +
+                        `📍 Total Route Points: ${stats.totalRoutePoints}\n` +
+                        `📈 Avg Points per Journey: ${stats.averageRoutePointsPerJourney.toFixed(1)}\n` +
+                        `✅ Journeys with Routes: ${stats.journeysWithRoutes}\n` +
+                        `❌ Journeys without Routes: ${stats.journeysWithoutRoutes}\n\n` +
+                        `📅 Your Activity:\n` +
+                        `• Oldest Journey: ${stats.oldestJourney?.toLocaleDateString() || 'None'}\n` +
+                        `• Newest Journey: ${stats.newestJourney?.toLocaleDateString() || 'None'}\n` +
+                        `• Total Distance: ${stats.totalDistance.toFixed(1)}m\n` +
+                        `• Total Duration: ${Math.round(stats.totalDuration / 60)}min`
+                      );
+                    } else {
+                      Alert.alert('Error', `Failed to get your statistics: ${result.error}`);
+                    }
+                  } catch (error) {
+                    Alert.alert('Error', `Failed to get your statistics: ${error.message}`);
+                  }
+                }}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="analytics" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>Your Journey Statistics</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={async () => {
+                  try {
+                    Alert.alert('Loading...', 'Exporting your journey data...');
+                    const result = await FirestoreDataViewer.exportUserJourneyData(user.uid);
+                    if (result.success) {
+                      const data = result.objectData;
+                      Alert.alert(
+                        'Your Data Export Ready',
+                        `✅ Your personal journey data has been prepared for export\n\n` +
+                        `📊 Summary:\n` +
+                        `• Your Journeys: ${data.journeys.length}\n` +
+                        `• Your Route Points: ${data.journeys.reduce((total, j) => total + (j.route?.length || 0), 0)}\n` +
+                        `• Export Date: ${new Date(data.exportDate).toLocaleString()}\n\n` +
+                        `🔒 Privacy: This export contains only your personal data\n\n` +
+                        `💡 Check the console for the full JSON data.`,
+                        [
+                          { text: 'OK' },
+                          { 
+                            text: 'Copy to Console', 
+                            onPress: () => {
+                              console.log('📋 YOUR EXPORTED JOURNEY DATA:', data);
+                              Alert.alert('Copied!', 'Your data logged to console. Check your development console.');
+                            }
+                          }
+                        ]
+                      );
+                    } else {
+                      Alert.alert('Error', `Failed to export your data: ${result.error}`);
+                    }
+                  } catch (error) {
+                    Alert.alert('Error', `Failed to export your data: ${error.message}`);
+                  }
+                }}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="file-download" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>Export Your Journey Data</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={() => setShowAnimationDemo(true)}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="animation" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>🎨 Test Ping Animations</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </SectionCard>
+        )}
       </ScrollView>
 
       {/* Animation Demo Modal */}
@@ -1022,7 +1400,7 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
-    </View>
+    </>
   );
 }
 

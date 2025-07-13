@@ -18,6 +18,10 @@ import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
 import DiscoveryService from '../services/DiscoveryService';
+import Card from '../components/ui/Card';
+import ListItem from '../components/ui/ListItem';
+import AppButton from '../components/ui/AppButton';
+import SectionHeader from '../components/ui/SectionHeader';
 
 export default function SavedPlacesScreen() {
   const { user, migrationStatus } = useUser();
@@ -113,124 +117,50 @@ export default function SavedPlacesScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Category dropdown */}
-      <View style={styles.headerRow}>
-        <View style={styles.dropdownWrapper}>
-          <TouchableOpacity
-            style={styles.pickerToggle}
-            onPress={() => setDropdownVisible(true)}
-          >
-            <Text style={styles.pickerToggleText}>
-              {filterType
-                ? (PLACE_TYPES.find(t => t.key === filterType)?.label || 'All Types')
-                : 'All Types'} ▼
+    <View style={{ flex: 1 }}>
+      <SectionHeader title="Saved Places" />
+      {/* Category dropdown and filter UI can be refactored later */}
+      {loading ? (
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={places}
+          keyExtractor={item => item.placeId}
+          contentContainerStyle={{ padding: 16 }}
+          ListEmptyComponent={() => (
+            <Text style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
+              No saved places{filterType ? ` in ${PLACE_TYPES.find(t => t.key === filterType)?.label}` : ''}.
             </Text>
-          </TouchableOpacity>
-          <Modal
-            visible={dropdownVisible}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setDropdownVisible(false)}
-          >
-            <TouchableOpacity
-              style={styles.modalBackdrop}
-              activeOpacity={1}
-              onPressOut={() => setDropdownVisible(false)}
-            >
-              <View style={styles.modalContent}>
-                <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-                  <TouchableOpacity
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setFilterType(null);
-                      setDropdownVisible(false);
-                    }}
-                  >
-                    <Text style={styles.modalItemText}>All Types</Text>
-                  </TouchableOpacity>
-                  {PLACE_TYPES
-                    .filter(t => t.key !== 'all')
-                    .map(({ key, label }) => (
-                    <TouchableOpacity
-                      key={key}
-                      style={styles.modalItem}
-                      onPress={() => {
-                        setFilterType(key);
-                        setDropdownVisible(false);
-                      }}
-                    >
-                      <Text style={styles.modalItemText}>{label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        </View>
-      </View>
-
-      <FlatList
-        data={places}
-        keyExtractor={item => item.placeId}
-        contentContainerStyle={places.length ? styles.listContent : styles.center}
-        ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>
-            No saved places{filterType ? ` in ${PLACE_TYPES.find(t => t.key === filterType)?.label}` : ''}.
-          </Text>
-        )}
-        renderItem={({ item }) => (
-          <Swipeable
-            renderRightActions={() => (
-              <TouchableOpacity
-                style={styles.dismiss}
-                onPress={() => handleRemove(item.placeId)}
-              >
-                <Text style={styles.actionText}>Remove</Text>
-              </TouchableOpacity>
-            )}
-          >
-            <View style={styles.card}>
-              {item.thumbnail && (
-                <Image
-                  source={{ uri: item.thumbnail }}
-                  style={styles.thumb}
-                />
-              )}
-              <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                {item.category && (
-                  <Text style={styles.category}>
-                    {item.category.replace('_', ' ')}
-                    {item.combinedTypes && item.combinedTypes.length > 1 && (
-                      <Text style={styles.combinedTypes}>
-                        {' • ' + item.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
-                      </Text>
-                    )}
-                  </Text>
-                )}
-                {item.description && (
-                  <Text style={styles.description}>{item.description}</Text>
-                )}
-                <Text style={styles.meta}>
-                  ★ {item.rating ?? '—'} ({item.userRatingsTotal ?? '0'})
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    const url =
-                      `https://www.google.com/maps/search/?api=1` +
-                      `&query=${encodeURIComponent(item.name)}` +
-                      `&query_place_id=${item.placeId}`;
-                    Linking.openURL(url);
-                  }}
-                >
-                  <Text style={styles.link}>View on Maps</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Swipeable>
-        )}
-      />
+          )}
+          renderItem={({ item }) => (
+            <Card style={{ marginBottom: 8 }}>
+              <ListItem
+                title={item.name}
+                subtitle={item.description}
+                left={item.thumbnail ? (
+                  <Image source={{ uri: item.thumbnail }} style={{ width: 48, height: 48, borderRadius: 8 }} />
+                ) : null}
+                right={
+                  <AppButton
+                    title="Remove"
+                    variant="danger"
+                    onPress={() => handleRemove(item.placeId)}
+                    style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 8 }}
+                    textStyle={{ fontSize: 14 }}
+                  />
+                }
+                onPress={() => {
+                  const url =
+                    `https://www.google.com/maps/search/?api=1` +
+                    `&query=${encodeURIComponent(item.name)}` +
+                    `&query_place_id=${item.placeId}`;
+                  Linking.openURL(url);
+                }}
+              />
+            </Card>
+          )}
+        />
+      )}
     </View>
   );
 }

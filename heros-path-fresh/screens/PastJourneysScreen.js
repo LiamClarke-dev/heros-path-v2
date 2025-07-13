@@ -13,6 +13,10 @@ import { useUser } from '../contexts/UserContext';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import { useFocusEffect } from '@react-navigation/native';
+import Card from '../components/ui/Card';
+import ListItem from '../components/ui/ListItem';
+import AppButton from '../components/ui/AppButton';
+import SectionHeader from '../components/ui/SectionHeader';
 
 export default function PastJourneysScreen({ navigation }) {
   const [journeys, setJourneys] = useState([]);
@@ -114,8 +118,6 @@ export default function PastJourneysScreen({ navigation }) {
 
   const renderItem = ({ item, index }) => {
     const d = item.dateObj || new Date(item.date);
-    
-    // Format: "DD MMM'YY HH:MM" (e.g., "12 Jul'25 14:30")
     const formattedDate = d.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -126,90 +128,43 @@ export default function PastJourneysScreen({ navigation }) {
       minute: '2-digit',
       hour12: false
     });
-    
-    // Use journey name if available, otherwise generate label
     const label = item.name || `${formattedDate} ${formattedTime}`;
-
-    // Get completion status from pre-computed state
-    const isCompleted = journeyStatuses[item.id] || false;
-    const isLoadingStatus = !(item.id in journeyStatuses);
-    const hasDiscoveries = item.totalDiscoveriesCount > 0;
-
     return (
-      <View style={styles.item}>
-        <TouchableOpacity
-          style={styles.info}
-          onPress={() =>
-            navigation.navigate('Map', { routeToDisplay: { ...item, dateObj: undefined } })
+      <Card style={{ marginBottom: 8 }}>
+        <ListItem
+          title={label}
+          subtitle={`Distance: ${item.distance}m | Duration: ${Math.round(item.duration / 60)} min`}
+          right={
+            <AppButton
+              title="Delete"
+              variant="danger"
+              onPress={() => deleteJourney(item.id)}
+              style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 8 }}
+              textStyle={{ fontSize: 14 }}
+            />
           }
-        >
-          <View style={styles.infoRow}>
-            <Text style={[
-              styles.label,
-              isCompleted && styles.labelCompleted
-            ]}>
-              {label}
-            </Text>
-          </View>
-          <Text style={styles.sub}>{item.coords.length} points</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.reviewButton, 
-            isCompleted && styles.reviewButtonCompleted,
-            !hasDiscoveries && styles.reviewButtonNoDiscoveries
-          ]}
-          onPress={() =>
-            navigation.navigate('Discoveries', { selectedRoute: { ...item, dateObj: undefined } })
-          }
-        >
-          <Text style={[
-            styles.reviewText, 
-            isCompleted && styles.reviewTextCompleted,
-            !hasDiscoveries && styles.reviewTextNoDiscoveries
-          ]}>
-            {isLoadingStatus ? '...' : 
-              (hasDiscoveries ? 
-                (isCompleted ? 'All Reviewed' : 'Review') : 
-                'No Discoveries'
-              )
-            }
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteJourney(item.id)}
-        >
-          <MaterialIcons name="more-vert" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
+          onPress={() => navigation.navigate('DiscoveriesScreen', { journeyId: item.id })}
+        />
+      </Card>
     );
   };
 
-  // Oldest-first
-  const sorted = [...journeys].sort((a, b) => a.id.localeCompare(b.id));
-
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
+      <SectionHeader title="Past Journeys" />
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading journeys...</Text>
-        </View>
-      ) : sorted.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.empty}>No past journeys yet.</Text>
-          {migrationStatus && !migrationStatus.hasMigrated && (
-            <Text style={styles.migrationNote}>
-              Your data will be migrated to the cloud when you sign in.
-            </Text>
-          )}
-        </View>
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
       ) : (
         <FlatList
-          data={sorted}
+          data={journeys}
           keyExtractor={item => item.id}
           renderItem={renderItem}
+          contentContainerStyle={{ padding: 16 }}
+          ListEmptyComponent={() => (
+            <Text style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
+              No journeys found.
+            </Text>
+          )}
         />
       )}
     </View>

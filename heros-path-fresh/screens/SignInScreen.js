@@ -15,6 +15,9 @@ import {
   GOOGLE_ANDROID_CLIENT_ID 
 } from "../config";
 
+import SectionHeader from '../components/ui/SectionHeader';
+import AppButton from '../components/ui/AppButton';
+
 // Add: Log all Google client IDs at startup
 console.log('GOOGLE_WEB_CLIENT_ID:', GOOGLE_WEB_CLIENT_ID);
 console.log('GOOGLE_IOS_CLIENT_ID:', GOOGLE_IOS_CLIENT_ID);
@@ -97,6 +100,7 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
+      <SectionHeader title="Sign In" />
       <Text style={styles.title}>Hero's Path</Text>
       <Text style={styles.subtitle}>Discover your journey</Text>
       
@@ -107,14 +111,14 @@ export default function SignInScreen() {
         </View>
       ) : (
         <View style={styles.buttonContainer}>
-          <Button
+          <AppButton
             disabled={!request}
             title="Sign in with Google"
             onPress={handleSignIn}
             color="#007AFF"
           />
           <View style={{ height: 16 }} />
-          <Button
+          <AppButton
             title="Sign in with Email"
             onPress={() => navigation.navigate('EmailAuth')}
             color="#888"

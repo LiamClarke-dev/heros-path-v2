@@ -38,6 +38,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import Logger from '../utils/Logger';
+import Card from '../components/ui/Card';
+import ListItem from '../components/ui/ListItem';
+import AppButton from '../components/ui/AppButton';
+import SectionHeader from '../components/ui/SectionHeader';
 
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
@@ -1218,610 +1222,61 @@ export default function DiscoveriesScreen({ navigation, route }) {
     filterType: filterType || 'all'
   });
 
-  return (
-    <View style={styles.container}>
-      <FlatList
-        data={filteredSuggestions}
-        keyExtractor={item => item.placeId}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListHeaderComponent={() => (
-          <View>
-            {/* Enhanced Header with Discovery Management */}
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
-                <Text style={styles.headerTitle}>
-                  {filterType && filterType !== 'all' 
-                    ? `${PLACE_TYPES.find(t => t.key === filterType)?.label || 'Filtered'} Discoveries (${filteredSuggestions.length}/${suggestions.length})`
-                    : `Total Discoveries (${suggestions.length})`
-                  }
-                </Text>
-                <View style={styles.headerStats}>
-                  <Text style={styles.headerStatText}>Saved: {savedPlaces?.length || 0}</Text>
-                  <Text style={styles.headerStatText}>Dismissed: {dismissedPlaces.length}</Text>
-                </View>
-              </View>
-              <View style={styles.headerRight}>
-                <TouchableOpacity
-                  style={styles.gearButton}
-                  onPress={() => setShowSettingsModal(true)}
-                >
-                  <MaterialIcons name="settings" size={20} color={Colors.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.manageButton}
-                  onPress={() => setShowManageHistory(true)}
-                >
-                  <MaterialIcons name="history" size={16} color={Colors.background} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Journey and Type dropdowns side by side */}
-            <View style={styles.dropdownsRow}>
-              {/* Journey dropdown */}
-              <View style={styles.dropdownWrapper}>
-                <TouchableOpacity
-                  style={styles.pickerToggle}
-                  onPress={() => setRouteDropdownVisible(true)}
-                >
-                  <Text style={styles.pickerToggleText}>
-                    {new Date(selectedRoute.date).toLocaleDateString()} (
-                    {selectedRoute.coords.length} pts) ▼
-                  </Text>
-                </TouchableOpacity>
-                <Modal
-                  visible={routeDropdownVisible}
-                  transparent animationType="fade"
-                  onRequestClose={() => setRouteDropdownVisible(false)}
-                >
-                  <TouchableOpacity
-                    style={styles.modalBackdrop}
-                    activeOpacity={1}
-                    onPressOut={() => setRouteDropdownVisible(false)}
-                  >
-                    <View style={styles.modalContent}>
-                      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-                        {savedRoutes.map(j => (
-                          <TouchableOpacity
-                            key={j.id}
-                            style={styles.modalItem}
-                            onPress={() => {
-                              setSelectedRoute(j);
-                              setRouteDropdownVisible(false);
-                            }}
-                          >
-                            <Text style={styles.modalItemText}>
-                              {new Date(j.date).toLocaleString()} — {j.coords.length} pts
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  </TouchableOpacity>
-                </Modal>
-              </View>
-
-              {/* Discovery Type dropdown */}
-              <View style={styles.dropdownWrapper}>
-                <TouchableOpacity
-                  style={styles.pickerToggle}
-                  onPress={() => setTypeDropdownVisible(true)}
-                >
-                  <Text style={styles.pickerToggleText}>
-                    {filterType
-                      ? (PLACE_TYPES.find(t => t.key === filterType)?.label || 'All Types')
-                      : 'All Types'} ▼
-                  </Text>
-                </TouchableOpacity>
-                <Modal
-                  visible={typeDropdownVisible}
-                  transparent animationType="fade"
-                  onRequestClose={() => setTypeDropdownVisible(false)}
-                >
-                  <TouchableOpacity
-                    style={styles.modalBackdrop}
-                    activeOpacity={1}
-                    onPressOut={() => setTypeDropdownVisible(false)}
-                  >
-                    <View style={styles.modalContent}>
-                      <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-                        <TouchableOpacity
-                          style={styles.modalItem}
-                          onPress={() => {
-                            Logger.filter('DISCOVERIES_SCREEN', 'FILTER_CHANGED', 'all', {
-                              previousFilter: filterType,
-                              newFilter: 'all'
-                            });
-                            setFilterType(null);
-                            setTypeDropdownVisible(false);
-                          }}
-                        >
-                          <Text style={styles.modalItemText}>All Types</Text>
-                        </TouchableOpacity>
-                        {PLACE_TYPES
-                          .filter(t => t.key !== 'all')
-                          .map(({ key, label }) => (
-                           <TouchableOpacity
-                             key={key}
-                             style={styles.modalItem}
-                             onPress={() => {
-                               Logger.filter('DISCOVERIES_SCREEN', 'FILTER_CHANGED', key, {
-                                 previousFilter: filterType,
-                                 newFilter: key,
-                                 filterLabel: label
-                               });
-                               setFilterType(key);
-                               setTypeDropdownVisible(false);
-                             }}
-                           >
-                             <Text style={styles.modalItemText}>{label}</Text>
-                           </TouchableOpacity>
-                         ))}
-                      </ScrollView>
-                    </View>
-                  </TouchableOpacity>
-                </Modal>
-              </View>
-            </View>
-
-            {/* AI Summaries Test Button - Commented out for future use */}
-            {/* <TouchableOpacity
-              style={styles.testButton}
-              onPress={testAISummariesFeature}
-            >
-              <MaterialIcons name="science" size={16} color={Colors.primary} />
-              <Text style={styles.testButtonText}>Test AI</Text>
-            </TouchableOpacity> */}
+  // Render a single suggestion card
+  const renderSuggestion = ({ item }) => (
+    <Card style={{ marginBottom: 8 }}>
+      <ListItem
+        title={item.name}
+        subtitle={item.formatted_address}
+        left={item.photos && item.photos[0] ? (
+          <Image source={{ uri: item.photos[0].photo_reference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=YOUR_API_KEY` : undefined }} style={{ width: 48, height: 48, borderRadius: 8 }} />
+        ) : null}
+        right={
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppButton
+              title="Save"
+              variant="primary"
+              onPress={() => handleSave(item)}
+              style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 0 }}
+              textStyle={{ fontSize: 14 }}
+            />
+            <AppButton
+              title="Dismiss"
+              variant="danger"
+              onPress={() => dismissPlace(item, 'temporary')}
+              style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 8 }}
+              textStyle={{ fontSize: 14 }}
+            />
           </View>
-        )}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={() => {
-          // Check if this journey has any discoveries at all
-          const hasAnyDiscoveries = selectedRoute?.totalDiscoveriesCount > 0;
-          
-          if (!hasAnyDiscoveries) {
-            return (
-              <View style={styles.completionContainer}>
-                <MaterialIcons name="explore" size={64} color={Colors.tabInactive} />
-                <Text style={styles.completionTitle}>No Discoveries Found</Text>
-                <Text style={styles.completionText}>
-                  This journey didn't find any new places to review.
-                </Text>
-                <Text style={styles.completionSubtext}>
-                  Try walking in a different area or check your discovery preferences.
-                </Text>
-              </View>
-            );
-          }
-          
-          return (
-            <View style={styles.completionContainer}>
-              <MaterialIcons name="check-circle" size={64} color={Colors.primary} />
-              <Text style={styles.completionTitle}>Congratulations!</Text>
-              <Text style={styles.completionText}>
-                There are no more places to review on this journey.
-              </Text>
-              <Text style={styles.completionSubtext}>
-                Get out there and explore to discover more!
-              </Text>
-            </View>
-          );
+        }
+        onPress={() => {
+          const url =
+            `https://www.google.com/maps/search/?api=1` +
+            `&query=${encodeURIComponent(item.name)}` +
+            `&query_place_id=${item.placeId}`;
+          Linking.openURL(url);
         }}
-        renderItem={({ item }) => (
-          <Swipeable
-            renderLeftActions={() => (
-              <TouchableOpacity
-                style={[styles.action, styles.save]}
-                onPress={() => handleSave(item)}
-              >
-                <Text style={styles.actionText}>Save</Text>
-              </TouchableOpacity>
-            )}
-            renderRightActions={() => (
-              <TouchableOpacity
-                style={[styles.action, styles.dismiss]}
-                onPress={() => handleDismiss(item)}
-              >
-                <Text style={styles.actionText}>Dismiss</Text>
-              </TouchableOpacity>
-            )}
-          >
-            <View style={styles.card}>
-              {item.thumbnail && (
-                <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
-              )}
-              <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                {item.category && (
-                  <Text style={styles.category}>
-                    {item.category.replace('_', ' ')}
-                    {item.combinedTypes && item.combinedTypes.length > 1 && (
-                      <Text style={styles.combinedTypes}>
-                        {' • ' + item.combinedTypes.slice(1).map(type => type.replace('_', ' ')).join(', ')}
-                      </Text>
-                    )}
-                  </Text>
-                )}
-                {item.description && (
-                  <Text style={styles.description}>{item.description}</Text>
-                )}
-                
-                {/* Place Summary Section */}
-                {aiSummaries[item.placeId] && (
-                  <View style={styles.summaryContainer}>
-                    <Text style={styles.summaryTitle}>Place Summary</Text>
-                    {aiSummaries[item.placeId].noSummary ? (
-                      <Text style={styles.summaryText}>No summary available for this place</Text>
-                    ) : aiSummaries[item.placeId].error ? (
-                      <View>
-                        <Text style={styles.summaryText}>Failed to load summary</Text>
-                        <TouchableOpacity
-                          style={styles.retryButton}
-                          onPress={() => fetchAiSummary(item.placeId)}
-                        >
-                          <Text style={styles.retryButtonText}>Retry</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <View>
-                        <Text style={styles.summaryText}>
-                          {aiSummaries[item.placeId].generativeSummary?.overview?.text ||
-                           aiSummaries[item.placeId].editorialSummary?.text ||
-                           (aiSummaries[item.placeId].topReview && `"${aiSummaries[item.placeId].topReview.text?.text || aiSummaries[item.placeId].topReview.text}" - ${aiSummaries[item.placeId].topReview.authorAttribution?.displayName || 'User'}`) ||
-                           'No summary available for this place'}
-                        </Text>
-                        {/* Show summary type indicator */}
-                        {(aiSummaries[item.placeId].generativeSummary || aiSummaries[item.placeId].editorialSummary) && (
-                          <Text style={styles.summaryTypeIndicator}>
-                            {aiSummaries[item.placeId].generativeSummary ? '🤖 AI Summary' : '📝 Editorial Summary'}
-                          </Text>
-                        )}
-                        {aiSummaries[item.placeId].generativeSummary?.disclosureText?.text && (
-                          <View style={styles.disclosureContainer}>
-                            <Text style={styles.disclosureText}>
-                              {aiSummaries[item.placeId].generativeSummary.disclosureText.text}
-                            </Text>
-                            {aiSummaries[item.placeId].generativeSummary?.overviewFlagContentUri && (
-                              <TouchableOpacity
-                                style={styles.flagButton}
-                                onPress={() => {
-                                  const url = aiSummaries[item.placeId].generativeSummary.overviewFlagContentUri;
-                                  Linking.openURL(url);
-                                }}
-                              >
-                                <MaterialIcons name="flag" size={12} color={Colors.tabInactive} />
-                                <Text style={styles.flagButtonText}>Report</Text>
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        )}
-                      </View>
-                    )}
-                  </View>
-                )}
-                
-                {!aiSummaries[item.placeId] && !loadingSummaries[item.placeId] && (
-                  <TouchableOpacity
-                    style={styles.summaryButton}
-                    onPress={() => fetchAiSummary(item.placeId)}
-                  >
-                    <MaterialIcons name="description" size={16} color={Colors.primary} />
-                    <Text style={styles.summaryButtonText}>Get Summary</Text>
-                  </TouchableOpacity>
-                )}
-                
-                {loadingSummaries[item.placeId] && (
-                  <View style={styles.summaryLoading}>
-                    <ActivityIndicator size="small" color={Colors.primary} />
-                    <Text style={styles.summaryLoadingText}>Loading summary...</Text>
-                  </View>
-                )}
-                
-                <Text style={styles.meta}>
-                  ★ {item.rating ?? '—'} ({item.userRatingsTotal ?? '0'})
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    const url =
-                      `https://www.google.com/maps/search/?api=1` +
-                      `&query=${encodeURIComponent(item.name)}` +
-                      `&query_place_id=${item.placeId}`;
-                    Linking.openURL(url);
-                  }}
-                >
-                  <Text style={styles.link}>View on Maps</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Swipeable>
-        )}
-      style={styles.listContainer}
       />
+    </Card>
+  );
 
-      {/* Onboarding Modal */}
-      <Modal
-        visible={showOnboarding}
-        transparent
-        animationType="fade"
-        onRequestClose={completeOnboarding}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.onboardingModal}>
-            <Text style={styles.onboardingTitle}>Welcome to Discoveries!</Text>
-            <View style={styles.onboardingContent}>
-              <View style={styles.onboardingItem}>
-                <MaterialIcons name="swipe-right" size={24} color={Colors.primary} />
-                <Text style={styles.onboardingText}>Swipe right to save a place</Text>
-              </View>
-              <View style={styles.onboardingItem}>
-                <MaterialIcons name="swipe-left" size={24} color={Colors.primary} />
-                <Text style={styles.onboardingText}>Swipe left to dismiss a place</Text>
-              </View>
-            </View>
-            <View style={styles.onboardingButtons}>
-              <TouchableOpacity
-                style={styles.onboardingButton}
-                onPress={completeOnboarding}
-              >
-                <Text style={styles.onboardingButtonText}>Got it!</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.onboardingButtonSecondary}
-                onPress={showOnboardingAgain}
-              >
-                <Text style={styles.onboardingButtonTextSecondary}>Show me again</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Enhanced Dismiss Modal */}
-      <Modal
-        visible={showDismissModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDismissModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.dismissModal}>
-            <Text style={styles.dismissModalTitle}>
-              Dismiss "{placeToDismiss?.name}"?
+  return (
+    <View style={{ flex: 1 }}>
+      <SectionHeader title="Discoveries" />
+      {loading ? (
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={suggestions}
+          keyExtractor={item => item.placeId}
+          contentContainerStyle={{ padding: 16 }}
+          ListEmptyComponent={() => (
+            <Text style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
+              No discoveries found for this journey.
             </Text>
-            <View style={styles.dismissOptions}>
-              <TouchableOpacity
-                style={styles.dismissOption}
-                onPress={() => handleDismissModalAction('30days')}
-              >
-                <MaterialIcons name="schedule" size={20} color={Colors.primary} />
-                <Text style={styles.dismissOptionText}>Hide for 30 days</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.dismissOption}
-                onPress={() => handleDismissModalAction('forever')}
-              >
-                <MaterialIcons name="block" size={20} color={Colors.primary} />
-                <Text style={styles.dismissOptionText}>Hide forever</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.dismissOption}
-                onPress={() => setShowDismissModal(false)}
-              >
-                <MaterialIcons name="cancel" size={20} color={Colors.tabInactive} />
-                <Text style={styles.dismissOptionText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.rememberChoiceContainer}>
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => setRememberChoice(!rememberChoice)}
-              >
-                {rememberChoice && (
-                  <MaterialIcons name="check" size={16} color={Colors.primary} />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.rememberChoiceText}>
-                Remember my choice for future dismissals
-              </Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Settings Modal */}
-      <Modal
-        visible={showSettingsModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSettingsModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.settingsModal}>
-            <Text style={styles.settingsModalTitle}>Discovery Settings</Text>
-            <View style={styles.settingsContent}>
-              <Text style={styles.settingsSectionTitle}>Default Dismissal:</Text>
-              <TouchableOpacity
-                style={[
-                  styles.settingsOption,
-                  dismissalPreference === 'ask' && styles.settingsOptionActive
-                ]}
-                onPress={() => setDismissalPreference('ask')}
-              >
-                <MaterialIcons 
-                  name={dismissalPreference === 'ask' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                  size={20} 
-                  color={Colors.primary} 
-                />
-                <Text style={styles.settingsOptionText}>Ask each time</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.settingsOption,
-                  dismissalPreference === '30days' && styles.settingsOptionActive
-                ]}
-                onPress={() => setDismissalPreference('30days')}
-              >
-                <MaterialIcons 
-                  name={dismissalPreference === '30days' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                  size={20} 
-                  color={Colors.primary} 
-                />
-                <Text style={styles.settingsOptionText}>Hide for 30 days</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.settingsOption,
-                  dismissalPreference === 'forever' && styles.settingsOptionActive
-                ]}
-                onPress={() => setDismissalPreference('forever')}
-              >
-                <MaterialIcons 
-                  name={dismissalPreference === 'forever' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                  size={20} 
-                  color={Colors.primary} 
-                />
-                <Text style={styles.settingsOptionText}>Hide forever</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={() => setShowSettingsModal(false)}
-            >
-              <Text style={styles.settingsButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Manage History Modal */}
-      <Modal
-        visible={showManageHistory}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowManageHistory(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.manageHistoryModal}>
-            <View style={styles.manageHistoryHeader}>
-              <Text style={styles.manageHistoryTitle}>Manage Discovery History</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowManageHistory(false)}
-              >
-                <MaterialIcons name="close" size={24} color={Colors.text} />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView style={styles.manageHistoryContent} showsVerticalScrollIndicator={true}>
-              <TouchableOpacity
-                style={styles.manageHistorySectionHeader}
-                onPress={() => setDismissedSectionCollapsed(!dismissedSectionCollapsed)}
-              >
-                <Text style={styles.manageHistorySectionTitle}>
-                  ❌ Dismissed Places ({dismissedPlaces.length})
-                </Text>
-                <MaterialIcons 
-                  name={dismissedSectionCollapsed ? "expand-more" : "expand-less"} 
-                  size={20} 
-                  color={Colors.text} 
-                />
-              </TouchableOpacity>
-              
-              {!dismissedSectionCollapsed && dismissedPlaces.map(place => (
-                <View key={place.placeId} style={styles.manageHistoryItem}>
-                  <View style={styles.manageHistoryItemInfo}>
-                    <Text style={styles.manageHistoryItemName}>
-                      {place.placeData?.name || place.name || 'Unknown Place'}
-                    </Text>
-                    <Text style={styles.manageHistoryItemCategory}>
-                      {place.placeData?.category || place.category || 'Unknown Category'}
-                    </Text>
-                    <Text style={styles.manageHistoryItemTime}>
-                      Dismissed {formatTimeAgo(place.dismissedAt)}
-                    </Text>
-                  </View>
-                  <View style={styles.manageHistoryItemActions}>
-                    <TouchableOpacity 
-                      style={styles.restoreButton}
-                      onPress={() => handleUndoDismiss(place)}
-                    >
-                      <Text style={styles.restoreButtonText}>Undo</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-
-              <TouchableOpacity
-                style={styles.manageHistorySectionHeader}
-                onPress={() => setDiscoveredSectionCollapsed(!discoveredSectionCollapsed)}
-              >
-                <Text style={styles.manageHistorySectionTitle}>
-                  ✅ Saved Places ({discoveredPlaces.length})
-                </Text>
-                <MaterialIcons 
-                  name={discoveredSectionCollapsed ? "expand-more" : "expand-less"} 
-                  size={20} 
-                  color={Colors.text} 
-                />
-              </TouchableOpacity>
-              
-              {!discoveredSectionCollapsed && discoveredPlaces.map(place => (
-                <View key={place.placeId} style={styles.manageHistoryItem}>
-                  <View style={styles.manageHistoryItemInfo}>
-                    <Text style={styles.manageHistoryItemName}>
-                      {place.placeData?.name || place.placeName || place.name || 'Unknown Place'}
-                    </Text>
-                    <Text style={styles.manageHistoryItemCategory}>
-                      {place.placeData?.category || place.placeType || place.category || 'Unknown Category'}
-                    </Text>
-                    <Text style={styles.manageHistoryItemTime}>
-                      Saved {formatTimeAgo(place.savedAt || place.discoveredAt)}
-                    </Text>
-                  </View>
-                  <View style={styles.manageHistoryItemActions}>
-                    <TouchableOpacity 
-                      style={styles.restoreButton}
-                      onPress={() => handleUndoSave(place)}
-                    >
-                      <Text style={styles.restoreButtonText}>Undo</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Shake to Undo Button (Demo) */}
-      {recentlyDismissed.length > 0 && (
-        <TouchableOpacity
-          style={styles.shakeButton}
-          onPress={() => {
-            const lastDismissed = recentlyDismissed[recentlyDismissed.length - 1];
-            Alert.alert(
-              'Undo Dismiss',
-              `Restore "${lastDismissed.name}" to suggestions?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Restore', 
-                  onPress: () => {
-                    setRecentlyDismissed(prev => prev.slice(0, -1));
-                    Toast.show(`${lastDismissed.name} restored to suggestions`, {
-                      duration: Toast.durations.SHORT,
-                      position: Toast.positions.BOTTOM,
-                    });
-                  }
-                }
-              ]
-            );
-          }}
-        >
-          <MaterialIcons name="undo" size={20} color={Colors.background} />
-          <Text style={styles.shakeButtonText}>Undo Last Dismiss</Text>
-        </TouchableOpacity>
+          )}
+          renderItem={renderSuggestion}
+        />
       )}
     </View>
   );

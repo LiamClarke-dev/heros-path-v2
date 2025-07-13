@@ -18,6 +18,7 @@ import { UserProvider, useUser } from './contexts/UserContext';
 import { ExplorationProvider } from './contexts/ExplorationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Colors, Spacing, Typography } from './styles/theme';
+import AppNavigator from './navigation/AppNavigator';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -173,17 +174,13 @@ export default function App() {
   }
 
   return (
-    <RootSiblingParent>
-      <ThemeProvider>
-        <UserProvider>
-          <ExplorationProvider>
-            <NavigationContainer>
-              <MemoizedDrawerNavigator />
-            </NavigationContainer>
-          </ExplorationProvider>
-        </UserProvider>
-      </ThemeProvider>
-    </RootSiblingParent>
+    <ThemeProvider>
+      <UserProvider>
+        <ExplorationProvider>
+          <AppNavigator />
+        </ExplorationProvider>
+      </UserProvider>
+    </ThemeProvider>
   );
 }
 
