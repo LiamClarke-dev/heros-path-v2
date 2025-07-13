@@ -17,6 +17,11 @@ const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 const NEW_BASE_URL = 'https://places.googleapis.com/v1';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
 
+// Use the same API key for Places API as Maps API (they can be the same key)
+const getPlacesAPIKey = () => {
+  return GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+};
+
 /**
  * Encode GPS coordinates to Google's polyline format
  * @param {Array} coordinates - Array of {latitude, longitude} objects
@@ -124,6 +129,26 @@ async function searchAlongRoute(routeCoords, preferences, language = 'en') {
     return [];
   }
 
+  // Check if route has enough distance for meaningful discoveries
+  if (routeCoords.length < 3) {
+    Logger.debug('DISCOVERIES_SERVICE', 'Route has less than 3 points, checking distance');
+    
+    if (routeCoords.length === 2) {
+      const distance = calculateDistance(
+        routeCoords[0].latitude, routeCoords[0].longitude,
+        routeCoords[1].latitude, routeCoords[1].longitude
+      );
+      
+      if (distance < 50) { // Less than 50 meters
+        Logger.debug('DISCOVERIES_SERVICE', 'Route distance too small for SAR', { distance });
+        return [];
+      }
+    } else {
+      Logger.debug('DISCOVERIES_SERVICE', 'Single point route, no discoveries possible for SAR');
+      return [];
+    }
+  }
+
   try {
     // Encode route coordinates to polyline
     const encodedPolyline = encodePolyline(routeCoords);
@@ -140,7 +165,7 @@ async function searchAlongRoute(routeCoords, preferences, language = 'en') {
     }
 
     // Get API key (use Android key as fallback)
-    const apiKey = GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+    const apiKey = getPlacesAPIKey();
     if (!apiKey) {
       Logger.error('DISCOVERIES_SERVICE', 'No Google Places API key available for SAR');
       return [];
@@ -905,45 +930,42 @@ export { searchAlongRoute, getSuggestionsForRouteFallback };
  * This helps determine which API is working and provides migration guidance
  */
 export async function testPlacesAPIMigration() {
-  Logger.log('🔍 Testing Google Places API migration status...');
+  Logger.info('DISCOVERIES_SERVICE', 'Testing Places API migration...');
   
   try {
-    const connectivity = await testAPIConnectivity();
-    
-    const status = {
-      timestamp: new Date().toISOString(),
-      newAPI: connectivity.newAPI,
-      legacyAPI: connectivity.legacyAPI,
-      newAPIError: connectivity.newAPIError,
-      legacyAPIError: connectivity.legacyAPIError,
-      recommendation: '',
-      migrationStatus: ''
-    };
-    
-    if (connectivity.newAPI) {
-      status.migrationStatus = 'READY';
-      status.recommendation = 'New Places API is working. You can safely migrate to use it exclusively.';
-    } else if (connectivity.legacyAPI) {
-      status.migrationStatus = 'FALLBACK';
-      status.recommendation = 'New Places API is not available, but legacy API is working. Continue using hybrid approach.';
-    } else {
-      status.migrationStatus = 'ERROR';
-      status.recommendation = 'Both APIs are failing. Check API key configuration and network connectivity.';
+    // Test API key availability
+    const apiKey = getPlacesAPIKey();
+    if (!apiKey) {
+      Logger.error('DISCOVERIES_SERVICE', 'No API key available for testing');
+      return { success: false, error: 'No API key available' };
     }
     
-    Logger.log('📊 Migration Status:', status);
-    return status;
+    Logger.info('DISCOVERIES_SERVICE', 'API key available for testing');
+    
+    // Test SAR with a simple route
+    const testRoute = [
+      { latitude: 37.7749, longitude: -122.4194 }, // San Francisco
+      { latitude: 37.7849, longitude: -122.4094 }  // Slightly north
+    ];
+    
+    const testPreferences = {
+      restaurant: true,
+      cafe: true
+    };
+    
+    Logger.info('DISCOVERIES_SERVICE', 'Testing SAR with simple route...');
+    const sarResults = await searchAlongRoute(testRoute, testPreferences, 'en');
+    
+    Logger.info('DISCOVERIES_SERVICE', `SAR test completed with ${sarResults.length} results`);
+    
+    return {
+      success: true,
+      sarResults: sarResults.length,
+      apiKey: apiKey ? 'Available' : 'Missing'
+    };
     
   } catch (error) {
-    console.error('❌ Failed to test API migration:', error);
-    return {
-      timestamp: new Date().toISOString(),
-      newAPI: false,
-      legacyAPI: false,
-      newAPIError: error.message,
-      legacyAPIError: 'Test failed',
-      recommendation: 'API testing failed. Check configuration and try again.',
-      migrationStatus: 'ERROR'
-    };
+    Logger.error('DISCOVERIES_SERVICE', 'SAR test failed', error);
+    return { success: false, error: error.message };
   }
 }

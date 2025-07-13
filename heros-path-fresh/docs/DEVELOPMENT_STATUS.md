@@ -1,5 +1,97 @@
 # Hero's Path App - Development Status
 
+# Next Priorities
+
+## 1. Ping Animation Overhaul (Future Enhancement)
+- Redesign the ping animation to feel like a "special power" charge and release.
+- Animation should last 3–5 seconds, with a dramatic, screen-dominating effect.
+- Should include a "charging up" phase (inward pulse/glow), then a powerful outward ripple.
+- Consider future addition of vibration and sound for extra feedback.
+- **Note**: Currently disabled with scaffolding in place for future implementation
+- See user notes for vision:
+  - Gamified, impactful, not subtle
+  - User should feel like they're charging and releasing energy
+  - (Future) Add vibration on release
+
+## 2. React Native Warning: useInsertionEffect must not schedule updates
+- Terminal log:
+  - `ERROR  Warning: useInsertionEffect must not schedule updates.`
+  - Call Stack: DrawerNavigator, RNSScreenContainer, RNCSafeAreaProvider, MainStackScreen, Root, App
+- This warning appears in the terminal and should be investigated and resolved.
+
+---
+
+# Previous/Current Work
+
+## ✅ **VERIFIED COMPLETE: UI Theme & Map Style System**
+
+### **🎨 UI Theme & Map Style System - COMPLETED**
+
+**Problem Solved**: The app lacked customization options for UI themes and map styles, limiting user personalization and accessibility.
+
+**Solution Implemented**:
+- **3 UI Themes**: Light, Dark, and Adventure (Zelda-inspired) themes
+- **5 Map Styles**: Standard, Satellite, Terrain, Night, and Adventure map styles
+- **Dynamic Theming**: Real-time theme switching across the entire app
+- **Persistent Preferences**: User choices saved automatically with AsyncStorage
+- **Theme Context**: Centralized theme management with React Context
+
+**Technical Implementation**:
+- **Enhanced Theme System** (`styles/theme.js`):
+  - Complete color schemes for 3 themes (30+ color variables each)
+  - Map style configurations with custom Google Maps styling
+  - Backward compatibility with legacy exports
+  - Typography, spacing, and shadow configurations
+
+- **Theme Context** (`contexts/ThemeContext.js`):
+  - Centralized state management for themes and map styles
+  - AsyncStorage persistence for user preferences
+  - Dynamic theme switching with real-time updates
+  - Map style integration for Google Maps
+
+- **Updated App Structure** (`App.js`):
+  - ThemeProvider integration wrapping entire app
+  - Navigation theming with dynamic colors
+  - React.memo optimization to prevent useInsertionEffect warnings
+
+- **Enhanced Settings Screen**:
+  - Visual theme picker with icons and descriptions
+  - Map style selection with preview information
+  - Reset to defaults functionality
+  - Dynamic styling that adapts to selected theme
+
+- **Updated Map Screen**:
+  - Dynamic map styling using selected map style
+  - Theme-aware UI elements (buttons, controls, route lines)
+  - Consistent theming across all map components
+
+**User Experience Improvements**:
+- **Instant Theme Switching**: Themes change immediately across all screens
+- **Map Style Variety**: 5 different map styles for different use cases
+- **Accessibility**: High contrast themes and readable text
+- **Personalization**: Users can customize their experience
+- **Persistent Settings**: Preferences saved across app restarts
+
+**Theme Options**:
+- **Light Theme**: Clean, modern iOS-style interface
+- **Dark Theme**: Battery-efficient dark mode
+- **Adventure Theme**: Fantasy-inspired with warm, Zelda-like colors
+
+**Map Style Options**:
+- **Standard**: Classic Google Maps view with roads and landmarks
+- **Satellite**: Aerial view with satellite imagery
+- **Terrain**: Topographic view with elevation details
+- **Night**: Dark theme optimized for low-light conditions
+- **Adventure**: Fantasy-inspired map style for explorers
+
+**Results**:
+- ✅ **Complete Theme System**: 3 UI themes with full color schemes
+- ✅ **Map Style Integration**: 5 map styles with custom Google Maps styling
+- ✅ **Dynamic Theming**: Real-time theme changes across all screens
+- ✅ **User Preferences**: Persistent settings with AsyncStorage
+- ✅ **Accessibility**: High contrast and readable text options
+- ✅ **Performance**: Optimized with React.memo and efficient context usage
+
 ## ✅ **VERIFIED COMPLETE: All Performance Optimizations Working**
 
 ### Final Testing Results (12 July 2025)

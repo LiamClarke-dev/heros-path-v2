@@ -15,199 +15,174 @@ import DiscoveryPreferencesScreen from './screens/DiscoveryPreferencesScreen';
 import SignInScreen from './screens/SignInScreen';
 import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
+import { ExplorationProvider } from './contexts/ExplorationContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Colors, Spacing, Typography } from './styles/theme';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 const Drawer = createDrawerNavigator();
-const AuthStack = createStackNavigator();
-const MainStack = createStackNavigator();
+const Stack = createStackNavigator();
 
-function AuthStackScreen() {
-  return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-      <AuthStack.Screen name="SignIn" component={SignInScreen} />
-      <AuthStack.Screen name="EmailAuth" component={EmailAuthScreen} />
-    </AuthStack.Navigator>
-  );
-}
+// Memoized navigation components to prevent useInsertionEffect warnings
+const MemoizedDrawerNavigator = React.memo(() => {
+  const { user, profileLoading } = useUser();
+  
+  if (profileLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
 
-function MainStackScreen() {
-  return (
-    <MainStack.Navigator>
-      <MainStack.Screen 
-        name="DrawerHome" 
-        component={DrawerNavigator}
-        options={{ headerShown: false }}
-      />
-      <MainStack.Screen 
-        name="DiscoveryPreferences" 
-        component={DiscoveryPreferencesScreen}
-        options={{ 
-          headerShown: false,
-          presentation: 'modal'
-        }}
-      />
-    </MainStack.Navigator>
-  );
-}
+  if (!user) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="SignIn" component={SignInScreen} />
+        <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
+      </Stack.Navigator>
+    );
+  }
 
-function DrawerNavigator() {
   return (
-    <Drawer.Navigator 
+    <Drawer.Navigator
       initialRouteName="Map"
       screenOptions={{
         headerStyle: {
-          backgroundColor: Colors.primary,
+          backgroundColor: Colors.background,
         },
-        headerTintColor: Colors.background,
+        headerTintColor: Colors.text,
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontWeight: '600',
         },
+        drawerStyle: {
+          backgroundColor: Colors.background,
+        },
+        drawerActiveTintColor: Colors.tabActive,
+        drawerInactiveTintColor: Colors.tabInactive,
       }}
     >
       <Drawer.Screen 
         name="Map" 
         component={MapScreen}
         options={{
-          title: 'Hero\'s Path',
-          drawerLabel: 'Map',
+          title: "Hero's Path",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>🗺️</Text>
+          ),
         }}
       />
       <Drawer.Screen 
         name="PastJourneys" 
         component={PastJourneysScreen}
         options={{
-          title: 'Past Journeys',
-          drawerLabel: 'Past Journeys',
+          title: "Past Journeys",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>📚</Text>
+          ),
         }}
       />
       <Drawer.Screen 
         name="Discoveries" 
         component={DiscoveriesScreen}
         options={{
-          title: 'Discoveries',
-          drawerLabel: 'Discoveries',
+          title: "Discoveries",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>🔍</Text>
+          ),
         }}
       />
       <Drawer.Screen 
         name="SavedPlaces" 
         component={SavedPlacesScreen}
         options={{
-          title: 'Saved Places',
-          drawerLabel: 'Saved Places',
+          title: "Saved Places",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>❤️</Text>
+          ),
         }}
       />
       <Drawer.Screen 
         name="Social" 
         component={SocialScreen}
         options={{
-          title: 'Social',
-          drawerLabel: 'Social',
+          title: "Social",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>👥</Text>
+          ),
         }}
       />
       <Drawer.Screen 
         name="Settings" 
         component={SettingsScreen}
         options={{
-          title: 'Settings',
-          drawerLabel: 'Settings',
+          title: "Settings",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>⚙️</Text>
+          ),
+        }}
+      />
+      <Drawer.Screen 
+        name="DiscoveryPreferences" 
+        component={DiscoveryPreferencesScreen}
+        options={{
+          title: "Discovery Preferences",
+          drawerIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size }}>🎯</Text>
+          ),
         }}
       />
     </Drawer.Navigator>
   );
-}
+});
 
-function AppContent() {
-  const { user, loading, error } = useUser();
+export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
     async function prepare() {
       try {
-        // Pre-load any resources here (fonts, images, etc.)
-        // This is where you could load fonts, images, or other assets
-        const preloadPromises = [
-          // Example: Load fonts
-          // Font.loadAsync({
-          //   'CustomFont': require('./assets/fonts/CustomFont.ttf'),
-          // }),
-          
-          // Example: Preload critical images
-          // Asset.loadAsync([
-          //   require('./assets/splash-icon.png'),
-          //   require('./assets/icon.png'),
-          // ]),
-          
-          // Add a minimum delay to show the splash screen
-          new Promise(resolve => setTimeout(resolve, 2000)), // 2 second minimum
-        ];
-        
-        await Promise.all(preloadPromises);
-        
-        // Wait for user context to be ready
-        if (!loading) {
-          setAppIsReady(true);
-        }
+        // Pre-load fonts, make any API calls you need to do here
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
       } catch (e) {
-        console.warn('Error preparing app:', e);
+        console.warn(e);
+      } finally {
         setAppIsReady(true);
       }
     }
 
     prepare();
-  }, [loading]);
+  }, []);
 
   useEffect(() => {
     if (appIsReady) {
-      // Hide the splash screen once everything is ready
       SplashScreen.hideAsync();
     }
   }, [appIsReady]);
 
-  // Show error if Firebase is not properly configured
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Configuration Error</Text>
-        <Text style={styles.errorText}>
-          {error}
-        </Text>
-        <Text style={styles.errorSubtext}>
-          Please check your environment variables and rebuild the app.
-        </Text>
-      </View>
-    );
-  }
-
-  // Show loading screen while preparing app
-  if (loading || !appIsReady) {
+  if (!appIsReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading Hero's Path...</Text>
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
-      {user ? (
-        <MainStackScreen />
-      ) : (
-        <AuthStackScreen />
-      )}
-    </NavigationContainer>
-  );
-}
-
-export default function App() {
-  return (
     <RootSiblingParent>
-      <UserProvider>
-        <AppContent />
-      </UserProvider>
+      <ThemeProvider>
+        <UserProvider>
+          <ExplorationProvider>
+            <NavigationContainer>
+              <MemoizedDrawerNavigator />
+            </NavigationContainer>
+          </ExplorationProvider>
+        </UserProvider>
+      </ThemeProvider>
     </RootSiblingParent>
   );
 }
@@ -223,31 +198,5 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     ...Typography.body,
     color: Colors.text,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    padding: Spacing.lg,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#d32f2f',
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  errorText: {
-    ...Typography.body,
-    color: Colors.text,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-  },
-  errorSubtext: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    fontSize: 14,
   },
 });

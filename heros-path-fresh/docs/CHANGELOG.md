@@ -2,6 +2,74 @@
 
 ## [Unreleased] - 12 July 2025
 
+### 🎨 **NEW: UI Theme & Map Style System**
+
+#### **Problem Solved**
+The app lacked customization options for UI themes and map styles, limiting user personalization and accessibility. Users couldn't customize their experience or choose map styles that suited their preferences.
+
+#### **Solution Implemented**
+- **3 UI Themes**: Light, Dark, and Adventure (Zelda-inspired) themes with complete color schemes
+- **5 Map Styles**: Standard, Satellite, Terrain, Night, and Adventure map styles with custom Google Maps styling
+- **Dynamic Theming**: Real-time theme switching across the entire app
+- **Persistent Preferences**: User choices saved automatically with AsyncStorage
+- **Theme Context**: Centralized theme management with React Context
+
+#### **Theme Options**
+1. **🌞 Light Theme**: Clean, modern iOS-style interface with bright colors
+2. **🌙 Dark Theme**: Battery-efficient dark mode with high contrast
+3. **⚔️ Adventure Theme**: Fantasy-inspired with warm, Zelda-like colors
+
+#### **Map Style Options**
+1. **🗺️ Standard**: Classic Google Maps view with roads and landmarks
+2. **🛰️ Satellite**: Aerial view with satellite imagery and labels
+3. **🏔️ Terrain**: Topographic view with elevation details
+4. **🌃 Night**: Dark theme optimized for low-light conditions
+5. **🗡️ Adventure**: Fantasy-inspired map style for explorers
+
+#### **Technical Implementation**
+- **Enhanced Theme System** (`styles/theme.js`):
+  - Complete color schemes for 3 themes (30+ color variables each)
+  - Map style configurations with custom Google Maps styling
+  - Backward compatibility with legacy exports
+  - Typography, spacing, and shadow configurations
+
+- **Theme Context** (`contexts/ThemeContext.js`):
+  - Centralized state management for themes and map styles
+  - AsyncStorage persistence for user preferences
+  - Dynamic theme switching with real-time updates
+  - Map style integration for Google Maps
+
+- **Updated App Structure** (`App.js`):
+  - ThemeProvider integration wrapping entire app
+  - Navigation theming with dynamic colors
+  - React.memo optimization to prevent useInsertionEffect warnings
+
+- **Enhanced Settings Screen**:
+  - Visual theme picker with icons and descriptions
+  - Map style selection with preview information
+  - Reset to defaults functionality
+  - Dynamic styling that adapts to selected theme
+
+- **Updated Map Screen**:
+  - Dynamic map styling using selected map style
+  - Theme-aware UI elements (buttons, controls, route lines)
+  - Consistent theming across all map components
+
+#### **User Experience Improvements**
+- **Instant Theme Switching**: Themes change immediately across all screens
+- **Map Style Variety**: 5 different map styles for different use cases
+- **Accessibility**: High contrast themes and readable text
+- **Personalization**: Users can customize their experience
+- **Persistent Settings**: Preferences saved across app restarts
+
+#### **Results**
+- ✅ **Complete Theme System**: 3 UI themes with full color schemes
+- ✅ **Map Style Integration**: 5 map styles with custom Google Maps styling
+- ✅ **Dynamic Theming**: Real-time theme changes across all screens
+- ✅ **User Preferences**: Persistent settings with AsyncStorage
+- ✅ **Accessibility**: High contrast and readable text options
+- ✅ **Performance**: Optimized with React.memo and efficient context usage
+
 ### 🎯 **NEW: Ping Animation System & Credit System Fixes**
 
 #### **Problem Solved**

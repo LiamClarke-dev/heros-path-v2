@@ -1,6 +1,15 @@
 // components/PingAnimation.js
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
+import { View, Animated, StyleSheet, Dimensions } from 'react-native';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// ANIMATION DISABLED - Scaffolding kept for future implementation
+// To re-enable animations:
+// 1. Set ANIMATIONS_ENABLED = true
+// 2. Uncomment the setShowPingAnimation(true) line in MapScreen.js
+// 3. Implement your preferred animation style
+const ANIMATIONS_ENABLED = false;
 
 const PingAnimation = ({ 
   isVisible, 
@@ -18,169 +27,220 @@ const PingAnimation = ({
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
   ]).current;
+  
+  // New dramatic effects
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const screenFlashAnim = useRef(new Animated.Value(0)).current;
+  const chargeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && ANIMATIONS_ENABLED) {
       // Reset animations
       scaleAnim.setValue(0);
       opacityAnim.setValue(1);
       rotationAnim.setValue(0);
+      glowAnim.setValue(0);
+      screenFlashAnim.setValue(0);
+      chargeAnim.setValue(0);
       particleAnims.forEach(anim => anim.setValue(0));
 
       switch (animationType) {
         case 'ripple':
-          playRippleAnimation();
+          playDramaticRippleAnimation();
           break;
         case 'pulse':
-          playPulseAnimation();
+          playDramaticPulseAnimation();
           break;
         case 'radar':
-          playRadarAnimation();
+          playDramaticRadarAnimation();
           break;
         case 'particles':
-          playParticleAnimation();
+          playDramaticParticleAnimation();
           break;
         default:
-          playRippleAnimation();
+          playDramaticRippleAnimation();
+      }
+    } else if (isVisible && !ANIMATIONS_ENABLED) {
+      // Animations disabled - just call completion immediately
+      if (onAnimationComplete) {
+        setTimeout(() => onAnimationComplete(), 100); // Small delay for future animation
       }
     }
   }, [isVisible, animationType]);
 
-  const playRippleAnimation = () => {
-    // Create ripple effect with multiple rings - faster and larger
-    const ring1 = Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 2,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotationAnim, {
+  // Animation functions kept for future implementation
+  const playDramaticRippleAnimation = () => {
+    // Phase 1: Charge up (1 second)
+    const chargeUp = Animated.parallel([
+      Animated.timing(chargeAnim, {
         toValue: 1,
-        duration: 300,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowAnim, {
+        toValue: 1,
+        duration: 1000,
         useNativeDriver: true,
       }),
     ]);
 
-    const ring2 = Animated.parallel([
+    // Phase 2: Release (2 seconds)
+    const release = Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: 4,
-        duration: 400,
+        toValue: 8, // Much larger scale
+        duration: 2000,
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0,
-        duration: 400,
+        duration: 2000,
         useNativeDriver: true,
       }),
       Animated.timing(rotationAnim, {
         toValue: 2,
-        duration: 400,
+        duration: 2000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(screenFlashAnim, {
+        toValue: 1,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]);
 
-    const ring3 = Animated.parallel([
+    // Phase 3: Screen flash fade (1 second)
+    const flashFade = Animated.timing(screenFlashAnim, {
+      toValue: 0,
+      duration: 1000,
+      useNativeDriver: true,
+    });
+
+    Animated.sequence([
+      chargeUp,
+      release,
+      flashFade
+    ]).start(() => {
+      if (onAnimationComplete) onAnimationComplete();
+    });
+  };
+
+  const playDramaticPulseAnimation = () => {
+    // Phase 1: Charge up (1.5 seconds)
+    const chargeUp = Animated.parallel([
+      Animated.timing(chargeAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowAnim, {
+        toValue: 1,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    // Phase 2: Explosive pulse (2.5 seconds)
+    const pulse = Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 6,
-        duration: 500,
+        duration: 1000,
         useNativeDriver: true,
       }),
-      Animated.timing(opacityAnim, {
+      Animated.timing(scaleAnim, {
         toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotationAnim, {
-        toValue: 3,
-        duration: 500,
+        duration: 1500,
         useNativeDriver: true,
       }),
     ]);
 
-    Animated.sequence([ring1, ring2, ring3]).start(() => {
-      if (onAnimationComplete) onAnimationComplete();
-    });
-  };
-
-  const playPulseAnimation = () => {
-    // Simple pulse effect - faster and larger
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 3,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
+    Animated.parallel([
+      chargeUp,
+      pulse,
+      Animated.timing(opacityAnim, {
         toValue: 0,
-        duration: 400,
+        duration: 2500,
         useNativeDriver: true,
       }),
     ]).start(() => {
       if (onAnimationComplete) onAnimationComplete();
     });
-
-    Animated.timing(opacityAnim, {
-      toValue: 0,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
   };
 
-  const playRadarAnimation = () => {
-    // Radar sweep effect - faster and larger
-    Animated.parallel([
+  const playDramaticRadarAnimation = () => {
+    // Phase 1: Charge up (1 second)
+    const chargeUp = Animated.timing(chargeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    });
+
+    // Phase 2: Radar sweep (3 seconds)
+    const radarSweep = Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: 5,
-        duration: 600,
+        toValue: 10, // Very large scale
+        duration: 3000,
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0,
-        duration: 600,
+        duration: 3000,
         useNativeDriver: true,
       }),
       Animated.timing(rotationAnim, {
-        toValue: 1,
-        duration: 600,
+        toValue: 3,
+        duration: 3000,
         useNativeDriver: true,
       }),
+    ]);
+
+    Animated.sequence([
+      chargeUp,
+      radarSweep
     ]).start(() => {
       if (onAnimationComplete) onAnimationComplete();
     });
   };
 
-  const playParticleAnimation = () => {
-    // Particle burst effect - faster and larger
+  const playDramaticParticleAnimation = () => {
+    // Phase 1: Charge up (1 second)
+    const chargeUp = Animated.timing(chargeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    });
+
+    // Phase 2: Particle burst (3 seconds)
     const particleAnimations = particleAnims.map((anim, index) => {
-      const angle = (index * 60) * (Math.PI / 180);
-      const distance = 100; // Increased distance
+      const angle = (index * 45) * (Math.PI / 180);
+      const distance = 200; // Much larger distance
       
       return Animated.parallel([
         Animated.timing(anim, {
           toValue: 1,
-          duration: 400, // Faster
+          duration: 3000,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 400, // Faster
+          duration: 3000,
           useNativeDriver: true,
         }),
       ]);
     });
 
-    Animated.parallel(particleAnimations).start(() => {
+    Animated.sequence([
+      chargeUp,
+      Animated.parallel(particleAnimations)
+    ]).start(() => {
       if (onAnimationComplete) onAnimationComplete();
     });
   };
 
-  if (!isVisible) {
+  // Don't render anything when animations are disabled
+  if (!isVisible || !ANIMATIONS_ENABLED) {
     return null;
   }
 
@@ -193,8 +253,8 @@ const PingAnimation = ({
             { scale: scaleAnim },
             {
               rotate: rotationAnim.interpolate({
-                inputRange: [0, 3],
-                outputRange: ['0deg', '360deg'],
+                inputRange: [0, 2],
+                outputRange: ['0deg', '720deg'],
               }),
             },
           ],
@@ -225,8 +285,8 @@ const PingAnimation = ({
             { scale: scaleAnim },
             {
               rotate: rotationAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0deg', '360deg'],
+                inputRange: [0, 3],
+                outputRange: ['0deg', '1080deg'],
               }),
             },
           ],
@@ -239,8 +299,8 @@ const PingAnimation = ({
   const renderParticles = () => (
     <>
       {particleAnims.map((anim, index) => {
-        const angle = (index * 60) * (Math.PI / 180);
-        const distance = 100; // Increased distance
+        const angle = (index * 45) * (Math.PI / 180);
+        const distance = 200;
         
         return (
           <Animated.View
@@ -280,6 +340,37 @@ const PingAnimation = ({
 
   return (
     <View style={[styles.container, style]} pointerEvents="none">
+      {/* Screen flash overlay */}
+      <Animated.View
+        style={[
+          styles.screenFlash,
+          {
+            opacity: screenFlashAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.3],
+            }),
+          },
+        ]}
+      />
+      
+      {/* Charge up glow */}
+      <Animated.View
+        style={[
+          styles.chargeGlow,
+          {
+            transform: [{ scale: chargeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.5, 2],
+            }) }],
+            opacity: chargeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.8],
+            }),
+          },
+        ]}
+      />
+      
+      {/* Main animation */}
       {animationType === 'ripple' && renderRipple()}
       {animationType === 'pulse' && renderPulse()}
       {animationType === 'radar' && renderRadar()}
@@ -292,11 +383,11 @@ const PingAnimation = ({
           {
             transform: [{ scale: scaleAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: [1, 1.5],
+              outputRange: [1, 2],
             }) }],
             opacity: opacityAnim.interpolate({
               inputRange: [0, 0.5, 1],
-              outputRange: [0.8, 0.4, 0],
+              outputRange: [1, 0.5, 0],
             }),
           },
         ]}
@@ -310,31 +401,32 @@ const styles = StyleSheet.create({
     position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    width: 200, // Increased container size
-    height: 200,
+    width: screenWidth,
+    height: screenHeight,
+    zIndex: 1000,
   },
   ripple: {
     position: 'absolute',
-    width: 40, // Larger ripple
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 3, // Thicker border
+    width: 80, // Much larger ripple
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 6, // Thicker border
     borderColor: '#4A90E2',
-    backgroundColor: 'rgba(74, 144, 226, 0.2)', // More visible
+    backgroundColor: 'rgba(74, 144, 226, 0.3)', // More visible
   },
   pulse: {
     position: 'absolute',
-    width: 60, // Larger pulse
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(74, 144, 226, 0.4)', // More visible
+    width: 120, // Much larger pulse
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(74, 144, 226, 0.5)', // More visible
   },
   radar: {
     position: 'absolute',
-    width: 80, // Larger radar
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 4, // Thicker border
+    width: 160, // Much larger radar
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 8, // Thicker border
     borderColor: '#4A90E2',
     borderTopColor: 'transparent',
     borderLeftColor: 'transparent',
@@ -342,17 +434,35 @@ const styles = StyleSheet.create({
   },
   particle: {
     position: 'absolute',
-    width: 12, // Larger particles
-    height: 12,
-    borderRadius: 6,
+    width: 20, // Larger particles
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#4A90E2',
   },
   centerPulse: {
     position: 'absolute',
-    width: 16, // Larger center pulse
-    height: 16,
-    borderRadius: 8,
+    width: 32, // Larger center pulse
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#4A90E2',
+  },
+  screenFlash: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)', // White flash
+    zIndex: 1,
+  },
+  chargeGlow: {
+    position: 'absolute',
+    width: screenWidth * 2,
+    height: screenHeight * 2,
+    borderRadius: (screenWidth * 2) / 2,
+    backgroundColor: 'rgba(74, 144, 226, 0.2)', // Light blue glow
+    opacity: 0,
+    zIndex: 0,
   },
 });
 

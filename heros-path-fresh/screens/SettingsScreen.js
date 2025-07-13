@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Colors, Spacing, Typography } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { testPlacesAPIMigration } from '../services/DiscoveriesService';
@@ -24,6 +24,8 @@ import * as Location from 'expo-location';
 import JourneyService from '../services/JourneyService';
 import FirestoreDataViewer from '../utils/FirestoreDataViewer';
 import DiscoveryService from '../services/DiscoveryService';
+import AnimationDemo from '../components/AnimationDemo';
+import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
 
 const LANG_KEY = '@user_language';
 const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
@@ -35,7 +37,21 @@ const LANGUAGES = [
 
 export default function SettingsScreen() {
   const { user, userProfile, profileLoading, updateProfile, signOutUser, migrationStatus: userMigrationStatus, triggerMigration } = useUser();
+  const { 
+    currentTheme, 
+    currentMapStyle, 
+    changeTheme, 
+    changeMapStyle, 
+    getCurrentThemeColors, 
+    mapStyleConfigs,
+    themeTypes,
+    mapStyles,
+    resetToDefaults
+  } = useTheme();
   const navigation = useNavigation();
+  
+  const colors = getCurrentThemeColors();
+  
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);
   const [developerSectionExpanded, setDeveloperSectionExpanded] = useState(false);
@@ -44,6 +60,7 @@ export default function SettingsScreen() {
   const [migrationStatus, setMigrationStatus] = useState(null);
   const [testingMigration, setTestingMigration] = useState(false);
   const [dataMigrationStatus, setDataMigrationStatus] = useState(null);
+  const [showAnimationDemo, setShowAnimationDemo] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: '',
     bio: '',
@@ -278,7 +295,60 @@ export default function SettingsScreen() {
     checkDataMigrationStatus();
   }, [user]);
 
-  
+  // Theme selection handlers
+  const handleThemeChange = async (themeType) => {
+    try {
+      await changeTheme(themeType);
+      Alert.alert('Theme Updated', `Switched to ${themeType} theme!`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update theme. Please try again.');
+    }
+  };
+
+  const handleMapStyleChange = async (mapStyle) => {
+    try {
+      await changeMapStyle(mapStyle);
+      Alert.alert('Map Style Updated', `Switched to ${mapStyleConfigs[mapStyle].name} map style!`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update map style. Please try again.');
+    }
+  };
+
+  const handleResetPreferences = async () => {
+    Alert.alert(
+      'Reset to Defaults?',
+      'This will reset your UI theme and map style to the default settings. Your other preferences will remain unchanged.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          onPress: async () => {
+            try {
+              await resetToDefaults();
+              Alert.alert('Success', 'Theme and map style reset to defaults!');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to reset preferences. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Theme data for UI
+  const themeOptions = [
+    { type: themeTypes.LIGHT, name: 'Light', icon: 'light-mode' },
+    { type: themeTypes.DARK, name: 'Dark', icon: 'dark-mode' },
+    { type: themeTypes.ADVENTURE, name: 'Adventure', icon: 'explore' },
+  ];
+
+  // Map style data for UI
+  const mapStyleOptions = Object.entries(mapStyleConfigs).map(([key, config]) => ({
+    type: key,
+    name: config.name,
+    description: config.description,
+    icon: config.icon,
+  }));
 
   const renderDeveloperSection = () => {
     if (!user) return null;
@@ -290,13 +360,13 @@ export default function SettingsScreen() {
           onPress={() => setDeveloperSectionExpanded(!developerSectionExpanded)}
         >
           <View style={styles.sectionHeaderContent}>
-            <MaterialIcons name="developer-mode" size={24} color={Colors.warning} />
+            <MaterialIcons name="developer-mode" size={24} color={colors.warning} />
             <Text style={styles.sectionTitle}>🛠️ Developer Tools</Text>
           </View>
           <MaterialIcons 
             name={developerSectionExpanded ? "expand-less" : "expand-more"} 
             size={24} 
-            color={Colors.textSecondary} 
+            color={colors.textSecondary} 
           />
         </TouchableOpacity>
         
@@ -304,7 +374,7 @@ export default function SettingsScreen() {
           <View style={styles.developerContent}>
             {developerLoading && (
               <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="small" color={Colors.primary} />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.loadingText}>Processing...</Text>
               </View>
             )}
@@ -319,15 +389,15 @@ export default function SettingsScreen() {
                 disabled={testingMigration}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="api" size={24} color={Colors.primary} />
+                  <MaterialIcons name="api" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>
                     {testingMigration ? 'Testing API Migration...' : 'Test Places API Migration'}
                   </Text>
                 </View>
                 {testingMigration ? (
-                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                  <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
                 )}
               </TouchableOpacity>
 
@@ -413,10 +483,10 @@ export default function SettingsScreen() {
                 }}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="cloud-sync" size={24} color={Colors.primary} />
+                  <MaterialIcons name="cloud-sync" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>Check Migration Status</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -434,10 +504,10 @@ export default function SettingsScreen() {
                 }}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="sync" size={24} color={Colors.primary} />
+                  <MaterialIcons name="sync" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>Trigger Data Migration</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
 
               {dataMigrationStatus && (
@@ -503,10 +573,10 @@ export default function SettingsScreen() {
                 onPress={fixJourneyStatuses}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="build" size={24} color={Colors.primary} />
+                  <MaterialIcons name="build" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>🔧 Fix Journey Statuses</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -514,10 +584,10 @@ export default function SettingsScreen() {
                 onPress={deleteAllJourneys}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="delete-forever" size={24} color={Colors.error} />
+                  <MaterialIcons name="delete-forever" size={24} color={colors.error} />
                   <Text style={[styles.settingText, styles.dangerText]}>🗑️ DELETE ALL JOURNEYS</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.error} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.error} />
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -525,10 +595,10 @@ export default function SettingsScreen() {
                 onPress={purgeAllAccountData}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="warning" size={24} color={Colors.critical} />
+                  <MaterialIcons name="warning" size={24} color={colors.critical} />
                   <Text style={[styles.settingText, styles.criticalText]}>🚨 PURGE EVERYTHING</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.critical} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.critical} />
               </TouchableOpacity>
             </View>
 
@@ -555,10 +625,10 @@ export default function SettingsScreen() {
                 }}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="storage" size={24} color={Colors.primary} />
+                  <MaterialIcons name="storage" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>Check Your Journey Data</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -578,10 +648,10 @@ export default function SettingsScreen() {
                 }}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="location-on" size={24} color={Colors.primary} />
+                  <MaterialIcons name="location-on" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>Check Location Permissions</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -615,10 +685,10 @@ export default function SettingsScreen() {
                 }}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="analytics" size={24} color={Colors.primary} />
+                  <MaterialIcons name="analytics" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>Your Journey Statistics</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -658,10 +728,21 @@ export default function SettingsScreen() {
                 }}
               >
                 <View style={styles.settingContent}>
-                  <MaterialIcons name="file-download" size={24} color={Colors.primary} />
+                  <MaterialIcons name="file-download" size={24} color={colors.primary} />
                   <Text style={styles.settingText}>Export Your Journey Data</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.settingItem} 
+                onPress={() => setShowAnimationDemo(true)}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="animation" size={24} color={colors.primary} />
+                  <Text style={styles.settingText}>🎨 Test Ping Animations</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -672,185 +753,299 @@ export default function SettingsScreen() {
 
   if (profileLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading profile...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* User Profile Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Profile</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView>
+        {/* User Profile Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>Profile</Text>
 
-        <View style={styles.profileHeader}>
-          <Image
-            source={{ uri: userProfile?.photoURL || 'https://via.placeholder.com/80' }}
-            style={styles.profileImage}
-          />
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{userProfile?.displayName || 'Hero Explorer'}</Text>
-            <Text style={styles.profileEmail}>{user?.email}</Text>
-            {userProfile?.location && (
-              <Text style={styles.profileLocation}>📍 {userProfile.location}</Text>
-            )}
+          <View style={styles.profileHeader}>
+            <Image
+              source={{ uri: userProfile?.photoURL || 'https://via.placeholder.com/80' }}
+              style={styles.profileImage}
+            />
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: colors.text }]}>{userProfile?.displayName || 'Hero Explorer'}</Text>
+              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
+              {userProfile?.location && (
+                <Text style={[styles.profileLocation, { color: colors.textSecondary }]}>📍 {userProfile.location}</Text>
+              )}
+            </View>
+          </View>
+
+          {editingProfile ? (
+            <View style={styles.editForm}>
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: colors.inputBackground, 
+                  borderColor: colors.inputBorder, 
+                  color: colors.inputText 
+                }]}
+                placeholder="Display Name"
+                placeholderTextColor={colors.placeholder}
+                value={editForm.displayName}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, displayName: text }))}
+              />
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: colors.inputBackground, 
+                  borderColor: colors.inputBorder, 
+                  color: colors.inputText 
+                }]}
+                placeholder="Bio"
+                placeholderTextColor={colors.placeholder}
+                value={editForm.bio}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, bio: text }))}
+                multiline
+                numberOfLines={3}
+              />
+              <TextInput
+                style={[styles.input, { 
+                  backgroundColor: colors.inputBackground, 
+                  borderColor: colors.inputBorder, 
+                  color: colors.inputText 
+                }]}
+                placeholder="Location"
+                placeholderTextColor={colors.placeholder}
+                value={editForm.location}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, location: text }))}
+              />
+              <View style={styles.editButtons}>
+                <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.buttonSecondary }]} onPress={cancelEditing}>
+                  <Text style={[styles.cancelButtonText, { color: colors.buttonTextSecondary }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.buttonPrimary }]} onPress={saveProfile}>
+                  <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.buttonPrimary }]} onPress={startEditing}>
+              <Text style={[styles.editButtonText, { color: colors.buttonText }]}>Edit Profile</Text>
+            </TouchableOpacity>
+          )}
+
+          {userProfile?.bio && (
+            <View style={styles.bioContainer}>
+              <Text style={styles.bioText}>{userProfile.bio}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Stats Section */}
+        {userProfile?.stats && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Your Stats</Text>
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userProfile.stats.totalWalks || 0}</Text>
+                <Text style={styles.statLabel}>Walks</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userProfile.stats.totalDistance || 0}km</Text>
+                <Text style={styles.statLabel}>Distance</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{userProfile.stats.discoveries || 0}</Text>
+                <Text style={styles.statLabel}>Discoveries</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Discovery Preferences Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Discovery Preferences</Text>
+          <Text style={styles.sectionDescription}>
+            Choose which types of places you'd like to discover during your walks:
+          </Text>
+
+          <TouchableOpacity
+            style={styles.preferenceLink}
+            onPress={() => navigation.navigate('DiscoveryPreferences')}
+          >
+            <View style={styles.preferenceLinkContent}>
+              <View style={styles.preferenceLinkLeft}>
+                <MaterialIcons name="tune" size={24} color={colors.primary} />
+                <Text style={styles.preferenceLinkText}>Configure Discovery Settings</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={colors.text + '60'} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Preferences Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>Preferences</Text>
+
+          <View style={styles.preferenceItem}>
+            <Text style={[styles.preferenceLabel, { color: colors.text }]}>Language</Text>
+            <View style={styles.languageOptions}>
+        {LANGUAGES.map(({code, label}) => (
+          <TouchableOpacity
+            key={code}
+            style={[
+                    styles.languageOption,
+                    { backgroundColor: colors.buttonSecondary },
+                    language === code && { backgroundColor: colors.buttonPrimary }
+            ]}
+            onPress={() => selectLanguage(code)}
+          >
+            <Text
+              style={[
+                      styles.languageOptionText,
+                      { color: colors.text },
+                      language === code && { color: colors.buttonText, fontWeight: '600' }
+              ]}
+            >
+              {label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
           </View>
         </View>
 
-        {editingProfile ? (
-          <View style={styles.editForm}>
-            <TextInput
-              style={styles.input}
-              placeholder="Display Name"
-              value={editForm.displayName}
-              onChangeText={(text) => setEditForm(prev => ({ ...prev, displayName: text }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Bio"
-              value={editForm.bio}
-              onChangeText={(text) => setEditForm(prev => ({ ...prev, bio: text }))}
-              multiline
-              numberOfLines={3}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Location"
-              value={editForm.location}
-              onChangeText={(text) => setEditForm(prev => ({ ...prev, location: text }))}
-            />
-            <View style={styles.editButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={cancelEditing}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
+        {/* Theme Selection Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>UI Theme</Text>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+            Choose your app's UI theme and map style.
+          </Text>
+          
+          <View style={styles.preferenceItem}>
+            <Text style={[styles.preferenceLabel, { color: colors.text }]}>Theme</Text>
+            <View style={styles.themeOptions}>
+              {themeOptions.map((theme) => (
+                <TouchableOpacity
+                  key={theme.type}
+                  style={[
+                    styles.themeOption,
+                    { backgroundColor: colors.buttonSecondary },
+                    currentTheme === theme.type && { backgroundColor: colors.buttonPrimary }
+                  ]}
+                  onPress={() => handleThemeChange(theme.type)}
+                >
+                  <MaterialIcons 
+                    name={theme.icon} 
+                    size={20} 
+                    color={currentTheme === theme.type ? colors.buttonText : colors.text} 
+                  />
+                  <Text style={[
+                    styles.themeOptionText, 
+                    { color: currentTheme === theme.type ? colors.buttonText : colors.text }
+                  ]}>
+                    {theme.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-        ) : (
-          <TouchableOpacity style={styles.editButton} onPress={startEditing}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
+
+          <View style={styles.preferenceItem}>
+            <Text style={[styles.preferenceLabel, { color: colors.text }]}>Map Style</Text>
+            <View style={styles.mapStyleOptions}>
+              {mapStyleOptions.map((mapStyle) => (
+                <TouchableOpacity
+                  key={mapStyle.type}
+                  style={[
+                    styles.mapStyleOption,
+                    { backgroundColor: colors.buttonSecondary },
+                    currentMapStyle === mapStyle.type && { backgroundColor: colors.buttonPrimary }
+                  ]}
+                  onPress={() => handleMapStyleChange(mapStyle.type)}
+                >
+                  <MaterialIcons 
+                    name={mapStyle.icon} 
+                    size={20} 
+                    color={currentMapStyle === mapStyle.type ? colors.buttonText : colors.text} 
+                  />
+                  <Text style={[
+                    styles.mapStyleOptionText, 
+                    { color: currentMapStyle === mapStyle.type ? colors.buttonText : colors.text }
+                  ]}>
+                    {mapStyle.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.settingItem, { borderBottomColor: colors.border }]}
+            onPress={handleResetPreferences}
+          >
+            <View style={styles.settingContent}>
+              <MaterialIcons name="settings-backup-restore" size={24} color={colors.primary} />
+              <Text style={[styles.settingText, { color: colors.text }]}>Reset UI and Map Styles to Defaults</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
-        )}
+        </View>
 
-        {userProfile?.bio && (
-          <View style={styles.bioContainer}>
-            <Text style={styles.bioText}>{userProfile.bio}</Text>
-          </View>
-        )}
-      </View>
+        {/* Account Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>Account</Text>
 
-      {/* Stats Section */}
-      {userProfile?.stats && (
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Your Stats</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userProfile.stats.totalWalks || 0}</Text>
-              <Text style={styles.statLabel}>Walks</Text>
+          <TouchableOpacity style={[styles.dangerButton, { backgroundColor: colors.danger }]} onPress={handleSignOut}>
+            <Text style={[styles.dangerButtonText, { color: colors.buttonText }]}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {renderDeveloperSection()}
+      </ScrollView>
+
+      {/* Animation Demo Modal */}
+      {showAnimationDemo && (
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.modalBackground }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>🎨 Ping Animation Demo</Text>
+              <TouchableOpacity 
+                onPress={() => setShowAnimationDemo(false)}
+                style={styles.closeButton}
+              >
+                <MaterialIcons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userProfile.stats.totalDistance || 0}km</Text>
-              <Text style={styles.statLabel}>Distance</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{userProfile.stats.discoveries || 0}</Text>
-              <Text style={styles.statLabel}>Discoveries</Text>
+            <View style={styles.modalBody}>
+              <AnimationDemo />
             </View>
           </View>
         </View>
       )}
-
-      {/* Discovery Preferences Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Discovery Preferences</Text>
-        <Text style={styles.sectionDescription}>
-          Choose which types of places you'd like to discover during your walks:
-        </Text>
-
-        <TouchableOpacity
-          style={styles.preferenceLink}
-          onPress={() => navigation.navigate('DiscoveryPreferences')}
-        >
-          <View style={styles.preferenceLinkContent}>
-            <View style={styles.preferenceLinkLeft}>
-              <MaterialIcons name="tune" size={24} color={Colors.primary} />
-              <Text style={styles.preferenceLinkText}>Configure Discovery Settings</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={Colors.text + '60'} />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Preferences Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Preferences</Text>
-
-        <View style={styles.preferenceItem}>
-          <Text style={styles.preferenceLabel}>Language</Text>
-          <View style={styles.languageOptions}>
-      {LANGUAGES.map(({code, label}) => (
-        <TouchableOpacity
-          key={code}
-          style={[
-                  styles.languageOption,
-                  language === code && styles.languageOptionActive
-          ]}
-          onPress={() => selectLanguage(code)}
-        >
-          <Text
-            style={[
-                    styles.languageOptionText,
-                    language === code && styles.languageOptionTextActive
-            ]}
-          >
-            {label}
-          </Text>
-        </TouchableOpacity>
-      ))}
     </View>
-        </View>
-      </View>
-
-
-
-      {/* Account Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Account</Text>
-
-        <TouchableOpacity style={styles.dangerButton} onPress={handleSignOut}>
-          <Text style={styles.dangerButtonText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-
-              {renderDeveloperSection()}
-    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: (props) => props.theme.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: (props) => props.theme.background,
   },
   loadingText: {
     marginTop: Spacing.md,
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
   },
   section: {
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: (props) => props.theme.tabInactive + '30',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -858,7 +1053,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: (props) => props.theme.tabInactive + '30',
   },
   sectionHeaderContent: {
     flexDirection: 'row',
@@ -866,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h2,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     marginLeft: Spacing.sm,
   },
   expandIcon: {
@@ -883,18 +1078,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background + '80',
+    backgroundColor: (props) => props.theme.background + '80',
     zIndex: 1,
   },
   subsection: {
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.tabInactive + '30',
+    borderTopColor: (props) => props.theme.tabInactive + '30',
   },
   subsectionTitle: {
     ...Typography.h3,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     marginBottom: Spacing.sm,
   },
   preferenceItem: {
@@ -908,12 +1103,12 @@ const styles = StyleSheet.create({
   },
   preferenceLabel: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     flex: 1,
     fontWeight: '600',
   },
   preferenceLink: {
-    backgroundColor: Colors.tabInactive + '20',
+    backgroundColor: (props) => props.theme.tabInactive + '20',
     borderRadius: 8,
     padding: Spacing.md,
     marginTop: Spacing.sm,
@@ -930,7 +1125,7 @@ const styles = StyleSheet.create({
   },
   preferenceLinkText: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     fontWeight: '600',
     marginLeft: Spacing.sm,
   },
@@ -943,17 +1138,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: Spacing.sm,
     marginBottom: Spacing.sm,
-    backgroundColor: Colors.tabInactive + '20',
+    backgroundColor: (props) => props.theme.tabInactive + '20',
   },
   languageOptionActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: (props) => props.theme.primary,
   },
   languageOptionText: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
   },
   languageOptionTextActive: {
-    color: Colors.background,
+    color: (props) => props.theme.background,
     fontWeight: '600',
   },
   dangerButton: {
@@ -964,7 +1159,7 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     ...Typography.body,
-    color: Colors.background,
+    color: (props) => props.theme.background,
     fontWeight: '600',
   },
   disabledButton: {
@@ -973,7 +1168,7 @@ const styles = StyleSheet.create({
   migrationStatus: {
     marginTop: Spacing.md,
     padding: Spacing.md,
-    backgroundColor: Colors.tabInactive + '20',
+    backgroundColor: (props) => props.theme.tabInactive + '20',
     borderRadius: 8,
   },
   statusRow: {
@@ -984,7 +1179,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     fontWeight: '600',
   },
   statusIndicator: {
@@ -1008,12 +1203,12 @@ const styles = StyleSheet.create({
   recommendationContainer: {
     marginTop: Spacing.md,
     padding: Spacing.sm,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: (props) => props.theme.primary + '20',
     borderRadius: 4,
   },
   recommendationText: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     fontStyle: 'italic',
   },
   errorContainer: {
@@ -1024,54 +1219,54 @@ const styles = StyleSheet.create({
   },
   errorLabel: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     fontWeight: '600',
     marginBottom: 4,
   },
   errorText: {
     ...Typography.body,
-    color: Colors.text + '80',
+    color: (props) => props.theme.text + '80',
     fontSize: 12,
   },
   migrationStatusContainer: {
     marginTop: Spacing.md,
     padding: Spacing.md,
-    backgroundColor: Colors.tabInactive + '20',
+    backgroundColor: (props) => props.theme.tabInactive + '20',
     borderRadius: 8,
   },
   migrationStats: {
     marginTop: Spacing.md,
     padding: Spacing.sm,
-    backgroundColor: Colors.background,
+    backgroundColor: (props) => props.theme.background,
     borderRadius: 4,
   },
   migrationStatsTitle: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     fontWeight: '600',
     marginBottom: Spacing.sm,
   },
   migrationStatsText: {
     ...Typography.body,
-    color: Colors.text + '80',
+    color: (props) => props.theme.text + '80',
     fontSize: 14,
     marginBottom: 2,
   },
   migrationResult: {
     marginTop: Spacing.md,
     padding: Spacing.sm,
-    backgroundColor: Colors.primary + '20',
+    backgroundColor: (props) => props.theme.primary + '20',
     borderRadius: 4,
   },
   migrationResultTitle: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     fontWeight: '600',
     marginBottom: Spacing.sm,
   },
   migrationResultText: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     marginBottom: Spacing.sm,
   },
   migrationDetails: {
@@ -1079,7 +1274,7 @@ const styles = StyleSheet.create({
   },
   migrationDetailsText: {
     ...Typography.body,
-    color: Colors.text + '80',
+    color: (props) => props.theme.text + '80',
     fontSize: 12,
     marginBottom: 2,
   },
@@ -1089,7 +1284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: (props) => props.theme.tabInactive + '30',
   },
   settingContent: {
     flexDirection: 'row',
@@ -1097,7 +1292,7 @@ const styles = StyleSheet.create({
   },
   settingText: {
     ...Typography.body,
-    color: Colors.text,
+    color: (props) => props.theme.text,
     marginLeft: Spacing.sm,
   },
   dangerItem: {
@@ -1120,30 +1315,122 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   testButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: (props) => props.theme.primary,
     padding: Spacing.md,
     borderRadius: 8,
     alignItems: 'center',
   },
   testButtonText: {
     ...Typography.body,
-    color: Colors.background,
+    color: (props) => props.theme.background,
     fontWeight: '600',
   },
   sectionDescription: {
     ...Typography.body,
-    color: Colors.textSecondary,
+    color: (props) => props.theme.textSecondary,
     marginBottom: Spacing.md,
   },
   editButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: (props) => props.theme.primary,
     padding: Spacing.md,
     borderRadius: 8,
     alignItems: 'center',
   },
   editButtonText: {
     ...Typography.body,
-    color: Colors.background,
+    color: (props) => props.theme.background,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: (props) => props.theme.background,
+    borderRadius: 16,
+    width: '95%',
+    height: '90%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: (props) => props.theme.tabInactive + '30',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: (props) => props.theme.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalBody: {
+    flex: 1,
+  },
+  // New styles for Theme and Map Style sections
+  themeOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: Spacing.sm,
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+    borderRadius: 4,
+    marginRight: Spacing.sm,
+    marginBottom: Spacing.sm,
+    backgroundColor: (props) => props.theme.tabInactive + '20',
+  },
+  themeOptionActive: {
+    backgroundColor: (props) => props.theme.primary,
+  },
+  themeOptionText: {
+    ...Typography.body,
+    color: (props) => props.theme.text,
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
+  },
+  mapStyleOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: Spacing.sm,
+  },
+  mapStyleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+    borderRadius: 4,
+    marginRight: Spacing.sm,
+    marginBottom: Spacing.sm,
+    backgroundColor: (props) => props.theme.tabInactive + '20',
+  },
+  mapStyleOptionActive: {
+    backgroundColor: (props) => props.theme.primary,
+  },
+  mapStyleOptionText: {
+    ...Typography.body,
+    color: (props) => props.theme.text,
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
   },
 });
