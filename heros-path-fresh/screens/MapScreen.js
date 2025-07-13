@@ -19,6 +19,7 @@ import { snapToRoads } from '../services/DiscoveriesService';
 import { useUser } from '../contexts/UserContext';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
+import BackgroundLocationService from '../services/BackgroundLocationService';
 
 const ROUTES_STORAGE_KEY = '@saved_routes';
 const SAVED_PLACES_KEY = 'savedPlaces';
@@ -55,6 +56,7 @@ export default function MapScreen({ navigation, route }) {
   const [previewRoute, setPreviewRoute] = useState(null);
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [showSavedPlaces, setShowSavedPlaces] = useState(true);
+  const [isLocating, setIsLocating] = useState(false);
 
   const locationSubscriber = useRef(null);
   const mapRef = useRef(null);
@@ -157,48 +159,48 @@ export default function MapScreen({ navigation, route }) {
      }
    }, [route.params?.routeToDisplay, navigation]);
 
-  // Fetch user location on mount
+  // Initialize background location service and fetch user location on mount
   useEffect(() => {
     let isMounted = true;
     (async () => {
-      // Request both foreground and background permissions
-      const foregroundStatus = await Location.requestForegroundPermissionsAsync();
-      const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-      
-      if (foregroundStatus.status !== 'granted') {
-        Alert.alert('Permission required', 'Location access is needed to track your journey.');
-        return;
-      }
-      
-      if (backgroundStatus.status !== 'granted') {
-        Alert.alert(
-          'Background Location Required', 
-          'Background location access is needed to track your journey when the app is minimized. Please enable "Always" location access in Settings.'
-        );
-        return;
-      }
-      
       try {
-        const { coords } = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 1000,
-          distanceInterval: 1
+        // Initialize background location service
+        await BackgroundLocationService.initialize();
+        
+        // Set up location update callback
+        BackgroundLocationService.setLocationUpdateCallback((coords, journey) => {
+          if (isMounted) {
+            setCurrentPosition(coords);
+            if (tracking && journey) {
+              setRawCoords(journey.coordinates);
+            }
+          }
         });
+
+        // Get initial location using optimized settings
+        const coords = await BackgroundLocationService.getCurrentLocation();
         if (isMounted) setCurrentPosition(coords);
-      } catch {
-        Alert.alert('Error', 'Unable to fetch location.');
+        
+      } catch (error) {
+        console.error('Failed to initialize location service:', error);
+        Alert.alert('Error', 'Unable to access location. Please check your GPS settings.');
       }
     })();
     return () => { isMounted = false; };
   }, []);
 
   const locateMe = async () => {
+    if (isLocating) return; // Prevent multiple simultaneous calls
+    
+    setIsLocating(true);
     try {
-      const { coords } = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.BestForNavigation,
-        timeInterval: 1000,
-        distanceInterval: 1
+      // Use the optimized location service
+      const coords = await BackgroundLocationService.getCurrentLocation({
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 5000,
+        distanceInterval: 10
       });
+      
       setCurrentPosition(coords);
       mapRef.current?.animateToRegion({
         latitude: coords.latitude,
@@ -206,8 +208,11 @@ export default function MapScreen({ navigation, route }) {
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
       });
-    } catch {
-      Alert.alert('Error', 'Unable to fetch location.');
+    } catch (error) {
+      console.error('Location error:', error);
+      Alert.alert('Error', 'Unable to fetch location. Please check your GPS settings.');
+    } finally {
+      setIsLocating(false);
     }
   };
 
@@ -217,135 +222,133 @@ export default function MapScreen({ navigation, route }) {
     await AsyncStorage.setItem(SHOW_SAVED_PLACES_KEY, newValue.toString());
   };
 
+  const saveJourney = async (rawCoords) => {
+    try {
+      if (user) {
+        // Save to Firestore
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: '2-digit'
+        }).replace(',', '');
+        const formattedTime = now.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        
+        const journeyData = {
+          name: `${formattedDate} ${formattedTime}`,
+          route: rawCoords,
+          distance: 0, // Calculate distance if needed
+          duration: 0, // Calculate duration if needed
+          startLocation: rawCoords[0] || null,
+          endLocation: rawCoords[rawCoords.length - 1] || null,
+        };
+        
+        console.log('🗺️ [MAP_SCREEN] Saving journey to Firestore:', {
+          userId: user.uid,
+          routePoints: rawCoords.length,
+          startLocation: journeyData.startLocation,
+          endLocation: journeyData.endLocation
+        });
+        
+        const result = await JourneyService.createJourney(user.uid, journeyData);
+        if (result.success) {
+          console.log('✅ [MAP_SCREEN] Journey saved successfully to Firestore');
+          
+          // Reload journeys to get updated list
+          const journeysResult = await JourneyService.getUserJourneys(user.uid);
+          if (journeysResult.success) {
+            const journeys = journeysResult.journeys.map(journey => ({
+              id: journey.id,
+              coords: journey.route || [],
+              date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
+              name: journey.name,
+              distance: journey.distance,
+              duration: journey.duration,
+            }));
+            setSavedRoutes(journeys);
+          }
+        } else {
+          console.error('❌ [MAP_SCREEN] Failed to save journey to Firestore');
+        }
+      } else {
+        // Fallback to AsyncStorage for non-authenticated users
+        const stored = await AsyncStorage.getItem(ROUTES_STORAGE_KEY);
+        const base = stored ? JSON.parse(stored) : [];
+        const normalized = base.map(e =>
+          Array.isArray(e)
+            ? { id: String(Date.now()), coords: e, date: new Date().toISOString() }
+            : e
+        );
+
+        const newEntry = { id: Date.now().toString(), coords: rawCoords, date: new Date().toISOString() };
+        const newSaved = [...normalized, newEntry];
+        await AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(newSaved));
+        setSavedRoutes(newSaved);
+      }
+      
+      await AsyncStorage.setItem('lastRoute', JSON.stringify({ coords: rawCoords, date: new Date().toISOString() }));
+
+      // Snap to roads for the live path and hide raw coords
+      try {
+        const snapped = await snapToRoads(rawCoords);
+        setRoadCoords(snapped);
+        setRawCoords([]); // Hide raw polyline after completion
+      } catch (e) {
+        console.warn('Road snapping failed:', e);
+      }
+
+      Alert.alert('Saved', `Route with ${rawCoords.length} points saved.`);
+    } catch (err) {
+      console.error('Error saving journey', err);
+      Alert.alert('Save failed', err.message || 'Unknown error');
+    }
+  };
+
   const toggleTracking = async () => {
     if (!tracking) {
       setPreviewRoute(null);
       setRawCoords([]);
       setRoadCoords([]);
       
-      // Check permissions before starting tracking
-      const foregroundStatus = await Location.getForegroundPermissionsAsync();
-      const backgroundStatus = await Location.getBackgroundPermissionsAsync();
-      
-      if (foregroundStatus.status !== 'granted') {
-        Alert.alert('Permission required', 'Location access is needed to track your journey.');
-        return;
-      }
-      
-      if (backgroundStatus.status !== 'granted') {
-        Alert.alert(
-          'Background Location Required', 
-          'Background location access is needed to track your journey when the app is minimized. Please enable "Always" location access in Settings.'
-        );
-        return;
-      }
-      
-      locationSubscriber.current = await Location.watchPositionAsync(
-        { 
-          accuracy: Location.Accuracy.BestForNavigation, 
-          timeInterval: 1000, 
-          distanceInterval: 1,
-          // Enable background location updates
-          foregroundService: {
-            notificationTitle: "Hero's Path",
-            notificationBody: "Tracking your journey...",
-            notificationColor: "#1E1E1E"
-          }
-        },
-        ({ coords }) => {
-          const pos = { latitude: coords.latitude, longitude: coords.longitude };
-          setRawCoords(prev => [...prev, pos]);
-          setCurrentPosition(pos);
-        }
-      );
-      setTracking(true);
-    } else {
-      locationSubscriber.current?.remove();
-      setTracking(false);
-
-      // Save journey
       try {
-        if (user) {
-          // Save to Firestore
-          const now = new Date();
-          const formattedDate = now.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: '2-digit'
-          }).replace(',', '');
-          const formattedTime = now.toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          });
-          
-          const journeyData = {
-            name: `${formattedDate} ${formattedTime}`,
-            route: rawCoords,
-            distance: 0, // Calculate distance if needed
-            duration: 0, // Calculate duration if needed
-            startLocation: rawCoords[0] || null,
-            endLocation: rawCoords[rawCoords.length - 1] || null,
-          };
-          
-          console.log('🗺️ [MAP_SCREEN] Saving journey to Firestore:', {
-            userId: user.uid,
-            routePoints: rawCoords.length,
-            startLocation: journeyData.startLocation,
-            endLocation: journeyData.endLocation
-          });
-          
-          const result = await JourneyService.createJourney(user.uid, journeyData);
-          if (result.success) {
-            console.log('✅ [MAP_SCREEN] Journey saved successfully to Firestore');
-            
-            // Reload journeys to get updated list
-            const journeysResult = await JourneyService.getUserJourneys(user.uid);
-            if (journeysResult.success) {
-              const journeys = journeysResult.journeys.map(journey => ({
-                id: journey.id,
-                coords: journey.route || [],
-                date: journey.createdAt?.toDate?.() || new Date(journey.createdAt) || new Date(),
-                name: journey.name,
-                distance: journey.distance,
-                duration: journey.duration,
-              }));
-              setSavedRoutes(journeys);
-            }
-          } else {
-            console.error('❌ [MAP_SCREEN] Failed to save journey to Firestore');
-          }
-        } else {
-          // Fallback to AsyncStorage for non-authenticated users
-          const stored = await AsyncStorage.getItem(ROUTES_STORAGE_KEY);
-          const base = stored ? JSON.parse(stored) : [];
-          const normalized = base.map(e =>
-            Array.isArray(e)
-              ? { id: String(Date.now()), coords: e, date: new Date().toISOString() }
-              : e
-          );
-
-          const newEntry = { id: Date.now().toString(), coords: rawCoords, date: new Date().toISOString() };
-          const newSaved = [...normalized, newEntry];
-          await AsyncStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(newSaved));
-          setSavedRoutes(newSaved);
-        }
+        // Start tracking using the background location service
+        const journeyId = `journey_${Date.now()}`;
+        const success = await BackgroundLocationService.startTracking(journeyId);
         
-        await AsyncStorage.setItem('lastRoute', JSON.stringify({ coords: rawCoords, date: new Date().toISOString() }));
-
-        // Snap to roads for the live path and hide raw coords
-        try {
-          const snapped = await snapToRoads(rawCoords);
-          setRoadCoords(snapped);
-          setRawCoords([]); // Hide raw polyline after completion
-        } catch (e) {
-          console.warn('Road snapping failed:', e);
+        if (success) {
+          setTracking(true);
+        } else {
+          Alert.alert('Error', 'Failed to start location tracking. Please check your permissions.');
         }
-
-        Alert.alert('Saved', `Route with ${rawCoords.length} points saved.`);
-      } catch (err) {
-        console.error('Error saving journey', err);
-        Alert.alert('Save failed', err.message || 'Unknown error');
+      } catch (error) {
+        console.error('Failed to start tracking:', error);
+        Alert.alert('Error', 'Failed to start location tracking. Please check your permissions.');
+      }
+    } else {
+      try {
+        // Stop tracking using the background location service
+        const journeyData = await BackgroundLocationService.stopTracking();
+        setTracking(false);
+        
+        if (journeyData) {
+          // Convert journey data to the format expected by the rest of the code
+          const rawCoords = journeyData.coordinates.map(coord => ({
+            latitude: coord.latitude,
+            longitude: coord.longitude
+          }));
+          
+          setRawCoords(rawCoords);
+          
+          // Save journey
+          await saveJourney(rawCoords);
+        }
+      } catch (error) {
+        console.error('Failed to stop tracking:', error);
+        setTracking(false);
       }
     }
   };
@@ -456,8 +459,16 @@ export default function MapScreen({ navigation, route }) {
         </TouchableOpacity>
         
         {/* Locate button */}
-        <TouchableOpacity style={styles.locateButton} onPress={locateMe}>
-          <MaterialIcons name="my-location" size={28} color={Colors.primary} />
+        <TouchableOpacity 
+          style={[styles.locateButton, isLocating && styles.locateButtonLoading]} 
+          onPress={locateMe}
+          disabled={isLocating}
+        >
+          <MaterialIcons 
+            name={isLocating ? "hourglass-empty" : "my-location"} 
+            size={28} 
+            color={isLocating ? Colors.text + '60' : Colors.primary} 
+          />
         </TouchableOpacity>
         
         {/* Toggle saved places button */}
@@ -524,6 +535,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     marginBottom: Spacing.sm,
+  },
+  locateButtonLoading: {
+    opacity: 0.7,
   },
   toggleButton: {
     backgroundColor: Colors.background,
