@@ -25,6 +25,13 @@ export default function PastJourneysScreen({ navigation }) {
     return unsubscribe;
   }, [navigation]);
 
+  // Add focus effect to refresh journeys when returning from DiscoveriesScreen
+  useFocusEffect(
+    React.useCallback(() => {
+      loadJourneys();
+    }, [user])
+  );
+
   async function loadJourneys() {
     if (!user) {
       setJourneys([]);
@@ -103,117 +110,25 @@ export default function PastJourneysScreen({ navigation }) {
     );
   };
 
-  const deleteAllJourneys = async () => {
-    Alert.alert(
-      'Delete ALL Journeys?',
-      'This will permanently delete ALL your journeys and all associated data (discoveries, dismissed places, etc.). This action cannot be undone.\n\nAre you sure you want to continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'DELETE ALL',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const result = await JourneyService.deleteAllJourneys(user.uid);
-              Alert.alert('Success', `Deleted ${result.deletedCount} journeys and all associated data.`);
-              // Reload journeys to reflect the change
-              await loadJourneys();
-            } catch (error) {
-              console.error('Error deleting all journeys:', error);
-              Alert.alert('Error', 'Failed to delete all journeys');
-            }
-          },
-        },
-      ]
-    );
-  };
 
-  const fixJourneyStatuses = async () => {
-    Alert.alert(
-      'Fix Journey Statuses?',
-      'This will update all journey completion statuses to be accurate. This is useful if some journeys show incorrect review status.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Fix Statuses',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              let fixedCount = 0;
-              
-              for (const journey of journeys) {
-                try {
-                  await DiscoveryService.updateJourneyCompletionStatus(user.uid, journey.id);
-                  fixedCount++;
-                } catch (error) {
-                  console.error(`Error fixing journey ${journey.id}:`, error);
-                }
-              }
-              
-              Alert.alert('Success', `Fixed completion status for ${fixedCount} journeys.`);
-              await loadJourneys();
-            } catch (error) {
-              console.error('Error fixing journey statuses:', error);
-              Alert.alert('Error', 'Failed to fix journey statuses');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const purgeAllAccountData = async () => {
-    Alert.alert(
-      '🚨 PURGE ALL ACCOUNT DATA?',
-      'This will PERMANENTLY DELETE ALL your data:\n\n• All journeys and routes\n• All saved places\n• All dismissed places\n• All discovery preferences\n• All app settings\n• All local storage data\n\nThis action CANNOT be undone and will give you a completely fresh start.\n\nAre you absolutely sure you want to continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: '🚨 PURGE EVERYTHING',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true);
-              const result = await JourneyService.purgeAllUserData(user.uid);
-              
-              Alert.alert(
-                '✅ Account Purged Successfully',
-                `All your data has been completely removed:\n\n• ${result.deletedJourneys} journeys deleted\n• ${result.deletedDiscoveries} discoveries deleted\n• ${result.deletedDismissed} dismissed places deleted\n• ${result.clearedStorageKeys} app settings cleared\n\nYou now have a completely fresh account!`,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      // Reload journeys to show empty state
-                      loadJourneys();
-                    }
-                  }
-                ]
-              );
-            } catch (error) {
-              console.error('Error purging account data:', error);
-              Alert.alert('Error', 'Failed to purge account data. Please try again.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const renderItem = ({ item, index }) => {
     const d = item.dateObj || new Date(item.date);
-    const dateStr = d.toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric'
-    });
-    const timeStr = d.toLocaleTimeString(undefined, {
-      hour: '2-digit', minute: '2-digit'
+    
+    // Format: "DD MMM'YY HH:MM" (e.g., "12 Jul'25 14:30")
+    const formattedDate = d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: '2-digit'
+    }).replace(',', '');
+    const formattedTime = d.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
     });
     
     // Use journey name if available, otherwise generate label
-    const label = item.name || `Journey #${index+1} – ${dateStr} at ${timeStr}`;
+    const label = item.name || `${formattedDate} ${formattedTime}`;
 
     // Get completion status from pre-computed state
     const isCompleted = journeyStatuses[item.id] || false;
@@ -229,8 +144,12 @@ export default function PastJourneysScreen({ navigation }) {
           }
         >
           <View style={styles.infoRow}>
-            <Text style={styles.label}>{label}</Text>
-            {isCompleted && <Text style={styles.completedIcon}>✅</Text>}
+            <Text style={[
+              styles.label,
+              isCompleted && styles.labelCompleted
+            ]}>
+              {label}
+            </Text>
           </View>
           <Text style={styles.sub}>{item.coords.length} points</Text>
         </TouchableOpacity>
@@ -251,8 +170,8 @@ export default function PastJourneysScreen({ navigation }) {
           ]}>
             {isLoadingStatus ? '...' : 
               (hasDiscoveries ? 
-                (isCompleted ? '✅ All Reviewed' : '🔍 Review') : 
-                '📭 No Discoveries'
+                (isCompleted ? 'All Reviewed' : 'Review') : 
+                'No Discoveries'
               )
             }
           </Text>
@@ -272,28 +191,6 @@ export default function PastJourneysScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Temporary development buttons - REMOVE BEFORE PRODUCTION */}
-      <View style={styles.devButtonsContainer}>
-        <TouchableOpacity
-          style={styles.devButton}
-          onPress={fixJourneyStatuses}
-        >
-          <Text style={styles.devButtonText}>🔧 Fix Journey Statuses</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.devButton, styles.deleteAllButton]}
-          onPress={deleteAllJourneys}
-        >
-          <Text style={styles.deleteAllButtonText}>🗑️ DELETE ALL JOURNEYS</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.devButton, styles.purgeAllButton]}
-          onPress={purgeAllAccountData}
-        >
-          <Text style={styles.purgeAllButtonText}>🚨 PURGE EVERYTHING</Text>
-        </TouchableOpacity>
-      </View>
-      
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -382,10 +279,8 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
-  completedIcon: {
-    fontSize: 16,
-    color: '#28a745', // A green color for completed
-    marginLeft: 8,
+  labelCompleted: {
+    color: '#28a745', // Green color for completed journeys
   },
   sub: {
     fontSize:  12,
@@ -424,38 +319,5 @@ const styles = StyleSheet.create({
   deleteText: {
     fontSize: 16,
     color: '#d32f2f',
-  },
-  devButtonsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  devButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#e3f2fd',
-  },
-  devButtonText: {
-    color: '#1976d2',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  deleteAllButton: {
-    backgroundColor: '#ffebee',
-  },
-  deleteAllButtonText: {
-    color: '#d32f2f',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  purgeAllButton: {
-    backgroundColor: '#ff5722',
-  },
-  purgeAllButtonText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 14,
   },
 });
