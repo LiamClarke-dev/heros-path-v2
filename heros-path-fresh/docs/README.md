@@ -2,6 +2,19 @@
 
 Welcome to the Hero's Path documentation! This guide helps you find the right documentation for your needs.
 
+# Next Steps for Development
+
+## 1. Ping Animation Overhaul
+- Redesign the ping animation to be a dramatic, gamified "special power" effect (see DEVELOPMENT_STATUS.md for details).
+- Should include a charge-up and release phase, last 3–5 seconds, and be visually impactful.
+- Part of the overall theme, user preferences, and map style overhaul.
+
+## 2. React Native useInsertionEffect Warning
+- Address the warning: `useInsertionEffect must not schedule updates.`
+- See DEVELOPMENT_STATUS.md for call stack and details.
+
+---
+
 ## 📚 **Documentation Categories**
 
 ### **🚀 Getting Started**
