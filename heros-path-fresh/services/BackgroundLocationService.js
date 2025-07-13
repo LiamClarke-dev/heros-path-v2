@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 
 const LOCATION_DATA_KEY = '@background_location_data';
 
@@ -12,15 +13,55 @@ class BackgroundLocationService {
     this.onJourneyComplete = null;
   }
 
+  // Show permission denied alert with privacy information
+  showPermissionDeniedAlert() {
+    Alert.alert(
+      'Location Permission Required',
+      'Hero\'s Path needs location access to track your walks and show your route on the map.\n\n' +
+      '🔒 Privacy Promise:\n' +
+      '• Location tracking only during active walks\n' +
+      '• Tracking stops immediately when walk ends\n' +
+      '• Route data stored locally until walk completion\n' +
+      '• No real-time location monitoring\n\n' +
+      'To enable: Settings > Privacy & Security > Location Services > Hero\'s Path > "While Using App"',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => this.openDeviceSettings() }
+      ]
+    );
+  }
+
+  // Open device settings (platform-specific)
+  async openDeviceSettings() {
+    try {
+      // For iOS, we can use Linking to open settings
+      const { Linking } = require('react-native');
+      await Linking.openSettings();
+    } catch (error) {
+      console.error('Failed to open device settings:', error);
+      // Fallback: just show instructions
+      Alert.alert(
+        'Open Settings',
+        'Please go to Settings > Privacy & Security > Location Services > Hero\'s Path and select "While Using App".'
+      );
+    }
+  }
+
   // Initialize the service (simplified for Expo Go compatibility)
   async initialize() {
     try {
       // Check permissions
-      const permissions = await this.checkPermissions();
+      let permissions = await this.checkPermissions();
       if (!permissions.foreground) {
-        throw new Error('Location permission not granted');
+        // Request permissions if not already granted
+        const foregroundStatus = await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus.status !== 'granted') {
+          this.showPermissionDeniedAlert();
+          throw new Error('Location permission not granted. Please enable location permissions in your device settings.');
+        }
+        // Re-check permissions after requesting
+        permissions = await this.checkPermissions();
       }
-      
       return true;
     } catch (error) {
       console.error('Failed to initialize background location service:', error);
@@ -281,12 +322,21 @@ class BackgroundLocationService {
   // Get battery-optimized location (for one-time requests)
   async getCurrentLocation(options = {}) {
     try {
+      // Check and request permissions if needed
+      let permissions = await this.checkPermissions();
+      if (!permissions.foreground) {
+        const foregroundStatus = await Location.requestForegroundPermissionsAsync();
+        if (foregroundStatus.status !== 'granted') {
+          this.showPermissionDeniedAlert();
+          throw new Error('Location permission not granted. Please enable location permissions in your device settings.');
+        }
+        permissions = await this.checkPermissions();
+      }
       const { coords } = await Location.getCurrentPositionAsync({
         accuracy: options.accuracy || Location.Accuracy.Balanced,
         timeInterval: options.timeInterval || 5000,
         distanceInterval: options.distanceInterval || 10
       });
-      
       return coords;
     } catch (error) {
       console.error('Failed to get current location:', error);

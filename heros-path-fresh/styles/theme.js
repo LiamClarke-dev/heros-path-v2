@@ -8,6 +8,7 @@ export const Colors = {
   swipeDismiss: '#F44336',
   tabActive: '#3e4a6c',
   tabInactive: '#a0a0a0',
+  warning: '#FF6B35',
 };
 
 export const Spacing = {

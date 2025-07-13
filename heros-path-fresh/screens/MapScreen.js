@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   StatusBar,
+  Linking,
 } from 'react-native';
 import MapView, { Polyline, Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -57,13 +58,49 @@ export default function MapScreen({ navigation, route }) {
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [showSavedPlaces, setShowSavedPlaces] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
+  const [showPermissionWarning, setShowPermissionWarning] = useState(false);
 
   const locationSubscriber = useRef(null);
   const mapRef = useRef(null);
   const isFocused = useIsFocused();
 
-   useEffect(() => {
-     if (isFocused && user) {
+  // Check background permissions and show warning if needed
+  const checkBackgroundPermissions = async () => {
+    try {
+      const backgroundStatus = await Location.getBackgroundPermissionsAsync();
+      // Show warning if background permission is not granted
+      setShowPermissionWarning(backgroundStatus.status !== 'granted');
+    } catch (error) {
+      console.error('Failed to check background permissions:', error);
+    }
+  };
+
+  // Show background permission warning
+  const showBackgroundPermissionWarning = () => {
+    Alert.alert(
+      'Background Location Access',
+      'Hero\'s Path needs "Always" location access to track your journey when the app is minimized or screen is locked.\n\n' +
+      'Without this, your journey data may have gaps when:\n' +
+      '• You minimize the app\n' +
+      '• Your screen locks\n' +
+      '• You switch to other apps\n\n' +
+      'To enable: Settings > Privacy & Security > Location Services > Hero\'s Path > "Always"',
+      [
+        { text: 'Not Now', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() }
+      ]
+    );
+  };
+
+  // Check background permissions when screen comes into focus
+  useEffect(() => {
+    if (isFocused) {
+      checkBackgroundPermissions();
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
+    if (isFocused && user) {
        // Load journeys from Firestore
        JourneyService.getUserJourneys(user.uid)
          .then(result => {
@@ -180,6 +217,9 @@ export default function MapScreen({ navigation, route }) {
         // Get initial location using optimized settings
         const coords = await BackgroundLocationService.getCurrentLocation();
         if (isMounted) setCurrentPosition(coords);
+        
+        // Check background permissions and show warning if needed
+        await checkBackgroundPermissions();
         
       } catch (error) {
         console.error('Failed to initialize location service:', error);
@@ -419,6 +459,20 @@ export default function MapScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
+      {/* Permission Warning Banner */}
+      {showPermissionWarning && (
+        <TouchableOpacity 
+          style={styles.permissionWarningBanner} 
+          onPress={showBackgroundPermissionWarning}
+        >
+          <MaterialIcons name="warning" size={20} color="#FF6B35" />
+          <Text style={styles.permissionWarningText}>
+            Hero's Path Does Not Have 'Always' Allow Location Access (Tap to resolve)
+          </Text>
+          <MaterialIcons name="chevron-right" size={20} color="#FF6B35" />
+        </TouchableOpacity>
+      )}
+
       {currentPosition ? (
         <MapView
           ref={mapRef}
@@ -615,5 +669,23 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.text + '80',
     fontSize: 12,
+  },
+  permissionWarningBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.warning,
+    padding: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 10,
+  },
+  permissionWarningText: {
+    ...Typography.body,
+    color: Colors.background,
+    marginLeft: Spacing.sm,
+    marginRight: Spacing.sm,
   },
 });

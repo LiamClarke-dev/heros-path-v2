@@ -2,6 +2,80 @@
 
 ## [Unreleased] - 12 July 2025
 
+### 🚀 **NEW: Location Permission Warning System**
+
+#### **Problem Solved**
+Users were not seeing location permission prompts when needed, and those with "While Using" permission weren't aware that their journey data could be inaccurate when the app was minimized or screen was locked.
+
+#### **Solution Implemented**
+- **Automatic Permission Requests**: Location permission prompts now appear when needed during app initialization and location requests
+- **Background Permission Warning**: Banner appears when user has "While Using" instead of "Always" permission
+- **Dynamic Permission Checking**: Banner automatically disappears when user grants "Always" permission
+- **User-Friendly Alerts**: Clear explanations of permission requirements and privacy implications
+
+#### **Technical Implementation**
+- **BackgroundLocationService.js**: Enhanced with automatic permission requests and user-friendly error messages
+- **MapScreen.js**: Added permission warning banner with dynamic visibility
+- **Permission Flow**: Check → Request → Warn → Re-check on focus
+- **Settings Integration**: Direct link to device settings for permission management
+
+#### **User Experience Improvements**
+- **Clear Communication**: Banner text: "Hero's Path Does Not Have 'Always' Allow Location Access (Tap to resolve)"
+- **Privacy Transparency**: Explains exactly when location is tracked and what data is collected
+- **Easy Resolution**: One-tap access to device settings with clear navigation instructions
+- **Automatic Updates**: Banner disappears immediately when permission is granted
+
+#### **Privacy Features**
+- **Transparent Messaging**: Clear explanation that location is only tracked during active walks
+- **No Real-time Monitoring**: Emphasizes that developers cannot see location in real-time
+- **User Control**: Easy access to change permissions at any time
+- **Informed Consent**: Users understand exactly what permissions are needed and why
+
+---
+
+### 🚀 **NEW: Search Along Route (SAR) Implementation Plan**
+
+#### **Problem Solved**
+The route discovery algorithm was using `calculateRouteCenter()` which averaged GPS coordinates to find a single center point, fundamentally breaking the app's core value proposition of discovering places along the entire walking route.
+
+#### **New Solution: Google Places API SAR**
+**Phase 1: End-of-Trip "Search Along Route" (High Priority)**
+- **Single API Call**: Use `places:searchText` with `searchAlongRouteParameters`
+- **Full Path Coverage**: Searches along ENTIRE route, not just center point
+- **No Detour Bias**: Uses actual walking path via encoded polyline
+- **Minimal API Cost**: 1 call instead of 5-10 segment calls
+- **Google Optimized**: Leverages Google's built-in path-based search
+
+**Phase 2: Real-Time "Ping" Feature (Medium Priority)**
+- **On-Demand Discovery**: User can ping for nearby places during active walks
+- **Controlled Usage**: 10-second cooldown and monthly credit limits
+- **Real-time Results**: Immediate feedback with animated markers
+- **Hybrid Storage**: Combines ping results with end-of-trip SAR results
+
+#### **Technical Implementation**
+```javascript
+// New SAR approach in services/DiscoveriesService.js
+{
+  "textQuery": "restaurant cafe park",
+  "searchAlongRouteParameters": {
+    "polyline": { "encodedPolyline": "..." }
+  }
+}
+```
+
+#### **Expected Benefits**
+- **API Efficiency**: ~80% reduction in API calls for route discovery
+- **Full Route Coverage**: Discovers places along entire walking path
+- **Better User Experience**: No more missed discoveries at route extremities
+- **Real-time Engagement**: Ping feature keeps users engaged during walks
+
+#### **Implementation Timeline**
+- **Immediate**: Replace center-point algorithm with SAR
+- **Next Sprint**: Add ping feature and credit system
+- **Future**: Route optimization and advanced filtering
+
+---
+
 ### ✅ **VERIFICATION COMPLETE: All Performance Optimizations Working**
 
 #### **Final Testing Results**
