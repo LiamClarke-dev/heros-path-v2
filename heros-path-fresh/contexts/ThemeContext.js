@@ -107,6 +107,29 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  // Add this function to the ThemeContext value
+  function getNavigationTheme() {
+    const colors = getCurrentThemeColors();
+    return {
+      dark: colors.mode === 'dark' || colors.mode === 'adventure',
+      colors: {
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.surface || colors.background,
+        text: colors.text,
+        border: colors.border || colors.primary,
+        notification: colors.accent || colors.primary,
+      },
+      fonts: {
+        regular: { fontFamily: 'System', fontWeight: '400' },
+        medium: { fontFamily: 'System', fontWeight: '500' },
+        light: { fontFamily: 'System', fontWeight: '300' },
+        thin: { fontFamily: 'System', fontWeight: '100' },
+        bold: { fontFamily: 'System', fontWeight: 'bold' },
+      },
+    };
+  }
+
   // Context value
   const value = {
     // Current state
@@ -121,6 +144,7 @@ export const ThemeProvider = ({ children }) => {
     getCurrentMapStyleConfig,
     getCurrentMapStyleArray,
     resetToDefaults,
+    getNavigationTheme,
     
     // Available options
     availableThemes: Object.values(THEME_TYPES),

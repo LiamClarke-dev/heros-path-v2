@@ -907,19 +907,6 @@ export default function SettingsScreen() {
           </SectionCard>
         )}
 
-        {/* Discovery Preferences Section */}
-        <SectionCard>
-          <SectionHeader icon="tune" title="Discovery Preferences" />
-          <Text style={styles.sectionDescription}>
-            Choose which types of places you'd like to discover during your walks:
-          </Text>
-          <SettingsButton
-            label="Configure Discovery Settings"
-            onPress={() => navigation.navigate('DiscoveryPreferences')}
-            icon="tune"
-          />
-        </SectionCard>
-
         {/* Preferences Section */}
         <SectionCard>
           <SectionHeader icon="tune" title="Preferences" />
@@ -939,11 +926,6 @@ export default function SettingsScreen() {
               ))}
             </View>
           </View>
-          <SettingsButton
-            label="Configure Discovery Settings"
-            onPress={() => navigation.navigate('DiscoveryPreferences')}
-            icon="tune"
-          />
         </SectionCard>
 
         {/* Theme & Map Style Section */}

@@ -1,3 +1,11 @@
+/**
+ * EnhancedPlacesService
+ *
+ * Advanced features wrapper for NewPlacesService.
+ * - Adds AI summaries, editorial content, and advanced filtering.
+ * - Handles field masking and performance optimizations.
+ * - Extends NewPlacesService without duplicating logic.
+ */
 // services/EnhancedPlacesService.js
 import { GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
 import { 

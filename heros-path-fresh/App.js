@@ -16,54 +16,34 @@ import SignInScreen from './screens/SignInScreen';
 import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { ExplorationProvider } from './contexts/ExplorationContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Colors, Spacing, Typography } from './styles/theme';
-import AppNavigator from './navigation/AppNavigator';
+import { MaterialIcons } from '@expo/vector-icons';
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
-// Memoized navigation components to prevent useInsertionEffect warnings
-const MemoizedDrawerNavigator = React.memo(() => {
-  const { user, profileLoading } = useUser();
-  
-  if (profileLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SignIn" component={SignInScreen} />
-        <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
-      </Stack.Navigator>
-    );
-  }
-
+function MainDrawer() {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
   return (
     <Drawer.Navigator
       initialRouteName="Map"
       screenOptions={{
         headerStyle: {
-          backgroundColor: Colors.background,
+          backgroundColor: colors.background,
         },
-        headerTintColor: Colors.text,
+        headerTintColor: colors.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
         drawerStyle: {
-          backgroundColor: Colors.background,
+          backgroundColor: colors.background,
         },
-        drawerActiveTintColor: Colors.tabActive,
-        drawerInactiveTintColor: Colors.tabInactive,
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.tabInactive,
       }}
     >
       <Drawer.Screen 
@@ -72,7 +52,7 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Hero's Path",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>🗺️</Text>
+            <MaterialIcons name="map" size={size} color={color} />
           ),
         }}
       />
@@ -82,7 +62,7 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Past Journeys",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>📚</Text>
+            <MaterialIcons name="history" size={size} color={color} />
           ),
         }}
       />
@@ -92,7 +72,7 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Discoveries",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>🔍</Text>
+            <MaterialIcons name="explore" size={size} color={color} />
           ),
         }}
       />
@@ -102,7 +82,7 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Saved Places",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>❤️</Text>
+            <MaterialIcons name="favorite" size={size} color={color} />
           ),
         }}
       />
@@ -112,7 +92,7 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Social",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>👥</Text>
+            <MaterialIcons name="group" size={size} color={color} />
           ),
         }}
       />
@@ -122,7 +102,7 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Settings",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>⚙️</Text>
+            <MaterialIcons name="settings" size={size} color={color} />
           ),
         }}
       />
@@ -132,13 +112,41 @@ const MemoizedDrawerNavigator = React.memo(() => {
         options={{
           title: "Discovery Preferences",
           drawerIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size }}>🎯</Text>
+            <MaterialIcons name="tune" size={size} color={color} />
           ),
         }}
       />
     </Drawer.Navigator>
   );
-});
+}
+
+function RootNavigation() {
+  const { user, profileLoading } = useUser();
+  const { getNavigationTheme } = useTheme();
+  const navigationTheme = getNavigationTheme ? getNavigationTheme() : undefined;
+
+  if (profileLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer theme={navigationTheme}>
+      {user ? (
+        <MainDrawer />
+      ) : (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="SignIn" component={SignInScreen} />
+          <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
+        </Stack.Navigator>
+      )}
+    </NavigationContainer>
+  );
+}
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -146,15 +154,13 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Pre-load fonts, make any API calls you need to do here
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (e) {
         console.warn(e);
       } finally {
         setAppIsReady(true);
       }
     }
-
     prepare();
   }, []);
 
@@ -177,7 +183,9 @@ export default function App() {
     <ThemeProvider>
       <UserProvider>
         <ExplorationProvider>
-          <AppNavigator />
+          <RootSiblingParent>
+            <RootNavigation />
+          </RootSiblingParent>
         </ExplorationProvider>
       </UserProvider>
     </ThemeProvider>

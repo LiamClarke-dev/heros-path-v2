@@ -580,6 +580,7 @@ export const Typography = {
   bodySmall: { fontSize: 14, fontWeight: '400' },
   caption: { fontSize: 12, fontWeight: '400' },
   button: { fontSize: 16, fontWeight: '600' },
+  bold: { fontWeight: 'bold' }, // Added for compatibility
 };
 
 export const Layout = {

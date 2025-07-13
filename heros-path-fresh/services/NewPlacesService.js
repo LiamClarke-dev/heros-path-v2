@@ -1,3 +1,11 @@
+/**
+ * NewPlacesService
+ *
+ * Unified API interface for Google Places (new and legacy).
+ * - Handles all API calls to Google Places, including fallback to legacy endpoints.
+ * - Provides field mapping, response transformation, and error handling.
+ * - Used by EnhancedPlacesService for advanced features.
+ */
 // services/NewPlacesService.js
 // Google Places API (New) implementation
 // Migration from Legacy API to new standardized API

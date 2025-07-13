@@ -1,3 +1,10 @@
+/**
+ * UserProfileService
+ *
+ * Handles user profile data (authentication, preferences, onboarding, etc.).
+ * - Provides CRUD for user profiles and preference syncing.
+ * - Supports onboarding and user data management.
+ */
 // services/UserProfileService.js
 import { 
   doc, 
