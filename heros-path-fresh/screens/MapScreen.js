@@ -12,7 +12,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import MapView, { Polyline, Marker, Callout } from 'react-native-maps';
+import MapView, { Polyline, Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,7 +24,6 @@ import PingStats from '../components/PingStats';
 import PingAnimation from '../components/PingAnimation';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
-import SavedPlacesService from '../services/SavedPlacesService';
 import Logger from '../utils/Logger';
 
 const { width, height } = Dimensions.get('window');
@@ -121,6 +120,25 @@ export default function MapScreen({ navigation, route }) {
 
   // Load saved routes and places on mount
   useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Location permission is required to use the map.');
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({});
+        setCurrentPosition({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          timestamp: location.timestamp,
+        });
+      } catch (error) {
+        console.error('Error fetching location:', error);
+      }
+    };
+
+    fetchLocation();
     loadSavedRoutes();
     loadSavedPlaces();
     checkBackgroundPermissions();
@@ -155,7 +173,8 @@ export default function MapScreen({ navigation, route }) {
     if (!user) return;
     
     try {
-      const places = await SavedPlacesService.getUserSavedPlaces(user.uid);
+      const result = await DiscoveryService.getSavedPlaces(user.uid);
+      const places = result.success ? result.discoveries : [];
       setSavedPlaces(places);
     } catch (error) {
       console.error('Error loading saved places:', error);
@@ -376,15 +395,6 @@ export default function MapScreen({ navigation, route }) {
     ));
   };
 
-  if (profileLoading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>Loading map...</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       {backgroundPermissionWarning && (
@@ -404,6 +414,7 @@ export default function MapScreen({ navigation, route }) {
         <MapView
           ref={mapRef}
           style={styles.map}
+          provider={PROVIDER_GOOGLE}
           initialRegion={{
             latitude: currentPosition.latitude,
             longitude: currentPosition.longitude,
