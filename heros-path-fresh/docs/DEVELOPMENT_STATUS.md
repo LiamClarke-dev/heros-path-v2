@@ -9,12 +9,137 @@
 - **✅ Undo Operations**: Undo dismiss/save operations restore places to suggestions correctly
 - **✅ Debug Logging**: Comprehensive logs show successful API calls and status updates
 - **✅ Journey Deletion**: Complete cleanup of all associated data works perfectly
+- **✅ Permission Warning System**: Dynamic permission checking and user-friendly alerts working
 
 ### Performance Metrics Verified
 - **API Call Reduction**: ~95% reduction confirmed (18 → 0 calls for old journeys)
 - **Load Time**: Instant loading for cached journeys from Firestore
 - **Status Updates**: Real-time with no additional database queries
 - **Data Integrity**: 100% reliable across all operations
+- **Permission Flow**: Seamless user experience with automatic permission management
+
+---
+
+## 🚨 **CRITICAL PRIORITY: Route Discovery Algorithm - NEW SOLUTION**
+
+### **Problem Solved: Search Along Route (SAR) Implementation**
+
+**Previous Problem**: The route discovery algorithm used `calculateRouteCenter()` which averaged GPS coordinates to find a single center point, fundamentally breaking the app's core value proposition.
+
+**New Solution**: Implement Google Places API's **Search Along Route (SAR)** feature with optional real-time "Ping" functionality.
+
+### **🎯 SAR Implementation Plan**
+
+#### **Phase 1: End-of-Trip "Search Along Route" (High Priority)**
+**When**: User taps "End Walk"
+**Backend Process**:
+1. Receive full GPS trace in single request
+2. Convert to encoded polyline
+3. Call Places Text Search once with `searchAlongRouteParameters`
+4. Filter by user preferences, dedupe by place_id
+5. Persist to Firestore under `trips/{tripId}.discoveries`
+
+**API Call Structure**:
+```javascript
+{
+  "textQuery": "restaurant cafe park",
+  "searchAlongRouteParameters": {
+    "polyline": { "encodedPolyline": "..." }
+  }
+}
+```
+
+**Benefits**:
+- ✅ **Single API Call**: Instead of multiple segment calls
+- ✅ **Full Path Coverage**: Searches along ENTIRE route, not just center point
+- ✅ **No Detour Bias**: Uses actual walking path
+- ✅ **Minimal API Cost**: 1 call instead of 5-10 segment calls
+- ✅ **Google Optimized**: Leverages Google's built-in path-based search
+
+#### **Phase 2: Real-Time "Ping" Feature (Medium Priority)**
+**When**: User taps "Ping" during active walk
+**Rules**:
+- 10 second cooldown per user
+- Monthly credit limit
+- 500m radius search around current location
+
+**Implementation**:
+- Endpoint: `POST /users/{uid}/ping`
+- Validate cooldown & remaining credits
+- Run nearby search around current lat/lng
+- Store results in `trips/{tripId}/discoveries` subcollection
+- Decrement credit, update last-ping timestamp
+
+**UI Features**:
+- "Ping" button with cooldown timer and credit counter
+- Spinner/overlay while loading
+- Animated markers for returned POIs
+- Toast notifications for cooldown/credit limits
+
+### **📊 Expected Impact**
+
+#### **Performance Improvements**
+- **API Efficiency**: ~80% reduction in API calls for route discovery
+- **Response Time**: Faster due to single optimized call
+- **Cost Reduction**: Significant reduction in Google Places API usage
+- **Reliability**: Less chance of API failures
+
+#### **User Experience Improvements**
+- **Full Route Coverage**: Discovers places along entire walking path
+- **Real-time Discovery**: Ping feature for immediate feedback during walks
+- **Better Results**: No more missed discoveries at route extremities
+- **Engagement**: Keeps users engaged during longer walks
+
+### **🔧 Technical Implementation**
+
+#### **Files to Modify**
+- **`services/DiscoveriesService.js`**: Replace `calculateRouteCenter()` with SAR implementation
+- **`services/PingService.js`**: New service for real-time discovery
+- **`screens/MapScreen.js`**: Add ping button during active walks
+- **Firestore Structure**: Add subcollections for ping results
+
+#### **New Service Structure**
+```javascript
+// services/DiscoveriesService.js
+async function getSuggestionsForRoute(routeCoordinates, preferences) {
+  const encodedPolyline = encodePolyline(routeCoordinates);
+  
+  const response = await fetch(`${NEW_BASE_URL}/places:searchText`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.types,places.rating,places.location,places.formattedAddress'
+    },
+    body: JSON.stringify({
+      textQuery: buildSearchQuery(preferences),
+      searchAlongRouteParameters: {
+        polyline: { encodedPolyline }
+      },
+      maxResultCount: 50
+    })
+  });
+  
+  return processAndFilterResults(response.data.places, preferences);
+}
+```
+
+### **📋 Implementation Timeline**
+
+#### **Immediate (This Week)**
+1. **Implement SAR**: Replace current center-point algorithm
+2. **Test with Various Routes**: Straight lines, L-shapes, long routes
+3. **Update Documentation**: Reflect new approach
+
+#### **Next Sprint**
+1. **Add Ping Feature**: Real-time discovery during walks
+2. **Credit System**: User management for ping limits
+3. **UI Updates**: Ping button and cooldown indicators
+
+#### **Future Enhancements**
+1. **Route Optimization**: Use Google Routes API for better polylines
+2. **Advanced Filtering**: More sophisticated preference matching
+3. **Analytics**: Track discovery patterns and user engagement
 
 ---
 
@@ -100,39 +225,48 @@ Journey deletion was incomplete, leaving orphaned data in Firestore collections.
 
 ---
 
-## 🚨 **CRITICAL PRIORITY: Route Discovery Algorithm**
+## ✅ **COMPLETED: Location Permission Warning System**
 
-### **Current Limitation**
-The route discovery algorithm in `services/DiscoveriesService.js` uses `calculateRouteCenter()` which averages all GPS coordinates to find a single center point. **This fundamentally breaks the app's core value proposition.**
+### Problem Statement
+Users were not seeing location permission prompts when needed, and those with "While Using" permission weren't aware that their journey data could be inaccurate when the app was minimized or screen was locked.
 
-### **The Problem**
-- **Straight line routes**: Misses discoveries at the start/end of long walks
-- **Long routes**: Only finds places in the middle section
-- **Core value failure**: Users should discover places along their ENTIRE route, not just the center
+### ✅ **Solution Implemented**
+- **Automatic Permission Requests**: Location permission prompts now appear when needed during app initialization and location requests
+- **Background Permission Warning**: Banner appears when user has "While Using" instead of "Always" permission
+- **Dynamic Permission Checking**: Banner automatically disappears when user grants "Always" permission
+- **User-Friendly Alerts**: Clear explanations of permission requirements and privacy implications
 
-### **The Solution Needed**
-- **Path-based search**: Search along the actual route path every 200-500m
-- **Route segmentation**: Split long routes into searchable segments
-- **Smart radius**: Adjust search radius based on route characteristics
+### ✅ **Technical Implementation**
+- **BackgroundLocationService.js**: Enhanced with automatic permission requests and user-friendly error messages
+- **MapScreen.js**: Added permission warning banner with dynamic visibility
+- **Permission Flow**: Check → Request → Warn → Re-check on focus
+- **Settings Integration**: Direct link to device settings for permission management
 
-### **Impact**
-This is a small piece of code but **CRITICAL** to the app's core value of discovering new places by walking new streets. The current approach only works for small loops and circular routes, failing for the most common use case.
+### ✅ **User Experience Improvements**
+- **Clear Communication**: Banner text: "Hero's Path Does Not Have 'Always' Allow Location Access (Tap to resolve)"
+- **Privacy Transparency**: Explains exactly when location is tracked and what data is collected
+- **Easy Resolution**: One-tap access to device settings with clear navigation instructions
+- **Automatic Updates**: Banner disappears immediately when permission is granted
 
-**Priority:** High - This should be implemented before production deployment.
+### ✅ **Privacy Features**
+- **Transparent Messaging**: Clear explanation that location is only tracked during active walks
+- **No Real-time Monitoring**: Emphasizes that developers cannot see location in real-time
+- **User Control**: Easy access to change permissions at any time
+- **Informed Consent**: Users understand exactly what permissions are needed and why
 
 ---
 
 ## 📋 **Next Development Priorities**
 
 ### **High Priority**
-1. **Route Discovery Algorithm**: Implement path-based search instead of center point
+1. **Route Discovery Algorithm**: Implement SAR (Search Along Route) instead of center point
 2. **Production Cleanup**: Remove debug logs and development utilities
 3. **Error Handling**: Add comprehensive error handling for API failures
 
 ### **Medium Priority**
-1. **Offline Mode**: Implement offline functionality with sync
-2. **Journey Analytics**: Add insights and statistics
-3. **Performance Monitoring**: Add production performance tracking
+1. **Ping Feature**: Add real-time discovery during active walks
+2. **Offline Mode**: Implement offline functionality with sync
+3. **Journey Analytics**: Add insights and statistics
 
 ### **Low Priority**
 1. **Journey Sharing**: Implement social features
@@ -173,7 +307,7 @@ This is a small piece of code but **CRITICAL** to the app's core value of discov
 ## 🚨 **Known Issues & Limitations**
 
 ### **Current Limitations**
-1. **Route Discovery**: Still uses center point instead of path-based search
+1. **Route Discovery**: Still uses center point instead of SAR (being fixed)
 2. **API Dependencies**: Relies on Google Places API availability
 3. **Offline Functionality**: Limited offline capabilities
 
@@ -185,5 +319,5 @@ This is a small piece of code but **CRITICAL** to the app's core value of discov
 ---
 
 **Last Updated**: 12 July 2025  
-**Current Status**: Performance optimization complete and verified working  
-**Next Developer**: Focus on route discovery algorithm and production deployment
+**Current Status**: Performance optimization complete, SAR implementation planned  
+**Next Developer**: Focus on SAR implementation and production deployment

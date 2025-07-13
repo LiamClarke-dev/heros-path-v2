@@ -10,6 +10,7 @@ Welcome to the Hero's Path documentation! This guide helps you find the right do
 
 ### **🔧 Development & Status**
 - **[DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md)** - Current development status, priorities, and next steps
+- **[SAR_IMPLEMENTATION_PLAN.md](SAR_IMPLEMENTATION_PLAN.md)** - Search Along Route (SAR) implementation plan for route discovery
 - **[DEBUG_LOGGING_GUIDE.md](DEBUG_LOGGING_GUIDE.md)** - How to use the debug logging system and troubleshoot issues
 
 ### **🌐 API & Services**
@@ -34,8 +35,9 @@ Welcome to the Hero's Path documentation! This guide helps you find the right do
 
 ### **For API Development**
 1. **Google Places**: `GOOGLE_PLACES_API_MIGRATION_COMPLETE.md` - API integration details
-2. **Location Features**: `LOCATION_OPTIMIZATIONS.md` - Location tracking implementation
-3. **GPS Issues**: `GPS_TRACKING_FIXES.md` - Platform-specific GPS fixes
+2. **Route Discovery**: `SAR_IMPLEMENTATION_PLAN.md` - New SAR implementation for route discovery
+3. **Location Features**: `LOCATION_OPTIMIZATIONS.md` - Location tracking implementation
+4. **GPS Issues**: `GPS_TRACKING_FIXES.md` - Platform-specific GPS fixes
 
 ### **For Database Work**
 1. **Data Analysis**: `FIRESTORE_DATA_VIEWING_GUIDE.md` - How to view and export data
@@ -76,6 +78,7 @@ Welcome to the Hero's Path documentation! This guide helps you find the right do
 |------|----------|---------|
 | **Setup** | `README.md` | Project setup and configuration |
 | **Current Status** | `DEVELOPMENT_STATUS.md` | What's working and what's next |
+| **Route Discovery** | `SAR_IMPLEMENTATION_PLAN.md` | New SAR implementation plan |
 | **API Issues** | `GOOGLE_PLACES_API_MIGRATION_COMPLETE.md` | Google Places API problems |
 | **Location Problems** | `LOCATION_OPTIMIZATIONS.md` | GPS and location tracking |
 | **Database Issues** | `FIRESTORE_DATA_VIEWING_GUIDE.md` | Firestore data problems |
