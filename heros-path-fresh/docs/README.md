@@ -105,3 +105,26 @@ Welcome to the Hero's Path documentation! This guide helps you find the right do
 **Last Updated**: 12 July 2025  
 **Maintained by**: Development Team  
 **For questions**: Check the relevant documentation or create an issue 
+
+# UI/UX and Navigation Refactor (July 2025)
+
+## New Navigation Structure
+- DrawerNavigator for top-level navigation (Map, Social, Settings, etc.)
+- StackNavigator for flows (e.g., viewing a journey, editing a place)
+- TabNavigator for sub-navigation within a section (e.g., Discoveries)
+
+## Shared UI Components
+- Card, ListItem, AppButton, SectionHeader, Divider, etc. in `components/ui/`
+- Used across all screens for a unified look
+
+## Card-Based Layouts
+- All screens will use card-based layouts for lists and detail views
+- Consistent padding, spacing, and section headers
+
+## Theming
+- Theme system used for all backgrounds, borders, text, and shadows
+
+## Recent Changes
+- Refactored SettingsScreen to use SectionCard and SettingsButton
+- Forced Google Maps provider on iOS for custom map styles
+- Plan to refactor all screens for consistency and scalability 

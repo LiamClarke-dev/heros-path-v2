@@ -526,3 +526,33 @@ Users were not seeing location permission prompts when needed, and those with "W
 **Last Updated**: 12 July 2025  
 **Current Status**: Performance optimization complete, SAR implementation planned  
 **Next Developer**: Focus on SAR implementation and production deployment
+
+# UI/UX and Navigation Refactor Plan (July 2025)
+
+## Navigation Structure
+- Move to a scalable navigation structure: DrawerNavigator for top-level, StackNavigator for flows, TabNavigator for sub-sections.
+- Example: Drawer (Map, Social, Settings, etc.), each with its own Stack, and Tabs for sub-sections (e.g., Discoveries).
+
+## Shared UI Components
+- Create a `components/ui/` directory for Card, ListItem, AppButton, SectionHeader, Divider, etc.
+- Use these across all screens for a unified look.
+
+## Card-Based Layouts
+- All screens should use card-based layouts for lists and detail views.
+- Consistent padding, spacing, and section headers.
+
+## Theming
+- Use the theme system for all backgrounds, borders, text, and shadows.
+- Pass theme colors as props to shared components.
+
+## Recent Changes
+- Refactored SettingsScreen to use SectionCard and SettingsButton for a modern, consistent look.
+- Forced Google Maps provider on iOS for custom map styles and consistency.
+- Plan to refactor all screens to use shared UI components and card-based layouts.
+
+## Next Steps
+1. Create shared UI components in `components/ui/`.
+2. Refactor PastJourneysScreen and other screens to use these components.
+3. Move navigation logic to a `navigation/` directory and split into logical stacks.
+4. Adopt card-based, sectioned layout across all screens.
+5. Use the theme system for all colors, spacing, and typography.

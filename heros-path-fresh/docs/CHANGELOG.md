@@ -475,3 +475,11 @@ Ready for production after cleanup of debug logs and dev utilities.`
 **Last Updated**: 12 July 2025  
 **Status**: Performance optimization complete and verified working  
 **Next Developer**: Focus on route discovery algorithm and production deployment 
+
+## [Unreleased] - July 2025
+
+### 🎨 UI/UX & Navigation Refactor
+- Refactored SettingsScreen to use SectionCard and SettingsButton for a modern, card-based layout and consistent UI.
+- Forced Google Maps provider on iOS for custom map styles and consistent experience.
+- Documented and planned a scalable navigation structure (Drawer + Stack + Tab) and shared UI component strategy for all screens.
+- Plan to refactor all screens to use card-based layouts and shared UI components for consistency and scalability. 
