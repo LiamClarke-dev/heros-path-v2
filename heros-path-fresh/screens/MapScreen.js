@@ -21,6 +21,9 @@ import { useUser } from '../contexts/UserContext';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import BackgroundLocationService from '../services/BackgroundLocationService';
+import PingButton from '../components/PingButton';
+import PingStats from '../components/PingStats';
+import PingAnimation from '../components/PingAnimation';
 
 const ROUTES_STORAGE_KEY = '@saved_routes';
 const SAVED_PLACES_KEY = 'savedPlaces';
@@ -59,6 +62,9 @@ export default function MapScreen({ navigation, route }) {
   const [showSavedPlaces, setShowSavedPlaces] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [showPermissionWarning, setShowPermissionWarning] = useState(false);
+  const [currentJourneyId, setCurrentJourneyId] = useState(null);
+  const [showPingAnimation, setShowPingAnimation] = useState(false);
+  const [pingUsed, setPingUsed] = useState(0);
 
   const locationSubscriber = useRef(null);
   const mapRef = useRef(null);
@@ -298,6 +304,29 @@ export default function MapScreen({ navigation, route }) {
         if (result.success) {
           console.log('✅ [MAP_SCREEN] Journey saved successfully to Firestore');
           
+          // Consolidate discoveries for this journey
+          try {
+            console.log('🔍 [MAP_SCREEN] Starting discovery consolidation for journey:', result.journey.id);
+            const consolidationResult = await JourneyService.consolidateJourneyDiscoveries(
+              user.uid,
+              result.journey.id,
+              rawCoords
+            );
+            
+            if (consolidationResult.success) {
+              console.log('✅ [MAP_SCREEN] Discovery consolidation completed', {
+                sarPlaces: consolidationResult.sarPlaces,
+                pingPlaces: consolidationResult.pingPlaces,
+                consolidatedPlaces: consolidationResult.consolidatedPlaces,
+                savedCount: consolidationResult.savedCount
+              });
+            } else {
+              console.warn('⚠️ [MAP_SCREEN] Discovery consolidation failed:', consolidationResult.error);
+            }
+          } catch (consolidationError) {
+            console.error('❌ [MAP_SCREEN] Discovery consolidation error:', consolidationError);
+          }
+          
           // Reload journeys to get updated list
           const journeysResult = await JourneyService.getUserJourneys(user.uid);
           if (journeysResult.success) {
@@ -361,6 +390,7 @@ export default function MapScreen({ navigation, route }) {
         
         if (success) {
           setTracking(true);
+          setCurrentJourneyId(journeyId);
         } else {
           Alert.alert('Error', 'Failed to start location tracking. Please check your permissions.');
         }
@@ -373,6 +403,7 @@ export default function MapScreen({ navigation, route }) {
         // Stop tracking using the background location service
         const journeyData = await BackgroundLocationService.stopTracking();
         setTracking(false);
+        setCurrentJourneyId(null);
         
         if (journeyData) {
           // Convert journey data to the format expected by the rest of the code
@@ -389,6 +420,7 @@ export default function MapScreen({ navigation, route }) {
       } catch (error) {
         console.error('Failed to stop tracking:', error);
         setTracking(false);
+        setCurrentJourneyId(null);
       }
     }
   };
@@ -505,6 +537,16 @@ export default function MapScreen({ navigation, route }) {
         </View>
       )}
       
+              {/* Ping Animation Overlay */}
+        {showPingAnimation && currentPosition && (
+          <PingAnimation
+            isVisible={showPingAnimation}
+            onAnimationComplete={() => setShowPingAnimation(false)}
+            style={styles.pingAnimation}
+            animationType="particle"
+          />
+        )}
+      
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
         {/* Discovery preferences button */}
@@ -537,6 +579,34 @@ export default function MapScreen({ navigation, route }) {
           />
         </TouchableOpacity>
       </View>
+
+      {/* Ping components - only show when tracking */}
+      {tracking && currentPosition && currentJourneyId && (
+        <View style={styles.pingContainer}>
+          <PingStats 
+            style={styles.pingStats} 
+            onPingUsed={pingUsed}
+          />
+          <PingButton
+            currentLocation={currentPosition}
+            journeyId={currentJourneyId}
+            onPingStart={() => {
+              // Trigger animation immediately when ping starts
+              setShowPingAnimation(true);
+            }}
+            onPingSuccess={(result) => {
+              console.log('Ping successful:', result);
+              // Trigger stats refresh
+              setPingUsed(prev => prev + 1);
+            }}
+            onPingError={(error) => {
+              console.log('Ping error:', error);
+            }}
+            style={styles.pingButton}
+            disabled={!tracking}
+          />
+        </View>
+      )}
       
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
@@ -687,5 +757,25 @@ const styles = StyleSheet.create({
     color: Colors.background,
     marginLeft: Spacing.sm,
     marginRight: Spacing.sm,
+  },
+  pingContainer: {
+    position: 'absolute',
+    left: Spacing.md,
+    bottom: 120,
+    alignItems: 'center',
+  },
+  pingStats: {
+    marginBottom: Spacing.sm,
+  },
+  pingButton: {
+    // Additional styling if needed
+  },
+  pingAnimation: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -100, // Adjusted for larger container
+    marginTop: -100,
+    zIndex: 1000,
   },
 });
