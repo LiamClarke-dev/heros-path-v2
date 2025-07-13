@@ -9,10 +9,10 @@ Hero's Path is a React Native/Expo app that lets users track their walks with a 
 ### ✅ **Migration Status: COMPLETE** (July 2025)
 - **Current Branch:** `feature/discovery-preferences-and-map-enhancements`
 - **Migration Status:** ✅ **FULLY COMPLETE** - Using Google Places API (New) with automatic fallback
-- **Documentation:** See `GOOGLE_PLACES_API_MIGRATION_COMPLETE.md` for full details
+- **Documentation:** See [📚 Documentation Index](docs/README.md) for complete guide
 
 ### 🎯 **For New Developers**
-**⚠️ IMPORTANT:** Before working with Google Places API functionality, please read the complete migration documentation:
+**⚠️ IMPORTANT:** Before working with Google Places API functionality, please read the complete migration documentation in the [docs directory](docs/README.md):
 
 📖 **`GOOGLE_PLACES_API_MIGRATION_COMPLETE.md`** - Comprehensive guide covering:
 - Complete API migration implementation
@@ -219,10 +219,16 @@ heros-path-fresh/
 ├── firebase.js              # Firebase initialization
 ├── GoogleService-Info.plist # iOS Firebase configuration
 ├── .gitignore
-├── GOOGLE_PLACES_API_MIGRATION_COMPLETE.md  # Complete migration documentation
-├── DEBUG_LOGGING_GUIDE.md   # Debug logging system documentation
-├── DEVELOPMENT_STATUS.md    # Current development status and priorities
-├── CHANGELOG.md             # Recent changes and updates
+├── docs/                    # 📚 All documentation organized here
+│   ├── README.md            # Documentation index and guide
+│   ├── CHANGELOG.md         # Recent changes and updates
+│   ├── DEVELOPMENT_STATUS.md # Current development status and priorities
+│   ├── GOOGLE_PLACES_API_MIGRATION_COMPLETE.md # Complete migration documentation
+│   ├── DEBUG_LOGGING_GUIDE.md # Debug logging system documentation
+│   ├── LOCATION_OPTIMIZATIONS.md # GPS and location improvements
+│   ├── FIRESTORE_DATA_VIEWING_GUIDE.md # Database data viewing
+│   ├── FIRESTORE_INDEXES_GUIDE.md # Database optimization
+│   └── GPS_TRACKING_FIXES.md # Platform-specific GPS fixes
 ├── screens/
 │   ├── MapScreen.js
 │   ├── PastJourneysScreen.js

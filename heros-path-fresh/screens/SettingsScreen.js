@@ -309,9 +309,92 @@ export default function SettingsScreen() {
               </View>
             )}
             
-            {/* Migration Status */}
+            {/* API Migration Testing */}
             <View style={styles.subsection}>
-              <Text style={styles.subsectionTitle}>📊 Migration Status</Text>
+              <Text style={styles.subsectionTitle}>🌐 API Migration Testing</Text>
+              
+              <TouchableOpacity 
+                style={[styles.settingItem, testingMigration && styles.disabledItem]} 
+                onPress={handleTestMigration}
+                disabled={testingMigration}
+              >
+                <View style={styles.settingContent}>
+                  <MaterialIcons name="api" size={24} color={Colors.primary} />
+                  <Text style={styles.settingText}>
+                    {testingMigration ? 'Testing API Migration...' : 'Test Places API Migration'}
+                  </Text>
+                </View>
+                {testingMigration ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+
+              {migrationStatus && (
+                <View style={styles.migrationStatus}>
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>New API:</Text>
+                    <View style={[
+                      styles.statusIndicator,
+                      migrationStatus.newAPI ? styles.statusSuccess : styles.statusError
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {migrationStatus.newAPI ? '✅ Working' : '❌ Failed'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>Legacy API:</Text>
+                    <View style={[
+                      styles.statusIndicator,
+                      migrationStatus.legacyAPI ? styles.statusSuccess : styles.statusError
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {migrationStatus.legacyAPI ? '✅ Working' : '❌ Failed'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>Status:</Text>
+                    <Text style={[
+                      styles.statusText,
+                      migrationStatus.migrationStatus === 'READY' ? styles.statusSuccess :
+                      migrationStatus.migrationStatus === 'FALLBACK' ? styles.statusWarning :
+                      styles.statusError
+                    ]}>
+                      {migrationStatus.migrationStatus}
+                    </Text>
+                  </View>
+
+                  {migrationStatus.recommendation && (
+                    <View style={styles.recommendationContainer}>
+                      <Text style={styles.recommendationText}>{migrationStatus.recommendation}</Text>
+                    </View>
+                  )}
+
+                  {migrationStatus.newAPIError && (
+                    <View style={styles.errorContainer}>
+                      <Text style={styles.errorLabel}>New API Error:</Text>
+                      <Text style={styles.errorText}>{migrationStatus.newAPIError}</Text>
+                    </View>
+                  )}
+
+                  {migrationStatus.legacyAPIError && (
+                    <View style={styles.errorContainer}>
+                      <Text style={styles.errorLabel}>Legacy API Error:</Text>
+                      <Text style={styles.errorText}>{migrationStatus.legacyAPIError}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Data Migration Status */}
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>📊 Data Migration Status</Text>
               
               <TouchableOpacity 
                 style={styles.settingItem} 
@@ -356,6 +439,59 @@ export default function SettingsScreen() {
                 </View>
                 <MaterialIcons name="chevron-right" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
+
+              {dataMigrationStatus && (
+                <View style={styles.migrationStatusContainer}>
+                  <View style={styles.statusRow}>
+                    <Text style={styles.statusLabel}>Migration Status:</Text>
+                    <View style={[
+                      styles.statusIndicator,
+                      dataMigrationStatus.hasMigrated ? styles.statusSuccess : styles.statusWarning
+                    ]}>
+                      <Text style={styles.statusText}>
+                        {dataMigrationStatus.hasMigrated ? '✅ Complete' : '⏳ Pending'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {!dataMigrationStatus.hasMigrated && dataMigrationStatus.stats && (
+                    <View style={styles.migrationStats}>
+                      <Text style={styles.migrationStatsTitle}>Data to migrate:</Text>
+                      <Text style={styles.migrationStatsText}>
+                        • Journeys: {dataMigrationStatus.stats.journeysCount}
+                      </Text>
+                      <Text style={styles.migrationStatsText}>
+                        • Saved Places: {dataMigrationStatus.stats.savedPlacesCount}
+                      </Text>
+                      <Text style={styles.migrationStatsText}>
+                        • Dismissed Places: {dataMigrationStatus.stats.dismissedPlacesCount}
+                      </Text>
+                    </View>
+                  )}
+
+                  {dataMigrationStatus.migrationResult && (
+                    <View style={styles.migrationResult}>
+                      <Text style={styles.migrationResultTitle}>Last Migration:</Text>
+                      <Text style={styles.migrationResultText}>
+                        {dataMigrationStatus.migrationResult.message}
+                      </Text>
+                      {dataMigrationStatus.migrationResult.results && (
+                        <View style={styles.migrationDetails}>
+                          <Text style={styles.migrationDetailsText}>
+                            Journeys: {dataMigrationStatus.migrationResult.results.journeys.migrated}/{dataMigrationStatus.migrationResult.results.journeys.total}
+                          </Text>
+                          <Text style={styles.migrationDetailsText}>
+                            Saved Places: {dataMigrationStatus.migrationResult.results.savedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.savedPlaces.total}
+                          </Text>
+                          <Text style={styles.migrationDetailsText}>
+                            Dismissed Places: {dataMigrationStatus.migrationResult.results.dismissedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.dismissedPlaces.total}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Data Management */}
@@ -679,156 +815,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* API Migration Testing Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>API Migration Status</Text>
-        <Text style={styles.sectionDescription}>
-          Test the Google Places API migration from Legacy to New API:
-        </Text>
 
-        <TouchableOpacity
-          style={[styles.editButton, testingMigration && styles.disabledButton]}
-          onPress={handleTestMigration}
-          disabled={testingMigration}
-        >
-          {testingMigration ? (
-            <ActivityIndicator size="small" color={Colors.background} />
-          ) : (
-            <Text style={styles.editButtonText}>Test API Migration</Text>
-          )}
-        </TouchableOpacity>
-
-        {migrationStatus && (
-          <View style={styles.migrationStatus}>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>New API:</Text>
-              <View style={[
-                styles.statusIndicator,
-                migrationStatus.newAPI ? styles.statusSuccess : styles.statusError
-              ]}>
-                <Text style={styles.statusText}>
-                  {migrationStatus.newAPI ? '✅ Working' : '❌ Failed'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Legacy API:</Text>
-              <View style={[
-                styles.statusIndicator,
-                migrationStatus.legacyAPI ? styles.statusSuccess : styles.statusError
-              ]}>
-                <Text style={styles.statusText}>
-                  {migrationStatus.legacyAPI ? '✅ Working' : '❌ Failed'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Status:</Text>
-              <Text style={[
-                styles.statusText,
-                migrationStatus.migrationStatus === 'READY' ? styles.statusSuccess :
-                migrationStatus.migrationStatus === 'FALLBACK' ? styles.statusWarning :
-                styles.statusError
-              ]}>
-                {migrationStatus.migrationStatus}
-              </Text>
-            </View>
-
-            {migrationStatus.recommendation && (
-              <View style={styles.recommendationContainer}>
-                <Text style={styles.recommendationText}>{migrationStatus.recommendation}</Text>
-              </View>
-            )}
-
-            {migrationStatus.newAPIError && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorLabel}>New API Error:</Text>
-                <Text style={styles.errorText}>{migrationStatus.newAPIError}</Text>
-              </View>
-            )}
-
-            {migrationStatus.legacyAPIError && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorLabel}>Legacy API Error:</Text>
-                <Text style={styles.errorText}>{migrationStatus.legacyAPIError}</Text>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-
-      {/* Data Migration Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Data Migration</Text>
-        <Text style={styles.sectionDescription}>
-          Migrate your local data to the cloud for cross-device sync and backup.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={handleManualMigration}
-          disabled={!user}
-        >
-          <Text style={styles.testButtonText}>
-            {user ? 'Migrate Data to Cloud' : 'Sign in to migrate'}
-          </Text>
-        </TouchableOpacity>
-
-        {dataMigrationStatus && (
-          <View style={styles.migrationStatusContainer}>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Migration Status:</Text>
-              <View style={[
-                styles.statusIndicator,
-                dataMigrationStatus.hasMigrated ? styles.statusSuccess : styles.statusWarning
-              ]}>
-                <Text style={styles.statusText}>
-                  {dataMigrationStatus.hasMigrated ? '✅ Complete' : '⏳ Pending'}
-                </Text>
-              </View>
-            </View>
-
-            {!dataMigrationStatus.hasMigrated && dataMigrationStatus.stats && (
-              <View style={styles.migrationStats}>
-                <Text style={styles.migrationStatsTitle}>Data to migrate:</Text>
-                <Text style={styles.migrationStatsText}>
-                  • Journeys: {dataMigrationStatus.stats.journeysCount}
-                </Text>
-                <Text style={styles.migrationStatsText}>
-                  • Saved Places: {dataMigrationStatus.stats.savedPlacesCount}
-                </Text>
-                <Text style={styles.migrationStatsText}>
-                  • Dismissed Places: {dataMigrationStatus.stats.dismissedPlacesCount}
-                </Text>
-              </View>
-            )}
-
-            {dataMigrationStatus.migrationResult && (
-              <View style={styles.migrationResult}>
-                <Text style={styles.migrationResultTitle}>Last Migration:</Text>
-                <Text style={styles.migrationResultText}>
-                  {dataMigrationStatus.migrationResult.message}
-                </Text>
-                {dataMigrationStatus.migrationResult.results && (
-                  <View style={styles.migrationDetails}>
-                    <Text style={styles.migrationDetailsText}>
-                      Journeys: {dataMigrationStatus.migrationResult.results.journeys.migrated}/{dataMigrationStatus.migrationResult.results.journeys.total}
-                    </Text>
-                    <Text style={styles.migrationDetailsText}>
-                      Saved Places: {dataMigrationStatus.migrationResult.results.savedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.savedPlaces.total}
-                    </Text>
-                    <Text style={styles.migrationDetailsText}>
-                      Dismissed Places: {dataMigrationStatus.migrationResult.results.dismissedPlaces.migrated}/{dataMigrationStatus.migrationResult.results.dismissedPlaces.total}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
-      </View>
 
       {/* Account Section */}
       <View style={styles.section}>
@@ -1129,6 +1116,9 @@ const styles = StyleSheet.create({
     color: '#F44336',
     fontWeight: '600',
   },
+  disabledItem: {
+    opacity: 0.6,
+  },
   testButton: {
     backgroundColor: Colors.primary,
     padding: Spacing.md,
@@ -1136,6 +1126,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   testButtonText: {
+    ...Typography.body,
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  sectionDescription: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+  editButton: {
+    backgroundColor: Colors.primary,
+    padding: Spacing.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  editButtonText: {
     ...Typography.body,
     color: Colors.background,
     fontWeight: '600',
