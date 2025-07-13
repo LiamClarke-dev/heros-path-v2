@@ -43,9 +43,26 @@ class DataMigrationService {
 
       for (const journey of journeys) {
         try {
+          // Generate proper journey name if not available
+          let journeyName = journey.name;
+          if (!journeyName) {
+            const journeyDate = journey.timestamp ? new Date(journey.timestamp) : new Date();
+            const formattedDate = journeyDate.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: '2-digit'
+            }).replace(',', '');
+            const formattedTime = journeyDate.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            });
+            journeyName = `${formattedDate} ${formattedTime}`;
+          }
+          
           // Transform journey data to match Firestore structure
           const journeyData = {
-            name: journey.name || `Journey ${migratedCount + 1}`,
+            name: journeyName,
             startLocation: journey.startLocation || journey.route?.[0],
             endLocation: journey.endLocation || journey.route?.[journey.route.length - 1],
             route: journey.route || [],
