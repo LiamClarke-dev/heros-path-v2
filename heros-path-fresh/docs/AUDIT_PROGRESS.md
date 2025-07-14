@@ -81,8 +81,9 @@ Conduct a comprehensive code audit to ensure all components are properly wired u
 **Issue 6: Inconsistent API Key Usage**
 - **Problem**: NewPlacesService uses Android API key for all platforms
 - **Root Cause**: Missing platform-specific key selection logic
-- **Files Affected**: `services/NewPlacesService.js`
-- **Status**: 🟡 **IDENTIFIED** - Should use platform-specific keys like DiscoveriesService
+- **Fix Applied**: Added getPlacesAPIKey() function to use platform-specific keys consistently
+- **Files Modified**: `services/NewPlacesService.js`, `services/EnhancedPlacesService.js`
+- **Status**: ✅ **RESOLVED** - Now uses platform-specific keys like DiscoveriesService
 
 **Issue 12: Route Discovery Algorithm - IMPLEMENTATION STATUS UPDATE**
 - **Problem**: Documentation incorrectly stated SAR was not implemented
@@ -130,8 +131,9 @@ Conduct a comprehensive code audit to ensure all components are properly wired u
 **Issue 11: Debug Logging in Production**
 - **Problem**: Extensive debug logging throughout the codebase
 - **Root Cause**: DEBUG_MODE flag set to true in Logger utility
-- **Files Affected**: `utils/Logger.js` and all files using Logger.debug
-- **Status**: 🟡 **IDENTIFIED** - Should set DEBUG_MODE to false for production
+- **Fix Applied**: Updated Logger utility to use __DEV__ flag and removed debug console.log statements
+- **Files Modified**: `utils/Logger.js`, `config.js`, `screens/SignInScreen.js`, `screens/MapScreen.js`, `firebase.js`, `services/JourneyService.js`, `services/DataMigrationService.js`, `services/BackgroundLocationService.js`, `contexts/UserContext.js`, `screens/SettingsScreen.js`, `services/EnhancedPlacesService.js`
+- **Status**: ✅ **RESOLVED** - All debug logging now gated behind __DEV__ for production safety
 
 #### **🚨 KNOWN ISSUES**
 - **Apple Maps Fallback**: Google Maps API key injection issue on iOS (documented in DEVELOPMENT_STATUS.md)
