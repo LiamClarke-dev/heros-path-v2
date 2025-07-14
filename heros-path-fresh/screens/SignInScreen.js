@@ -9,6 +9,7 @@ import { useUser } from '../contexts/UserContext';
 import { Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 
 import { 
   GOOGLE_WEB_CLIENT_ID, 
@@ -46,7 +47,15 @@ export default function SignInScreen() {
   const { createOrUpdateProfile } = useUser();
   const navigation = useNavigation();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
+  Logger.debug('SIGNIN_SCREEN', 'Theme colors loaded', {
+    colorsExists: !!colors,
+    colorsType: typeof colors,
+    colorsKeys: colors ? Object.keys(colors) : null
+  });
+  if (!colors) {
+    Logger.warn('SIGNIN_SCREEN', 'Colors is undefined after getCurrentThemeColors!');
+  }
   
   const [request, response, promptAsync] = Google.useAuthRequest(
     {

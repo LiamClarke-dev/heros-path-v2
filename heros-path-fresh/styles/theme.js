@@ -25,6 +25,7 @@ const lightTheme = {
   surface: '#F2F2F7',
   text: '#000000',
   textSecondary: '#8E8E93',
+  secondaryText: '#8E8E93', // Alias for textSecondary
   border: '#C6C6C8',
   success: '#34C759',
   warning: '#FF9500',
@@ -60,7 +61,10 @@ const lightTheme = {
   danger: '#FF3B30',
   warning: '#FF9500',
   success: '#34C759',
-  info: '#007AFF'
+  info: '#007AFF',
+  onPrimary: '#FFFFFF',
+  onSecondary: '#FFFFFF',
+  onError: '#FFFFFF'
 };
 
 // Dark Theme
@@ -71,6 +75,7 @@ const darkTheme = {
   surface: '#1C1C1E',
   text: '#FFFFFF',
   textSecondary: '#8E8E93',
+  secondaryText: '#8E8E93', // Alias for textSecondary
   border: '#38383A',
   success: '#30D158',
   warning: '#FF9F0A',
@@ -106,7 +111,10 @@ const darkTheme = {
   danger: '#FF453A',
   warning: '#FF9F0A',
   success: '#30D158',
-  info: '#0A84FF'
+  info: '#0A84FF',
+  onPrimary: '#FFFFFF',
+  onSecondary: '#FFFFFF',
+  onError: '#FFFFFF'
 };
 
 // Adventure Theme (Zelda-inspired)
@@ -117,6 +125,7 @@ const adventureTheme = {
   surface: '#34495E',
   text: '#ECF0F1',
   textSecondary: '#BDC3C7',
+  secondaryText: '#BDC3C7', // Alias for textSecondary
   border: '#7F8C8D',
   success: '#27AE60',
   warning: '#F39C12',
@@ -152,7 +161,10 @@ const adventureTheme = {
   danger: '#E74C3C',
   warning: '#F39C12',
   success: '#27AE60',
-  info: '#3498DB'
+  info: '#3498DB',
+  onPrimary: '#FFFFFF',
+  onSecondary: '#FFFFFF',
+  onError: '#FFFFFF'
 };
 
 // Map Style Configurations
@@ -549,19 +561,69 @@ export const MAP_STYLE_CONFIGS = {
 
 // Theme selector function
 export const getTheme = (themeType = THEME_TYPES.LIGHT) => {
+  if (__DEV__) {
+    console.debug('[THEME]', 'getTheme called', { themeType, availableTypes: Object.values(THEME_TYPES) });
+  }
+  
+  let result;
   switch (themeType) {
     case THEME_TYPES.DARK:
-      return darkTheme;
+      result = darkTheme;
+      break;
     case THEME_TYPES.ADVENTURE:
-      return adventureTheme;
+      result = adventureTheme;
+      break;
     case THEME_TYPES.LIGHT:
     default:
-      return lightTheme;
+      result = lightTheme;
+      break;
   }
+  
+  if (__DEV__) {
+    console.debug('[THEME]', 'getTheme result', { 
+      themeType, 
+      resultExists: !!result, 
+      resultKeys: result ? Object.keys(result) : null 
+    });
+  }
+  
+  return result;
+};
+
+// Fallback theme for when theme context is not ready
+export const getFallbackTheme = () => {
+  if (__DEV__) {
+    console.debug('[THEME]', 'getFallbackTheme called');
+  }
+  
+  const fallback = {
+    ...lightTheme,
+    // Ensure all properties are available
+    secondaryText: lightTheme.textSecondary,
+    onPrimary: '#FFFFFF',
+    onSecondary: '#FFFFFF',
+    onError: '#FFFFFF'
+  };
+  
+  if (__DEV__) {
+    console.debug('[THEME]', 'getFallbackTheme result', { 
+      fallbackExists: !!fallback, 
+      fallbackKeys: fallback ? Object.keys(fallback) : null 
+    });
+  }
+  
+  return fallback;
 };
 
 // Legacy exports for backward compatibility
-export const Colors = lightTheme;
+export const Colors = {
+  ...lightTheme,
+  // Ensure all properties are available for backward compatibility
+  secondaryText: lightTheme.textSecondary,
+  onPrimary: '#FFFFFF',
+  onSecondary: '#FFFFFF',
+  onError: '#FFFFFF'
+};
 export const Spacing = {
   xs: 4,
   sm: 8,

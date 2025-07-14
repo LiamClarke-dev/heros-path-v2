@@ -1,7 +1,8 @@
 // contexts/ThemeContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { THEME_TYPES, MAP_STYLES, getTheme, MAP_STYLE_CONFIGS } from '../styles/theme';
+import { THEME_TYPES, MAP_STYLES, getTheme, MAP_STYLE_CONFIGS, getFallbackTheme } from '../styles/theme';
+import Logger from '../utils/Logger';
 
 // Storage keys
 const THEME_STORAGE_KEY = '@user_ui_theme';
@@ -27,22 +28,34 @@ export const ThemeProvider = ({ children }) => {
 
   // Load saved preferences from AsyncStorage
   const loadSavedPreferences = async () => {
+    Logger.debug('THEME_CONTEXT', 'loadSavedPreferences started');
     try {
       const [savedTheme, savedMapStyle] = await Promise.all([
         AsyncStorage.getItem(THEME_STORAGE_KEY),
         AsyncStorage.getItem(MAP_STYLE_STORAGE_KEY)
       ]);
 
+      Logger.debug('THEME_CONTEXT', 'AsyncStorage results', { savedTheme, savedMapStyle });
+
       if (savedTheme && Object.values(THEME_TYPES).includes(savedTheme)) {
+        Logger.debug('THEME_CONTEXT', 'Setting saved theme', { savedTheme });
         setCurrentTheme(savedTheme);
+      } else {
+        Logger.debug('THEME_CONTEXT', 'Using default theme', { defaultTheme: DEFAULT_THEME });
+        setCurrentTheme(DEFAULT_THEME);
       }
 
       if (savedMapStyle && Object.values(MAP_STYLES).includes(savedMapStyle)) {
+        Logger.debug('THEME_CONTEXT', 'Setting saved map style', { savedMapStyle });
         setCurrentMapStyle(savedMapStyle);
+      } else {
+        Logger.debug('THEME_CONTEXT', 'Using default map style', { defaultMapStyle: DEFAULT_MAP_STYLE });
+        setCurrentMapStyle(DEFAULT_MAP_STYLE);
       }
     } catch (error) {
-      console.error('Error loading theme preferences:', error);
+      Logger.error('THEME_CONTEXT', 'Error loading theme preferences', error);
     } finally {
+      Logger.debug('THEME_CONTEXT', 'loadSavedPreferences completed, setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -79,7 +92,19 @@ export const ThemeProvider = ({ children }) => {
 
   // Get current theme colors
   const getCurrentThemeColors = () => {
-    return getTheme(currentTheme);
+    Logger.debug('THEME_CONTEXT', 'getCurrentThemeColors called', { currentTheme, isLoading });
+    
+    const theme = getTheme(currentTheme);
+    Logger.debug('THEME_CONTEXT', 'getTheme result', { currentTheme, themeExists: !!theme, themeKeys: theme ? Object.keys(theme) : null });
+    
+    if (!theme) {
+      Logger.warn('THEME_CONTEXT', 'Theme not found, using fallback', { currentTheme });
+      // Fallback to light theme if something goes wrong
+      return getFallbackTheme();
+    }
+    
+    Logger.debug('THEME_CONTEXT', 'Returning theme colors', { themeType: currentTheme, hasColors: !!theme });
+    return theme;
   };
 
   // Get current map style configuration
@@ -109,16 +134,47 @@ export const ThemeProvider = ({ children }) => {
 
   // Add this function to the ThemeContext value
   function getNavigationTheme() {
+    Logger.debug('THEME_CONTEXT', 'getNavigationTheme called', { currentTheme, isLoading });
+    
     const colors = getCurrentThemeColors();
+    Logger.debug('THEME_CONTEXT', 'getNavigationTheme colors result', { 
+      colorsExists: !!colors, 
+      colorsType: typeof colors, 
+      colorsKeys: colors ? Object.keys(colors) : null 
+    });
+    
+    if (!colors) {
+      Logger.warn('THEME_CONTEXT', 'Colors not found in getNavigationTheme, using fallback');
+      // Fallback to light theme colors
+      const fallbackColors = getFallbackTheme();
+      return {
+        dark: false,
+        colors: {
+          primary: fallbackColors.primary,
+          background: fallbackColors.background,
+          card: fallbackColors.surface || fallbackColors.background,
+          text: fallbackColors.text,
+          border: fallbackColors.border || fallbackColors.primary,
+          notification: fallbackColors.primary,
+        },
+        fonts: {
+          regular: { fontFamily: 'System', fontWeight: '400' },
+          medium: { fontFamily: 'System', fontWeight: '500' },
+          light: { fontFamily: 'System', fontWeight: '300' },
+          thin: { fontFamily: 'System', fontWeight: '100' },
+          bold: { fontFamily: 'System', fontWeight: 'bold' },
+        },
+      };
+    }
     return {
-      dark: colors.mode === 'dark' || colors.mode === 'adventure',
+      dark: currentTheme === THEME_TYPES.DARK || currentTheme === THEME_TYPES.ADVENTURE,
       colors: {
         primary: colors.primary,
         background: colors.background,
         card: colors.surface || colors.background,
         text: colors.text,
         border: colors.border || colors.primary,
-        notification: colors.accent || colors.primary,
+        notification: colors.primary,
       },
       fonts: {
         regular: { fontFamily: 'System', fontWeight: '400' },
@@ -164,7 +220,13 @@ export const ThemeProvider = ({ children }) => {
 // Custom hook to use theme context
 export const useTheme = () => {
   const context = useContext(ThemeContext);
+  Logger.debug('THEME_CONTEXT', 'useTheme hook called', { 
+    hasContext: !!context, 
+    contextKeys: context ? Object.keys(context) : null 
+  });
+  
   if (!context) {
+    Logger.error('THEME_CONTEXT', 'useTheme called outside ThemeProvider');
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
