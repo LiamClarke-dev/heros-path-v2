@@ -232,24 +232,24 @@ if (routeCoords.length < 3) {
 
 ---
 
-## 🚨 **CRITICAL PRIORITY: Route Discovery Algorithm - NEW SOLUTION**
+## ✅ **COMPLETED: Route Discovery Algorithm (SAR) Implementation**
 
 ### **Problem Solved: Search Along Route (SAR) Implementation**
 
 **Previous Problem**: The route discovery algorithm used `calculateRouteCenter()` which averaged GPS coordinates to find a single center point, fundamentally breaking the app's core value proposition.
 
-**New Solution**: Implement Google Places API's **Search Along Route (SAR)** feature with optional real-time "Ping" functionality.
+**Solution Implemented**: Google Places API's **Search Along Route (SAR)** feature with optional real-time "Ping" functionality.
 
-### **🎯 SAR Implementation Plan**
+### **🎯 SAR Implementation Status: COMPLETE**
 
-#### **Phase 1: End-of-Trip "Search Along Route" (High Priority)**
+#### **✅ Phase 1: End-of-Trip "Search Along Route" - COMPLETED**
 **When**: User taps "End Walk"
 **Backend Process**:
-1. Receive full GPS trace in single request
-2. Convert to encoded polyline
-3. Call Places Text Search once with `searchAlongRouteParameters`
-4. Filter by user preferences, dedupe by place_id
-5. Persist to Firestore under `trips/{tripId}.discoveries`
+1. ✅ Receive full GPS trace in single request
+2. ✅ Convert to encoded polyline
+3. ✅ Call Places Text Search once with `searchAlongRouteParameters`
+4. ✅ Filter by user preferences, dedupe by place_id
+5. ✅ Persist to Firestore under `journeys/{userId}/discoveries`
 
 **API Call Structure**:
 ```javascript
@@ -268,25 +268,25 @@ if (routeCoords.length < 3) {
 - ✅ **Minimal API Cost**: 1 call instead of 5-10 segment calls
 - ✅ **Google Optimized**: Leverages Google's built-in path-based search
 
-#### **Phase 2: Real-Time "Ping" Feature (Medium Priority)**
+#### **✅ Phase 2: Real-Time "Ping" Feature - COMPLETED**
 **When**: User taps "Ping" during active walk
 **Rules**:
-- 10 second cooldown per user
-- Monthly credit limit
-- 500m radius search around current location
+- ✅ 10 second cooldown per user
+- ✅ Monthly credit limit (50 credits)
+- ✅ 500m radius search around current location
 
 **Implementation**:
-- Endpoint: `POST /users/{uid}/ping`
-- Validate cooldown & remaining credits
-- Run nearby search around current lat/lng
-- Store results in `trips/{tripId}/discoveries` subcollection
-- Decrement credit, update last-ping timestamp
+- ✅ Endpoint: `POST /users/{uid}/ping`
+- ✅ Validate cooldown & remaining credits
+- ✅ Run nearby search around current lat/lng
+- ✅ Store results in `journeys/{userId}/pingResults` subcollection
+- ✅ Decrement credit, update last-ping timestamp
 
 **UI Features**:
-- "Ping" button with cooldown timer and credit counter
-- Spinner/overlay while loading
-- Animated markers for returned POIs
-- Toast notifications for cooldown/credit limits
+- ✅ "Ping" button with cooldown timer and credit counter
+- ✅ Spinner/overlay while loading
+- ✅ Animated markers for returned POIs
+- ✅ Toast notifications for cooldown/credit limits
 
 ### **📊 Expected Impact**
 
@@ -336,17 +336,17 @@ async function getSuggestionsForRoute(routeCoordinates, preferences) {
 }
 ```
 
-### **📋 Implementation Timeline**
+### **📋 Implementation Status: COMPLETE**
 
-#### **Immediate (This Week)**
-1. **Implement SAR**: Replace current center-point algorithm
-2. **Test with Various Routes**: Straight lines, L-shapes, long routes
-3. **Update Documentation**: Reflect new approach
+#### **✅ Immediate (Completed)**
+1. ✅ **Implement SAR**: Replaced current center-point algorithm
+2. ✅ **Test with Various Routes**: Straight lines, L-shapes, long routes
+3. ✅ **Update Documentation**: Reflect new approach
 
-#### **Next Sprint**
-1. **Add Ping Feature**: Real-time discovery during walks
-2. **Credit System**: User management for ping limits
-3. **UI Updates**: Ping button and cooldown indicators
+#### **✅ Next Sprint (Completed)**
+1. ✅ **Add Ping Feature**: Real-time discovery during walks
+2. ✅ **Credit System**: User management for ping limits
+3. ✅ **UI Updates**: Ping button and cooldown indicators
 
 #### **Future Enhancements**
 1. **Route Optimization**: Use Google Routes API for better polylines

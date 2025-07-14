@@ -84,12 +84,14 @@ The new Phase 7 specifically covers:
 
 ### **High Priority**
 - Review and address any remaining audit findings
+- Fix iOS platform issues (Apple Maps fallback, Link sprite rendering)
 - Ensure theme system is fully integrated
 - Verify API key management is secure
 - Check for performance bottlenecks
 
 ### **Medium Priority**
-- Implement route discovery algorithm improvements
+- Clean up production code (debug logging, API keys)
+- Implement ping animation overhaul
 - Add missing accessibility features
 - Optimize bundle size
 - Enhance error handling
@@ -99,6 +101,7 @@ The new Phase 7 specifically covers:
 - Implement additional map styles
 - Add new discovery features
 - Performance optimizations
+- Fix React Native useInsertionEffect warning
 
 ---
 
