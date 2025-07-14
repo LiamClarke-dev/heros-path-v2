@@ -183,6 +183,29 @@ This is a small piece of code but **CRITICAL** to the app's core value of discov
 ### Dev Dependencies
 * @babel/core 7.20.0
 
+## 📋 **Development & Audit Workflow**
+
+### 🔍 **Systematic Code Audit Process**
+For new developers joining the project, we have a comprehensive audit workflow:
+
+**📖 `docs/AUDIT_WORKFLOW_GUIDE.md`** - Complete step-by-step audit process including:
+- **6-Phase Audit System**: Navigation → Services → UI → Screens → Config → Performance
+- **Standardized Documentation**: Issue tracking and progress reporting
+- **Quick Reference Commands**: Common search patterns and file operations
+- **Completion Checklist**: What to verify before considering audit complete
+
+**📊 `docs/AUDIT_PROGRESS.md`** - Current audit status and findings:
+- Previous audit results and resolved issues
+- Current project status and known problems
+- Handover instructions for new developers
+
+### 🎯 **When to Run the Audit**
+- After major feature additions
+- Before production releases
+- When onboarding new developers
+- When experiencing unexplained bugs
+- Quarterly maintenance
+
 ## Git Workflow & Development Strategy
 
 ### 🎯 **Optimized Development Workflow**
