@@ -1,3 +1,102 @@
+/*
+ * DATA MIGRATION SERVICE (APP VERSION & DATA STRUCTURE MANAGEMENT)
+ * ================================================================
+ * 
+ * PURPOSE:
+ * This service handles critical data migration tasks when Hero's Path updates involve
+ * changes to data structures, storage systems, or application architecture. It ensures
+ * user data is safely transferred from old formats to new ones without loss, maintaining
+ * data integrity across app versions. Think of it as the "data upgrade manager" that
+ * makes app evolution seamless for existing users.
+ * 
+ * FUNCTIONALITY:
+ * - Version Migration: Migrate data between different app versions and data formats
+ * - Storage Migration: Transfer data between storage systems (AsyncStorage to Firestore)
+ * - Structure Migration: Convert data from old structures to new improved formats
+ * - Integrity Validation: Ensure data consistency and completeness during migration
+ * - Rollback Support: Ability to revert migrations if issues are detected
+ * - Progress Tracking: Monitor migration progress and provide user feedback
+ * - Error Recovery: Handle migration failures gracefully with retry mechanisms
+ * - Batch Processing: Migrate large datasets efficiently without blocking UI
+ * - Compatibility Maintenance: Ensure backward compatibility during transition periods
+ * - Migration Status Management: Track which users have completed which migrations
+ * 
+ * WHY IT EXISTS:
+ * As Hero's Path evolves, data structures and storage systems must improve to support
+ * new features and better performance. However, existing users have valuable data
+ * (journeys, discoveries, preferences) that must be preserved. This service enables
+ * the app to evolve while ensuring no user loses their walking history or saved places.
+ * 
+ * KEY MIGRATION TYPES:
+ * 1. **Journey Migration**: Transfer walking routes from AsyncStorage to Firestore
+ * 2. **Discovery Migration**: Migrate saved and dismissed places to new format
+ * 3. **Preference Migration**: Update user preferences to new structure
+ * 4. **Profile Migration**: Migrate user profiles to enhanced format
+ * 5. **Schema Migration**: Update database schemas and document structures
+ * 6. **API Migration**: Transition to new API endpoints and data formats
+ * 
+ * MIGRATION PROCESS:
+ * 1. Check if user requires migration based on app version and data status
+ * 2. Create backup of existing data for rollback capability
+ * 3. Perform migration tasks in logical order with dependency management
+ * 4. Validate migrated data for completeness and correctness
+ * 5. Mark migration as complete to prevent re-migration
+ * 6. Clean up old data structures after successful migration
+ * 7. Provide user feedback about migration status and results
+ * 
+ * RELATIONSHIPS:
+ * - Uses JourneyService for migrating walking route data
+ * - Integrates with DiscoveryService for place data migration
+ * - Works with AsyncStorage for legacy data access
+ * - Connects to Firebase/Firestore for modern data storage
+ * - Uses Logger for detailed migration tracking and debugging
+ * - Coordinates with UserContext for user-specific migration status
+ * - May trigger from app startup or settings screen operations
+ * 
+ * REFERENCED BY:
+ * - App initialization code (automatic migration on startup)
+ * - SettingsScreen.js (manual migration triggers and status display)
+ * - UserContext.js (migration status integration)
+ * - Service classes that need to handle legacy data formats
+ * - Debug and development tools for testing migration scenarios
+ * 
+ * REFERENCES:
+ * - JourneyService.js (for journey data migration)
+ * - DiscoveryService.js (for discovery data migration)
+ * - AsyncStorage (for legacy data access)
+ * - Firebase/Firestore (for modern data storage)
+ * - Logger.js (for migration tracking and debugging)
+ * - User authentication system (for user-specific migrations)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This service is essential for app evolution and user retention.
+ * Without proper data migration, app updates would result in data loss, causing
+ * users to lose their walking history and preferences. This would severely impact
+ * user trust and satisfaction, potentially leading to app abandonment.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add migration validation - verify data integrity after each migration step
+ * 2. Add migration analytics - track migration success rates and performance
+ * 3. Add migration scheduling - perform migrations during low-usage periods
+ * 4. Add migration notifications - inform users about migration progress
+ * 5. Add selective migration - allow users to choose what data to migrate
+ * 6. Add migration compression - compress large datasets during migration
+ * 7. Add migration encryption - encrypt sensitive data during migration process
+ * 8. Add migration versioning - support multiple migration paths and versions
+ * 9. Add migration testing - automated testing of migration scenarios
+ * 10. Add migration monitoring - real-time monitoring of migration health
+ * 11. Add migration optimization - optimize migration performance and speed
+ * 12. Add migration documentation - detailed logs of what was migrated
+ * 13. Add migration recovery - automatic recovery from failed migrations
+ * 14. Add migration preview - show users what will be migrated before starting
+ * 15. Add migration synchronization - coordinate migrations across multiple devices
+ * 16. Add migration backup - automatic backups before major migrations
+ * 17. Add migration compliance - ensure migrations meet data protection regulations
+ * 18. Add migration customization - allow advanced users to customize migration behavior
+ * 19. Add migration insights - analytics about migration patterns and success
+ * 20. Add migration automation - AI-powered migration optimization and decision making
+ */
+
 /**
  * DataMigrationService
  *
