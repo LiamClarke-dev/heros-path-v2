@@ -10,6 +10,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import JourneyService from './JourneyService';
 import DiscoveryService from './DiscoveryService';
+import Logger from '../utils/Logger';
 
 class DataMigrationService {
   // Check if user has already migrated their data
@@ -210,7 +211,7 @@ class DataMigrationService {
   // Perform complete migration for a user
   async migrateAllData(userId) {
     try {
-      console.log('Starting data migration for user:', userId);
+      Logger.debug('Starting data migration for user:', userId);
 
       // Check if already migrated
       if (await this.hasMigrated(userId)) {
@@ -235,7 +236,7 @@ class DataMigrationService {
         results.savedPlaces.migrated + 
         results.dismissedPlaces.migrated;
 
-      console.log('Migration completed:', results);
+      Logger.debug('Migration completed:', results);
 
       return {
         success: true,

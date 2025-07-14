@@ -26,6 +26,7 @@ import FirestoreDataViewer from '../utils/FirestoreDataViewer';
 import DiscoveryService from '../services/DiscoveryService';
 import AnimationDemo from '../components/AnimationDemo';
 import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
+import Logger from '../utils/Logger';
 
 // --- New UI Components ---
 const SectionCard = ({ children, style }) => {
@@ -768,7 +769,7 @@ export default function SettingsScreen() {
                           { 
                             text: 'Copy to Console', 
                             onPress: () => {
-                              console.log('📋 YOUR EXPORTED JOURNEY DATA:', data);
+                              Logger.debug('📋 YOUR EXPORTED JOURNEY DATA:', data);
                               Alert.alert('Copied!', 'Your data logged to console. Check your development console.');
                             }
                           }
@@ -1327,7 +1328,7 @@ export default function SettingsScreen() {
                           { 
                             text: 'Copy to Console', 
                             onPress: () => {
-                              console.log('📋 YOUR EXPORTED JOURNEY DATA:', data);
+                              Logger.debug('📋 YOUR EXPORTED JOURNEY DATA:', data);
                               Alert.alert('Copied!', 'Your data logged to console. Check your development console.');
                             }
                           }

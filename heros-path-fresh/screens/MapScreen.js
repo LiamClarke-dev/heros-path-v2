@@ -161,8 +161,8 @@ export default function MapScreen({ navigation, route }) {
 
   // Log API key and region on mount
   useEffect(() => {
-    console.log('MapScreen: Google Maps API Key (iOS):', GOOGLE_MAPS_API_KEY_IOS);
-    console.log('MapScreen: Current Position:', currentPosition);
+    Logger.debug('MapScreen: Google Maps API Key (iOS):', GOOGLE_MAPS_API_KEY_IOS);
+    Logger.debug('MapScreen: Current Position:', currentPosition);
   }, [currentPosition]);
 
   const spriteSource = SPRITE_SOURCES[spriteState];
@@ -553,12 +553,12 @@ export default function MapScreen({ navigation, route }) {
               // setShowPingAnimation(true);
             }}
             onPingSuccess={(result) => {
-              console.log('Ping successful:', result);
+              Logger.debug('Ping successful:', result);
               // Trigger stats refresh
               setPingUsed(prev => prev + 1);
             }}
             onPingError={(error) => {
-              console.log('Ping error:', error);
+              Logger.error('Ping error:', error);
             }}
             style={styles.pingButton}
             disabled={!tracking}
