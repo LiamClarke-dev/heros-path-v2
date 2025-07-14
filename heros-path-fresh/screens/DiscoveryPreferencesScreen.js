@@ -1,3 +1,26 @@
+/*
+  DiscoveryPreferencesScreen.js
+  -----------------------------
+  What this page does:
+  - Lets users customize their discovery preferences (e.g., which types of places to suggest, minimum rating).
+  - Organizes preferences by category and allows resetting to defaults.
+
+  Why this page exists & its importance:
+  - Empowers users to personalize their discovery experience, making suggestions more relevant.
+  - Improves user satisfaction and engagement by respecting preferences.
+
+  References & dependencies:
+  - Uses AsyncStorage for local persistence of preferences.
+  - Relies on the theme system (Colors, Spacing, Typography) for styling.
+  - Uses DiscoveryService for loading and resetting preferences.
+  - Integrates with custom UI components (SectionHeader, AppButton).
+
+  Suggestions for improvement:
+  - Add more comments explaining the preference loading and saving logic.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Consider extracting category and rating selectors into reusable components.
+  - Improve accessibility for switches and touchable elements.
+*/
 // screens/DiscoveryPreferencesScreen.js
 import React, { useState, useEffect } from 'react';
 import { 

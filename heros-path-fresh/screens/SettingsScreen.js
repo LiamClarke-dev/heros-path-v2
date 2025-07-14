@@ -1,3 +1,27 @@
+/*
+  SettingsScreen.js
+  ------------------
+  What this page does:
+  - Provides a settings interface for the app, allowing users to update their profile, change language, adjust discovery preferences, and manage app themes and map styles.
+  - Includes developer and migration tools, profile editing, and advanced options for data migration and account management.
+
+  Why this page exists & its importance:
+  - Centralizes all user and app configuration in one place, improving user experience and app maintainability.
+  - Essential for user personalization, troubleshooting, and accessing advanced features.
+
+  References & dependencies:
+  - Uses the theme system (useTheme) for dynamic styling.
+  - Relies on UserContext for profile and authentication.
+  - Integrates with services like DataMigrationService, JourneyService, DiscoveryService, and FirestoreDataViewer.
+  - Uses many UI components and custom section cards/buttons.
+
+  Suggestions for improvement:
+  - The file is very large and handles many responsibilities. Strongly consider splitting into smaller components (e.g., profile section, preferences, developer tools).
+  - Add more inline comments to explain complex logic, especially around migration and developer tools.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Improve accessibility for all settings controls and forms.
+  - Consider lazy-loading or hiding advanced/developer sections for regular users.
+*/
 // screens/SettingsScreen.js
 import React, { useState, useEffect } from 'react';
 import {

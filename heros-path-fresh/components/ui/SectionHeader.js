@@ -5,9 +5,21 @@ import { useTheme } from '../../contexts/ThemeContext';
 export default function SectionHeader({ title, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors();
+  
+  // Defensive check - if colors is undefined, use fallback
+  if (!colors) {
+    return (
+      <View style={[styles.container, style]} {...props}>
+        <Text style={[styles.title, { color: '#FFFFFF' }]} accessibilityRole="header">
+          {title}
+        </Text>
+      </View>
+    );
+  }
+  
   return (
     <View style={[styles.container, style]} {...props}>
-      <Text style={[styles.title, { color: colors.text }]} accessibilityRole="header">
+      <Text style={[styles.title, { color: colors?.text || '#FFFFFF' }]} accessibilityRole="header">
         {title}
       </Text>
     </View>

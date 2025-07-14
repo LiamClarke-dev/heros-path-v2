@@ -1,3 +1,28 @@
+/*
+  SavedPlacesScreen.js
+  ---------------------
+  What this page does:
+  - Displays a list of all places the user has saved/discovered.
+  - Allows filtering by place type and removing places from the saved list.
+  - Lets users open places in Google Maps for more details.
+
+  Why this page exists & its importance:
+  - Provides users with a way to review and manage their saved discoveries, which is a core part of the app's value.
+  - Acts as a personal archive of explored locations, encouraging continued use.
+
+  References & dependencies:
+  - Uses DiscoveryService for loading and updating saved places.
+  - Relies on the theme system (Colors, Spacing, Typography, Layout) and user context.
+  - Uses UI components like Card, ListItem, AppButton, SectionHeader.
+  - Integrates with navigation and Google Maps links.
+
+  Suggestions for improvement:
+  - Refactor filter and dropdown UI into reusable components for clarity.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Add more comments explaining the data transformation logic.
+  - Improve accessibility for list items and buttons.
+  - Consider paginating or virtualizing the list for better performance with many saved places.
+*/
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
 import {

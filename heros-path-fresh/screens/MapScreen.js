@@ -1,3 +1,28 @@
+/*
+  MapScreen.js
+  --------------
+  What this page does:
+  - This is the main map interface of the Hero's Path app. It displays the user's current location, tracks their journey, and shows saved routes and places on a map using Google Maps.
+  - Users can start/stop journey tracking, view their path, see saved places, and interact with map markers. The screen also supports animated Link sprites and a "ping" feature for real-time discovery.
+
+  Why this page exists & its importance:
+  - This is the core experience of the app, where users interact with the map, record their journeys, and discover new places. It ties together location tracking, journey management, and visual feedback.
+  - It is central to the app's value proposition and is referenced by other screens (e.g., journey history, discoveries).
+
+  References & dependencies:
+  - Uses the theme system via useTheme() for dynamic styling.
+  - Relies on JourneyService and DiscoveryService for data.
+  - Uses components like PingButton, PingStats, PingAnimation, SectionHeader, AppButton.
+  - References user and exploration context providers.
+  - Uses Google Maps API and Expo Location for map and geolocation features.
+
+  Suggestions for improvement:
+  - Consider breaking up the file: it's large and handles many responsibilities (map logic, UI, state, permissions). Move map logic, journey management, and UI components into separate hooks or components.
+  - Add more comments explaining complex logic, especially around journey tracking and sprite animation.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Improve error handling for location and map errors.
+  - Consider accessibility improvements for map controls and markers.
+*/
 // screens/MapScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {

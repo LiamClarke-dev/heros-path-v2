@@ -1,3 +1,28 @@
+/*
+  DiscoveriesScreen.js
+  ---------------------
+  What this page does:
+  - Manages the discovery process for the user. Shows suggested places to discover along a journey, allows saving or dismissing places, and manages discovery history.
+  - Handles filtering by journey and place type, onboarding, and AI-generated summaries for places.
+  - Loads, saves, and dismisses places using Firestore and local storage as fallback.
+
+  Why this page exists & its importance:
+  - This screen is key for the "discovery" aspect of the app, letting users find and manage interesting places along their journeys.
+  - It connects journey data, user preferences, and place suggestions, making it a central hub for user engagement.
+
+  References & dependencies:
+  - Uses DiscoveryService, JourneyService, and NewPlacesService for data and suggestions.
+  - Relies on the theme system (useTheme), user context, and navigation.
+  - Uses many UI components (Card, ListItem, AppButton, SectionHeader).
+  - Interacts with Firestore and AsyncStorage for data persistence.
+
+  Suggestions for improvement:
+  - The file is very large and complex. Strongly consider splitting into smaller components and custom hooks (e.g., for filtering, onboarding, modals, and data loading).
+  - Add more inline comments to explain non-obvious logic, especially around data loading and error handling.
+  - Ensure all UI elements use the theme system for colors and styles.
+  - Improve accessibility for list items and modals.
+  - Consider optimizing data fetching and state management for better performance.
+*/
 // screens/DiscoveriesScreen.js
 import React, { useState, useEffect } from 'react';
 import {

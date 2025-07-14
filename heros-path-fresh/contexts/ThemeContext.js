@@ -21,41 +21,50 @@ export const ThemeProvider = ({ children }) => {
   const [currentMapStyle, setCurrentMapStyle] = useState(DEFAULT_MAP_STYLE);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load saved theme and map style on mount
+  console.log('[ThemeProvider]', 'Initializing with state:', { 
+    currentTheme, 
+    currentMapStyle, 
+    isLoading,
+    defaultTheme: DEFAULT_THEME,
+    defaultMapStyle: DEFAULT_MAP_STYLE
+  });
+
+  // Load saved preferences on mount
   useEffect(() => {
+    console.log('[ThemeProvider]', 'useEffect triggered, loading saved preferences');
     loadSavedPreferences();
   }, []);
 
   // Load saved preferences from AsyncStorage
   const loadSavedPreferences = async () => {
-    Logger.debug('THEME_CONTEXT', 'loadSavedPreferences started');
+    console.log('[ThemeProvider]', 'loadSavedPreferences started');
     try {
       const [savedTheme, savedMapStyle] = await Promise.all([
         AsyncStorage.getItem(THEME_STORAGE_KEY),
         AsyncStorage.getItem(MAP_STYLE_STORAGE_KEY)
       ]);
 
-      Logger.debug('THEME_CONTEXT', 'AsyncStorage results', { savedTheme, savedMapStyle });
+      console.log('[ThemeProvider]', 'AsyncStorage results', { savedTheme, savedMapStyle });
 
       if (savedTheme && Object.values(THEME_TYPES).includes(savedTheme)) {
-        Logger.debug('THEME_CONTEXT', 'Setting saved theme', { savedTheme });
+        console.log('[ThemeProvider]', 'Setting saved theme', { savedTheme });
         setCurrentTheme(savedTheme);
       } else {
-        Logger.debug('THEME_CONTEXT', 'Using default theme', { defaultTheme: DEFAULT_THEME });
+        console.log('[ThemeProvider]', 'Using default theme', { defaultTheme: DEFAULT_THEME });
         setCurrentTheme(DEFAULT_THEME);
       }
 
       if (savedMapStyle && Object.values(MAP_STYLES).includes(savedMapStyle)) {
-        Logger.debug('THEME_CONTEXT', 'Setting saved map style', { savedMapStyle });
+        console.log('[ThemeProvider]', 'Setting saved map style', { savedMapStyle });
         setCurrentMapStyle(savedMapStyle);
       } else {
-        Logger.debug('THEME_CONTEXT', 'Using default map style', { defaultMapStyle: DEFAULT_MAP_STYLE });
+        console.log('[ThemeProvider]', 'Using default map style', { defaultMapStyle: DEFAULT_MAP_STYLE });
         setCurrentMapStyle(DEFAULT_MAP_STYLE);
       }
     } catch (error) {
-      Logger.error('THEME_CONTEXT', 'Error loading theme preferences', error);
+      console.error('[ThemeProvider]', 'Error loading theme preferences', error);
     } finally {
-      Logger.debug('THEME_CONTEXT', 'loadSavedPreferences completed, setting isLoading to false');
+      console.log('[ThemeProvider]', 'loadSavedPreferences completed, setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -93,6 +102,12 @@ export const ThemeProvider = ({ children }) => {
   // Get current theme colors
   const getCurrentThemeColors = () => {
     Logger.debug('THEME_CONTEXT', 'getCurrentThemeColors called', { currentTheme, isLoading });
+    
+    // Defensive check - if currentTheme is undefined, use fallback
+    if (!currentTheme) {
+      Logger.warn('THEME_CONTEXT', 'currentTheme is undefined, using fallback');
+      return getFallbackTheme();
+    }
     
     const theme = getTheme(currentTheme);
     Logger.debug('THEME_CONTEXT', 'getTheme result', { currentTheme, themeExists: !!theme, themeKeys: theme ? Object.keys(theme) : null });
@@ -136,6 +151,9 @@ export const ThemeProvider = ({ children }) => {
   function getNavigationTheme() {
     Logger.debug('THEME_CONTEXT', 'getNavigationTheme called', { currentTheme, isLoading });
     
+    // Always get fallback colors first
+    const fallbackColors = getFallbackTheme();
+    
     const colors = getCurrentThemeColors();
     Logger.debug('THEME_CONTEXT', 'getNavigationTheme colors result', { 
       colorsExists: !!colors, 
@@ -146,7 +164,6 @@ export const ThemeProvider = ({ children }) => {
     if (!colors) {
       Logger.warn('THEME_CONTEXT', 'Colors not found in getNavigationTheme, using fallback');
       // Fallback to light theme colors
-      const fallbackColors = getFallbackTheme();
       return {
         dark: false,
         colors: {
@@ -169,12 +186,12 @@ export const ThemeProvider = ({ children }) => {
     return {
       dark: currentTheme === THEME_TYPES.DARK || currentTheme === THEME_TYPES.ADVENTURE,
       colors: {
-        primary: colors.primary,
-        background: colors.background,
-        card: colors.surface || colors.background,
-        text: colors.text,
-        border: colors.border || colors.primary,
-        notification: colors.primary,
+        primary: colors?.primary || fallbackColors.primary,
+        background: colors?.background || fallbackColors.background,
+        card: colors?.surface || colors?.background || fallbackColors.surface || fallbackColors.background,
+        text: colors?.text || fallbackColors.text,
+        border: colors?.border || colors?.primary || fallbackColors.border || fallbackColors.primary,
+        notification: colors?.primary || fallbackColors.primary,
       },
       fonts: {
         regular: { fontFamily: 'System', fontWeight: '400' },

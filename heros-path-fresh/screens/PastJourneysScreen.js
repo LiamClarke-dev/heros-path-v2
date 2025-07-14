@@ -1,3 +1,26 @@
+/*
+  PastJourneysScreen.js
+  ----------------------
+  What this page does:
+  - Displays a list of the user's past journeys, including details like distance, duration, and completion status.
+  - Allows users to delete journeys and navigate to the Discoveries screen for a specific journey.
+
+  Why this page exists & its importance:
+  - Provides users with a history of their recorded journeys, encouraging reflection and continued engagement.
+  - Acts as a bridge between journey tracking and discovery management.
+
+  References & dependencies:
+  - Uses JourneyService and DiscoveryService for data.
+  - Relies on the theme system (useTheme) and user context.
+  - Uses UI components like Card, ListItem, AppButton, SectionHeader.
+  - Integrates with navigation to link to DiscoveriesScreen.
+
+  Suggestions for improvement:
+  - Add more comments explaining the journey transformation and deletion logic.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Consider paginating or virtualizing the list for better performance with many journeys.
+  - Improve accessibility for list items and action buttons.
+*/
 import React, { useState, useEffect } from 'react';
 import {
   View,

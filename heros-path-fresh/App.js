@@ -17,7 +17,7 @@ import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { ExplorationProvider } from './contexts/ExplorationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { Spacing, Typography } from './styles/theme';
+import { Spacing, Typography, getFallbackTheme } from './styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import Logger from './utils/Logger';
 
@@ -32,12 +32,7 @@ function MainDrawer() {
   const { getCurrentThemeColors, isLoading } = useTheme();
   Logger.debug('APP', 'MainDrawer useTheme result', { isLoading, hasGetCurrentThemeColors: !!getCurrentThemeColors });
   
-  const colors = getCurrentThemeColors() || { 
-    background: '#FFFFFF', 
-    text: '#000000', 
-    primary: '#007AFF', 
-    tabInactive: '#8E8E93' 
-  }; // Fallback to static colors if theme not ready
+  const colors = getCurrentThemeColors() || getFallbackTheme(); // Use getFallbackTheme instead of Colors
   Logger.debug('APP', 'MainDrawer colors result', { 
     colorsExists: !!colors, 
     colorsType: typeof colors, 
@@ -56,22 +51,40 @@ function MainDrawer() {
     );
   }
 
+  // Defensive check - if colors is still undefined/null, use fallback
+  if (!colors) {
+    Logger.error('APP', 'MainDrawer colors is null/undefined, using fallback');
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading theme...</Text>
+      </View>
+    );
+  }
+
+  Logger.debug('APP', 'MainDrawer proceeding with colors', { 
+    hasBackground: !!colors.background,
+    hasText: !!colors.text,
+    hasPrimary: !!colors.primary,
+    hasTabInactive: !!colors.tabInactive
+  });
+
   return (
     <Drawer.Navigator
       initialRouteName="Map"
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colors.background || '#1E1E1E',
         },
-        headerTintColor: colors.text,
+        headerTintColor: colors.text || '#FFFFFF',
         headerTitleStyle: {
           fontWeight: '600',
         },
         drawerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colors.background || '#1E1E1E',
         },
-        drawerActiveTintColor: colors.primary,
-        drawerInactiveTintColor: colors.tabInactive,
+        drawerActiveTintColor: colors.primary || '#007AFF',
+        drawerInactiveTintColor: colors.tabInactive || '#666666',
       }}
     >
       <Drawer.Screen 
@@ -244,12 +257,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1E1E1E', // Use static color instead of Colors.background
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#000000',
+    marginTop: Spacing.md,
+    ...Typography.body,
+    color: '#FFFFFF', // Use static color instead of Colors.text
   },
 });

@@ -5,11 +5,30 @@ import { useTheme } from '../../contexts/ThemeContext';
 export default function Card({ children, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors();
+  
+  // Defensive check - if colors is undefined, use fallback
+  if (!colors) {
+    return (
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: '#1C1C1E', shadowColor: '#000000' },
+          style,
+        ]}
+        accessible
+        accessibilityRole="summary"
+        {...props}
+      >
+        {children}
+      </View>
+    );
+  }
+  
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: colors.surface, shadowColor: colors.shadow },
+        { backgroundColor: colors?.surface || '#1C1C1E', shadowColor: colors?.shadow || '#000000' },
         style,
       ]}
       accessible
