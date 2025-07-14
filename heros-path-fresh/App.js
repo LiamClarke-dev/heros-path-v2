@@ -32,7 +32,7 @@ function MainDrawer() {
   const { getCurrentThemeColors, isLoading } = useTheme();
   Logger.debug('APP', 'MainDrawer useTheme result', { isLoading, hasGetCurrentThemeColors: !!getCurrentThemeColors });
   
-  const colors = getCurrentThemeColors() || getFallbackTheme(); // Use getFallbackTheme instead of Colors
+  const colors = getCurrentThemeColors() || getFallbackTheme(); // Fallback to default colors if theme not ready
   Logger.debug('APP', 'MainDrawer colors result', { 
     colorsExists: !!colors, 
     colorsType: typeof colors, 
@@ -51,40 +51,22 @@ function MainDrawer() {
     );
   }
 
-  // Defensive check - if colors is still undefined/null, use fallback
-  if (!colors) {
-    Logger.error('APP', 'MainDrawer colors is null/undefined, using fallback');
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading theme...</Text>
-      </View>
-    );
-  }
-
-  Logger.debug('APP', 'MainDrawer proceeding with colors', { 
-    hasBackground: !!colors.background,
-    hasText: !!colors.text,
-    hasPrimary: !!colors.primary,
-    hasTabInactive: !!colors.tabInactive
-  });
-
   return (
     <Drawer.Navigator
       initialRouteName="Map"
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.background || '#1E1E1E',
+          backgroundColor: colors.background,
         },
-        headerTintColor: colors.text || '#FFFFFF',
+        headerTintColor: colors.text,
         headerTitleStyle: {
           fontWeight: '600',
         },
         drawerStyle: {
-          backgroundColor: colors.background || '#1E1E1E',
+          backgroundColor: colors.background,
         },
-        drawerActiveTintColor: colors.primary || '#007AFF',
-        drawerInactiveTintColor: colors.tabInactive || '#666666',
+        drawerActiveTintColor: colors.primary,
+        drawerInactiveTintColor: colors.tabInactive,
       }}
     >
       <Drawer.Screen 
@@ -257,11 +239,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1E1E1E', // Use static color instead of Colors.background
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
-    marginTop: Spacing.md,
-    ...Typography.body,
-    color: '#FFFFFF', // Use static color instead of Colors.text
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000000',
   },
 });
