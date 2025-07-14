@@ -1,9 +1,13 @@
 // components/AnimationDemo.js
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 import PingAnimation from './PingAnimation';
 
 const AnimationDemo = () => {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  
   const [activeAnimation, setActiveAnimation] = useState(null);
   const [selectedType, setSelectedType] = useState('ripple');
 
@@ -75,29 +79,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.backgroundSecondary,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
-    color: '#333',
+    color: colors.text,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 30,
-    color: '#666',
+    color: colors.textSecondary,
   },
   animationContainer: {
     height: 200,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     borderRadius: 12,
     marginBottom: 30,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -114,51 +118,51 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     padding: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
   buttonActive: {
-    borderColor: '#4A90E2',
-    backgroundColor: '#f0f8ff',
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}10`,
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 4,
   },
   buttonTextActive: {
-    color: '#4A90E2',
+    color: colors.primary,
   },
   buttonDescription: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   infoContainer: {
     marginTop: 30,
     padding: 16,
-    backgroundColor: '#e8f4fd',
+    backgroundColor: `${colors.primary}10`,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#4A90E2',
+    borderLeftColor: colors.primary,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: colors.primary,
     marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.text,
     lineHeight: 20,
   },
 });

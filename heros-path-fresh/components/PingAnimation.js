@@ -1,6 +1,7 @@
 // components/PingAnimation.js
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Dimensions } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -17,6 +18,9 @@ const PingAnimation = ({
   style,
   animationType = 'ripple' // 'ripple', 'pulse', 'radar', 'particles'
 }) => {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const rotationAnim = useRef(new Animated.Value(0)).current;
@@ -411,15 +415,15 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 6, // Thicker border
-    borderColor: '#4A90E2',
-    backgroundColor: 'rgba(74, 144, 226, 0.3)', // More visible
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}30`, // More visible with transparency
   },
   pulse: {
     position: 'absolute',
     width: 120, // Much larger pulse
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(74, 144, 226, 0.5)', // More visible
+    backgroundColor: `${colors.primary}50`, // More visible with transparency
   },
   radar: {
     position: 'absolute',
@@ -427,7 +431,7 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 80,
     borderWidth: 8, // Thicker border
-    borderColor: '#4A90E2',
+    borderColor: colors.primary,
     borderTopColor: 'transparent',
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
@@ -437,14 +441,14 @@ const styles = StyleSheet.create({
     width: 20, // Larger particles
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#4A90E2',
+    backgroundColor: colors.primary,
   },
   centerPulse: {
     position: 'absolute',
     width: 32, // Larger center pulse
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#4A90E2',
+    backgroundColor: colors.primary,
   },
   screenFlash: {
     position: 'absolute',
@@ -452,7 +456,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)', // White flash
+    backgroundColor: `${colors.background}30`, // Theme-aware flash
     zIndex: 1,
   },
   chargeGlow: {
@@ -460,7 +464,7 @@ const styles = StyleSheet.create({
     width: screenWidth * 2,
     height: screenHeight * 2,
     borderRadius: (screenWidth * 2) / 2,
-    backgroundColor: 'rgba(74, 144, 226, 0.2)', // Light blue glow
+    backgroundColor: `${colors.primary}20`, // Light theme-aware glow
     opacity: 0,
     zIndex: 0,
   },
