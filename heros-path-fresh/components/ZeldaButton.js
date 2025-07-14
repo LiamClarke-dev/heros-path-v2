@@ -8,7 +8,7 @@ export default function ZeldaButton({ onPress, children, disabled, selected, sty
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors();
   
-  // Zelda-specific palette with theme integration
+  // Zelda-specific palette with theme integration - moved inside component
   const colorGray200 = selected ? colors.surface : colors.surface + '99'; // 60% opacity
   const colorGray100 = colors.surface;
   const colorGainsboro200 = colors.border + '4D'; // 30% opacity

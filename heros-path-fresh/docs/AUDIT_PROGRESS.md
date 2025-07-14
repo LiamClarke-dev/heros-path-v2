@@ -135,6 +135,22 @@ Conduct a comprehensive code audit to ensure all components are properly wired u
 - **Files Modified**: `utils/Logger.js`, `config.js`, `screens/SignInScreen.js`, `screens/MapScreen.js`, `firebase.js`, `services/JourneyService.js`, `services/DataMigrationService.js`, `services/BackgroundLocationService.js`, `contexts/UserContext.js`, `screens/SettingsScreen.js`, `services/EnhancedPlacesService.js`
 - **Status**: ✅ **RESOLVED** - All debug logging now gated behind __DEV__ for production safety
 
+**Issue 13: Critical Runtime Error - Colors Property Not Found**
+- **Problem**: App crashes immediately on startup with `ReferenceError: Property 'colors' doesn't exist, js engine: hermes`
+- **Root Cause**: Top-level usage of `colors` property before theme context is available in multiple files
+- **Files Affected**: 
+  - `App.js` - Top-level StyleSheet.create() referenced Colors
+  - `components/ZeldaButton.js` - Top-level variable declarations using colors
+  - `components/SettingsOptionRow.js` - Top-level variable declaration using colors
+- **Severity**: **CRITICAL** - App completely unusable
+- **Status**: ✅ **RESOLVED**
+- **Fix Applied**: 
+  1. Moved all top-level `colors` usage inside component functions after `useTheme()` hook
+  2. Replaced top-level `Colors.primary` references with static color values (`#007AFF`)
+  3. Removed unused `Colors` import from App.js
+  4. Ensured all `StyleSheet.create()` calls use static values only
+- **Testing**: App now starts successfully without the colors property error
+
 #### **🚨 KNOWN ISSUES**
 - **Apple Maps Fallback**: Google Maps API key injection issue on iOS (documented in DEVELOPMENT_STATUS.md)
 - **Link Sprite Rendering**: Animated GIF appears as white silhouette on iOS (documented in DEVELOPMENT_STATUS.md)

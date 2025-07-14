@@ -16,6 +16,7 @@ import MapView, { Polyline, Marker, Callout, PROVIDER_GOOGLE } from 'react-nativ
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
 import { useExploration } from '../contexts/ExplorationContext';
 import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
@@ -64,7 +65,7 @@ function getDirection([prev, curr]) {
 
 export default function MapScreen({ navigation, route }) {
   const { getCurrentThemeColors, getCurrentMapStyleArray } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   const mapStyleArray = getCurrentMapStyleArray();
   
   const { user } = useUser();
@@ -422,9 +423,8 @@ export default function MapScreen({ navigation, route }) {
     );
   }
 
-  // Determine map provider: fallback to Apple Maps on iOS if Google Maps API key is missing
-  const useGoogleMaps = Platform.OS !== 'ios' || (GOOGLE_MAPS_API_KEY_IOS && GOOGLE_MAPS_API_KEY_IOS !== '${GOOGLE_MAPS_API_KEY_IOS}');
-  const mapProvider = useGoogleMaps ? PROVIDER_GOOGLE : undefined; // PROVIDER_DEFAULT is undefined
+  // Determine map provider for iOS fallback
+  const mapProvider = Platform.OS === 'ios' && GOOGLE_MAPS_API_KEY_IOS ? PROVIDER_GOOGLE : undefined;
 
   return (
     <View style={styles.container}>

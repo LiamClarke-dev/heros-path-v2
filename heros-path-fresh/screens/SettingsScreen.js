@@ -15,6 +15,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
+import Logger from '../utils/Logger';
 import { useUser } from '../contexts/UserContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { testPlacesAPIMigration } from '../services/DiscoveriesService';
@@ -26,7 +28,6 @@ import FirestoreDataViewer from '../utils/FirestoreDataViewer';
 import DiscoveryService from '../services/DiscoveryService';
 import AnimationDemo from '../components/AnimationDemo';
 import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
-import Logger from '../utils/Logger';
 
 // --- New UI Components ---
 const SectionCard = ({ children, style }) => {

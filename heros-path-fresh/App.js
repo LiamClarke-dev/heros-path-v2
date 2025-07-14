@@ -17,8 +17,9 @@ import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { ExplorationProvider } from './contexts/ExplorationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { Colors, Spacing, Typography } from './styles/theme';
+import { Spacing, Typography } from './styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
+import Logger from './utils/Logger';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,8 +27,30 @@ const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
 function MainDrawer() {
-  const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  Logger.debug('APP', 'MainDrawer rendering', { component: 'MainDrawer' });
+  
+  const { getCurrentThemeColors, isLoading } = useTheme();
+  Logger.debug('APP', 'MainDrawer useTheme result', { isLoading, hasGetCurrentThemeColors: !!getCurrentThemeColors });
+  
+  const colors = getCurrentThemeColors() || Colors; // Fallback to default colors if theme not ready
+  Logger.debug('APP', 'MainDrawer colors result', { 
+    colorsExists: !!colors, 
+    colorsType: typeof colors, 
+    colorsKeys: colors ? Object.keys(colors) : null,
+    usingFallback: !getCurrentThemeColors() 
+  });
+  
+  // Don't render until theme is ready
+  if (isLoading) {
+    Logger.debug('APP', 'MainDrawer showing loading state');
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading theme...</Text>
+      </View>
+    );
+  }
+
   return (
     <Drawer.Navigator
       initialRouteName="Map"
@@ -121,18 +144,37 @@ function MainDrawer() {
 }
 
 function RootNavigation() {
+  Logger.debug('APP', 'RootNavigation rendering', { component: 'RootNavigation' });
+  
   const { user, profileLoading } = useUser();
-  const { getNavigationTheme } = useTheme();
-  const navigationTheme = getNavigationTheme ? getNavigationTheme() : undefined;
-
-  if (profileLoading) {
+  const { getNavigationTheme, isLoading: themeLoading } = useTheme();
+  
+  Logger.debug('APP', 'RootNavigation state', { 
+    hasUser: !!user, 
+    profileLoading, 
+    themeLoading, 
+    hasGetNavigationTheme: !!getNavigationTheme 
+  });
+  
+  // Don't render until both user profile and theme are ready
+  if (profileLoading || themeLoading) {
+    Logger.debug('APP', 'RootNavigation showing loading state', { profileLoading, themeLoading });
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>
+          {profileLoading ? 'Loading profile...' : 'Loading theme...'}
+        </Text>
       </View>
     );
   }
+
+  Logger.debug('APP', 'RootNavigation calling getNavigationTheme');
+  const navigationTheme = getNavigationTheme ? getNavigationTheme() : undefined;
+  Logger.debug('APP', 'RootNavigation navigationTheme result', { 
+    hasNavigationTheme: !!navigationTheme,
+    navigationThemeKeys: navigationTheme ? Object.keys(navigationTheme) : null
+  });
 
   return (
     <NavigationContainer theme={navigationTheme}>
@@ -173,7 +215,7 @@ export default function App() {
   if (!appIsReady) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color="#007AFF" />
         <Text style={styles.loadingText}>Loading Hero's Path...</Text>
       </View>
     );
@@ -197,11 +239,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
-    marginTop: Spacing.md,
-    ...Typography.body,
-    color: Colors.text,
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000000',
   },
 });
