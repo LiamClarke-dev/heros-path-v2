@@ -1,3 +1,70 @@
+/*
+ * PING ANIMATION COMPONENT
+ * ========================
+ * 
+ * PURPOSE:
+ * This component creates visual animations that play when users tap the "ping" button 
+ * during walks to discover nearby places. It provides immediate visual feedback to show 
+ * that the ping action is working, making the experience feel more interactive and 
+ * responsive. Currently, animations are DISABLED but the scaffolding is ready for 
+ * future implementation.
+ * 
+ * FUNCTIONALITY:
+ * - Supports 4 animation types: Ripple (expanding circles), Pulse (simple expansion), 
+ *   Radar (rotating sweep), and Particles (bursting outward)
+ * - Each animation has 3 phases: Charge up (building energy), Release (main effect), 
+ *   and Screen flash (dramatic finish)
+ * - Uses React Native's Animated API for smooth, native performance
+ * - Covers full screen with pointer events disabled to avoid interference
+ * - Automatically calls completion callback when animation finishes
+ * 
+ * WHY IT EXISTS:
+ * The ping feature is a core part of the app's gamification - users can actively 
+ * discover places during walks rather than waiting until the end. Visual feedback 
+ * makes this feel like a "special power" being activated, enhancing user engagement.
+ * Without animation, the ping would feel unresponsive or broken.
+ * 
+ * CURRENT STATUS:
+ * ANIMATIONS_ENABLED is set to false, so this component currently does nothing.
+ * The code structure is complete and ready to enable when needed.
+ * 
+ * RELATIONSHIPS:
+ * - Used by MapScreen.js when users tap the ping button during active walks
+ * - Uses ThemeContext for color theming that matches the current app theme
+ * - Called by PingButton.js component as visual feedback
+ * - Demonstrated in AnimationDemo.js for testing and selection
+ * 
+ * REFERENCED BY:
+ * - MapScreen.js (main usage during walks)
+ * - AnimationDemo.js (for testing and demonstration)
+ * - PingButton.js (triggers the animation)
+ * 
+ * REFERENCES:
+ * - ThemeContext.js (for theme-aware colors)
+ * - React Native Animated API (for animations)
+ * - Dimensions API (for screen size calculations)
+ * 
+ * IMPORTANCE TO APP:
+ * High importance for user experience - Even though currently disabled, this component
+ * is crucial for making the ping feature feel responsive and engaging. The ping feature
+ * is a key differentiator of the app, and without good visual feedback, users may think
+ * it's broken or unresponsive.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. RE-ENABLE ANIMATIONS - Set ANIMATIONS_ENABLED = true and test performance
+ * 2. Add haptic feedback - vibration on animation start/end for tactile feedback
+ * 3. Add sound effects - audio cues to make animations feel more impactful
+ * 4. Optimize performance - consider using native driver for all animations
+ * 5. Add battery consideration - reduce animation complexity on low battery
+ * 6. Add reduced motion support - simpler animations for accessibility
+ * 7. Add user preferences - let users choose animation intensity or disable
+ * 8. Add animation caching - pre-render common animations for better performance
+ * 9. Consider using Lottie animations for more complex effects
+ * 10. Add animation interrupt handling - what happens if user pings rapidly
+ * 11. Add background/foreground handling - pause animations when app backgrounded
+ * 12. Test on various device sizes and performance levels
+ */
+
 // components/PingAnimation.js
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Dimensions } from 'react-native';

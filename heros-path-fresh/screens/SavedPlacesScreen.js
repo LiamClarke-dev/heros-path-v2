@@ -1,3 +1,96 @@
+/*
+ * SAVED PLACES SCREEN (PERSONAL DISCOVERY COLLECTION)
+ * ====================================================
+ * 
+ * PURPOSE:
+ * This screen displays all the places that users have saved during their discovery
+ * review process, creating a personal collection of interesting locations they want
+ * to remember or visit. It serves as both a wishlist and a record of places that
+ * caught their attention during walks. Think of it as the user's "personal travel
+ * guide" built from their own exploration discoveries.
+ * 
+ * FUNCTIONALITY:
+ * - Displays a comprehensive list of all user-saved places from discoveries
+ * - Provides filtering capabilities to organize places by type or category
+ * - Shows detailed place information including photos, ratings, and descriptions
+ * - Supports swipe actions for quick management (unsave, share, etc.)
+ * - Integrates with external mapping and navigation apps
+ * - Handles place detail modals with comprehensive information display
+ * - Automatically refreshes when returning from other screens
+ * - Manages loading states and empty state messaging
+ * - Uses modern UI components for consistent visual experience
+ * - Provides export and sharing capabilities for saved places
+ * 
+ * WHY IT EXISTS:
+ * Users discover many interesting places during their walks but need a way to remember
+ * and organize them. This screen transforms the discovery process from passive viewing
+ * into active collection building. It gives users a sense of accomplishment and
+ * provides practical value by maintaining a personalized list of places they want
+ * to visit or remember.
+ * 
+ * KEY FEATURES:
+ * - Personal Collection: Curated list of user-selected interesting places
+ * - Smart Filtering: Filter saved places by category, type, or other criteria
+ * - Detailed Information: Rich place details including photos and descriptions
+ * - External Integration: Links to maps, reviews, and navigation apps
+ * - Quick Management: Swipe actions for efficient place management
+ * - Visual Organization: Clear categorization and visual hierarchy
+ * - Real-time Updates: Automatically reflects changes from discovery reviews
+ * - Empty State Guidance: Helpful messaging when no places are saved yet
+ * 
+ * RELATIONSHIPS:
+ * - Uses DiscoveryService.js for loading and managing saved place data
+ * - Integrates with discovery workflows in DiscoveriesScreen.js
+ * - Connected to UserContext for authentication and user data
+ * - Uses PLACE_TYPES constants for filtering and categorization
+ * - Part of the Discoveries tab navigation alongside DiscoveriesScreen
+ * - Uses shared UI components for consistent interface design
+ * - May integrate with external mapping and review services
+ * 
+ * REFERENCED BY:
+ * - AppNavigator.js (as part of the Discoveries tab navigation)
+ * - DiscoveriesScreen.js (users save places that appear here)
+ * - Discovery completion workflows that populate this screen
+ * - User travel planning and revisiting workflows
+ * 
+ * REFERENCES:
+ * - DiscoveryService.js (for saved place data management)
+ * - PLACE_TYPES constants (for filtering and categorization)
+ * - UserContext.js (for authentication and user data)
+ * - UI components (Card, ListItem, AppButton, SectionHeader)
+ * - External linking (for maps and navigation integration)
+ * - React Navigation (for screen focus and state management)
+ * 
+ * IMPORTANCE TO APP:
+ * HIGH - This screen is crucial for converting discovery browsing into lasting value.
+ * It transforms the app from just showing interesting places to actually helping users
+ * build a personal collection they can use for future planning and exploration. This
+ * creates long-term engagement and makes the discovery process feel more meaningful
+ * and practical.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add place collections - organize saved places into custom collections
+ * 2. Add place notes - personal notes and memories for each saved place
+ * 3. Add place photos - attach personal photos to saved places
+ * 4. Add visit tracking - mark places as visited and track visit history
+ * 5. Add place sharing - share saved places with friends or export lists
+ * 6. Add place recommendations - suggest similar places based on saved items
+ * 7. Add place planning - plan routes that visit multiple saved places
+ * 8. Add place reminders - location-based reminders when near saved places
+ * 9. Add place categories - custom categories beyond standard place types
+ * 10. Add place search - search through saved places by name or attributes
+ * 11. Add place analytics - insights about saved place patterns and preferences
+ * 12. Add place backup - backup and restore saved place collections
+ * 13. Add place import - import places from other apps or services
+ * 14. Add place reviews - personal ratings and reviews for saved places
+ * 15. Add place social features - see friends' saved places and recommendations
+ * 16. Add place optimization - optimize saved place organization automatically
+ * 17. Add place accessibility - accessibility information for saved places
+ * 18. Add place updates - notifications when saved places have updates
+ * 19. Add place visualization - map view showing all saved places
+ * 20. Add place achievements - rewards for reaching saved place milestones
+ */
+
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
 import {

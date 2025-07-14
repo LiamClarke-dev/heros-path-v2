@@ -1,5 +1,92 @@
 /**
- * NewPlacesService
+ * NEW PLACES SERVICE (GOOGLE PLACES API INTERFACE)
+ * =================================================
+ * 
+ * PURPOSE:
+ * This service provides a unified interface to Google Places API, handling both the new
+ * Google Places API (v1) and legacy fallback. It abstracts the complexity of API migration,
+ * provides consistent response formatting, and ensures the app continues working even if
+ * one API version fails. Think of it as the translation layer between Hero's Path and
+ * Google's place data, handling all the technical details of API communication.
+ * 
+ * FUNCTIONALITY:
+ * - Provides unified interface for both new Google Places API and legacy API
+ * - Handles automatic fallback when new API is unavailable or fails
+ * - Transforms API responses into consistent format regardless of source
+ * - Manages field mapping and response transformation between API versions
+ * - Provides comprehensive error handling and retry logic
+ * - Includes API connectivity testing and validation functions
+ * - Supports multiple languages for international users
+ * - Handles photo URL generation for both API versions
+ * - Provides AI summary integration through Gemini API
+ * - Includes performance monitoring and logging for all API calls
+ * 
+ * WHY IT EXISTS:
+ * Google deprecated their legacy Places API and introduced a new API with different
+ * endpoints, request formats, and response structures. This service ensures Hero's Path
+ * can use the new API while maintaining compatibility with the legacy API as backup.
+ * It provides a stable interface for the rest of the app while handling the complexity
+ * of API migration and potential API failures.
+ * 
+ * KEY FEATURES:
+ * - Dual API support: New Google Places API with legacy fallback
+ * - Automatic response transformation: Consistent data format regardless of API used
+ * - AI summary integration: Enhances place data with Gemini-generated summaries
+ * - Field masking optimization: Requests only needed data to reduce costs
+ * - Error handling: Graceful fallback and error recovery
+ * - Performance monitoring: Tracks API call duration and success rates
+ * - Multi-language support: Handles localized place information
+ * - Photo management: Generates photo URLs for both API versions
+ * 
+ * RELATIONSHIPS:
+ * - Used by DiscoveriesService.js for route-based place discovery
+ * - Used by PingService.js for real-time place discovery during walks
+ * - Works with EnhancedPlacesService.js for AI summaries and enhanced features
+ * - Provides core place data to all discovery and search functionality
+ * - Integrates with Google's Gemini AI for place summary generation
+ * - Connects to Firebase for caching and performance optimization
+ * 
+ * REFERENCED BY:
+ * - DiscoveriesService.js (for Search Along Route functionality)
+ * - PingService.js (for real-time place discovery)
+ * - EnhancedPlacesService.js (for AI-enhanced place information)
+ * - Any component that needs Google Places data
+ * - API testing and connectivity validation workflows
+ * 
+ * REFERENCES:
+ * - Google Places API (New) - places.googleapis.com/v1
+ * - Google Places API (Legacy) - maps.googleapis.com/maps/api/place
+ * - Google Gemini AI API (for AI summaries)
+ * - Configuration (for API keys and settings)
+ * - Logger utility (for performance monitoring and debugging)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This service is essential for all place discovery functionality in Hero's Path.
+ * Without reliable access to Google Places data, the app cannot discover places along
+ * routes or provide the core value proposition. The dual API support ensures the app
+ * continues working even during Google's API transitions and potential service issues.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add intelligent caching - cache frequent place lookups to reduce API costs
+ * 2. Add batch processing - optimize multiple place requests into fewer API calls
+ * 3. Add predictive loading - preload likely place data based on user patterns
+ * 4. Add offline support - cache essential place data for offline use
+ * 5. Add rate limiting - implement client-side rate limiting to prevent API quotas
+ * 6. Add data validation - validate and clean API responses before processing
+ * 7. Add alternative data sources - integrate with other place data providers
+ * 8. Add custom place data - allow users to add and edit place information
+ * 9. Add place verification - verify and update outdated place information
+ * 10. Add performance optimization - optimize API calls for battery and data usage
+ * 11. Add regional customization - adapt API behavior for different countries/regions
+ * 12. Add accessibility data - include accessibility information for places
+ * 13. Add real-time data - integrate with real-time place information (hours, busy times)
+ * 14. Add social integration - include user reviews and social signals
+ * 15. Add cost monitoring - track and optimize API usage costs
+ * 16. Add quality scoring - rate and filter places by data quality
+ * 17. Add machine learning - improve place relevance using ML algorithms
+ * 18. Add analytics integration - track place discovery patterns and success rates
+ * 19. Add emergency services - special handling for emergency/medical services
+ * 20. Add business partnerships - integrate with local business directories and APIs
  *
  * Unified API interface for Google Places (new and legacy).
  * - Handles all API calls to Google Places, including fallback to legacy endpoints.

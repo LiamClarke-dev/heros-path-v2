@@ -1,3 +1,88 @@
+/*
+ * BACKGROUND LOCATION SERVICE
+ * ===========================
+ * 
+ * PURPOSE:
+ * This service manages all GPS location tracking functionality for Hero's Path.
+ * It handles requesting location permissions, tracking user movement during walks,
+ * storing location data, and providing callbacks for location updates. Think of it
+ * as the GPS engine that powers the app's core tracking functionality while
+ * respecting user privacy and providing transparent permission management.
+ * 
+ * FUNCTIONALITY:
+ * - Manages location permission requests with user-friendly explanations
+ * - Tracks GPS location during active walks with configurable accuracy
+ * - Stores location data temporarily during journeys for performance
+ * - Provides callbacks for real-time location updates to UI components
+ * - Handles tracking start, stop, pause, and resume operations
+ * - Manages location subscription lifecycle to prevent memory leaks
+ * - Provides status information about current tracking state
+ * - Includes privacy-focused permission dialogs with clear explanations
+ * 
+ * WHY IT EXISTS:
+ * Location tracking is core to Hero's Path's functionality, but it's complex and
+ * sensitive. This service centralizes all location logic, handles the intricacies
+ * of permissions and tracking lifecycle, and provides a clean interface for other
+ * components. It also ensures user privacy by being transparent about when and
+ * why location is tracked.
+ * 
+ * KEY FEATURES:
+ * - Privacy-first approach with clear permission explanations
+ * - Robust error handling for permission denials and location failures
+ * - Efficient location storage and retrieval during active tracking
+ * - Platform-specific permission handling (iOS/Android differences)
+ * - Automatic cleanup when tracking stops
+ * - Integration with device settings for permission management
+ * - Performance optimization to minimize battery usage
+ * 
+ * RELATIONSHIPS:
+ * - Used by MapScreen.js for real-time location tracking during walks
+ * - Provides location data to journey recording and route visualization
+ * - Works with JourneyService for saving completed routes
+ * - Integrates with user permission workflows and settings
+ * - Called by tracking start/stop workflows throughout the app
+ * 
+ * REFERENCED BY:
+ * - MapScreen.js (primary usage for tracking during walks)
+ * - Any component that needs current location or tracking status
+ * - Journey completion workflows
+ * - Permission management components
+ * 
+ * REFERENCES:
+ * - expo-location (for location services and permissions)
+ * - AsyncStorage (for temporary location data storage)
+ * - Logger utility (for debugging and error tracking)
+ * - React Native Alert and Linking (for permission dialogs)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This service is absolutely essential for Hero's Path's core functionality.
+ * Without reliable location tracking, the app cannot record walks, show routes,
+ * or provide the core value proposition. The privacy and permission handling are
+ * also crucial for app store compliance and user trust.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add battery optimization - adaptive tracking frequency based on battery level
+ * 2. Add offline tracking - continue tracking without network connectivity
+ * 3. Add location accuracy indicators - show GPS signal strength to users
+ * 4. Add automatic pause detection - detect when user stops moving
+ * 5. Add location smoothing - filter out GPS noise and erratic readings
+ * 6. Add geofencing - detect when user enters/exits specific areas
+ * 7. Add elevation tracking - record altitude changes during walks
+ * 8. Add speed calculation - track walking/running speed in real-time
+ * 9. Add location history - maintain a history of recent locations
+ * 10. Add privacy controls - granular control over location data retention
+ * 11. Add location sharing - temporary location sharing with friends/family
+ * 12. Add emergency features - automatic emergency contact notification
+ * 13. Add location-based reminders - contextual notifications based on location
+ * 14. Add indoor positioning - enhanced tracking in buildings and underground
+ * 15. Add route prediction - predict likely routes based on historical data
+ * 16. Add location analytics - insights about user movement patterns
+ * 17. Add location export - export location data for external analysis
+ * 18. Add enhanced error recovery - better handling of GPS and permission failures
+ * 19. Add location validation - detect and filter invalid or suspicious readings
+ * 20. Add performance monitoring - track battery usage and location accuracy metrics
+ */
+
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
