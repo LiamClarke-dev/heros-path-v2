@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,6 +24,8 @@ export default function PastJourneysScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [journeyStatuses, setJourneyStatuses] = useState({});
   const { user, migrationStatus } = useUser();
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', loadJourneys);
@@ -150,10 +153,10 @@ export default function PastJourneysScreen({ navigation }) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Past Journeys" />
       {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} color={colors.primary} />
       ) : (
         <FlatList
           data={journeys}
@@ -161,7 +164,7 @@ export default function PastJourneysScreen({ navigation }) {
           renderItem={renderItem}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={() => (
-            <Text style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
               No journeys found.
             </Text>
           )}
@@ -175,12 +178,10 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     padding: 16,
-    backgroundColor: '#f5f5f5', // Light gray background
   },
-  empty: { 
+  emptyText: { 
     textAlign: 'center', 
-    marginTop: 20,
-    color: '#666',
+    marginTop: 40,
   },
   emptyContainer: {
     flex: 1,
@@ -195,7 +196,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   migrationNote: {
     textAlign: 'center',

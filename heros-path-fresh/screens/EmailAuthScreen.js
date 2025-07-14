@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import { signUpWithEmail, signInWithEmail } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../contexts/ThemeContext';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
 
@@ -11,6 +12,8 @@ export default function EmailAuthScreen() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
 
   const handleSignUp = async () => {
     setLoading(true);
@@ -45,29 +48,39 @@ export default function EmailAuthScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Email Authentication" />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { 
+          backgroundColor: colors.inputBackground,
+          borderColor: colors.border,
+          color: colors.text
+        }]}
         placeholder="Email"
+        placeholderTextColor={colors.secondaryText}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { 
+          backgroundColor: colors.inputBackground,
+          borderColor: colors.border,
+          color: colors.text
+        }]}
         placeholder="Password"
+        placeholderTextColor={colors.secondaryText}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
       />
       <View style={styles.buttonRow}>
-        <AppButton title="Sign Up" onPress={handleSignUp} disabled={loading} />
+        <AppButton title="Sign Up" onPress={handleSignUp} disabled={loading} variant="primary" />
         <View style={{ width: 16 }} />
-        <AppButton title="Sign In" onPress={handleSignIn} disabled={loading} />
+        <AppButton title="Sign In" onPress={handleSignIn} disabled={loading} variant="secondary" />
       </View>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+      {message ? <Text style={[styles.message, { color: colors.error }]}>{message}</Text> : null}
     </View>
   );
 }
@@ -77,24 +90,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 24,
-    color: '#333',
   },
   input: {
     width: 280,
     height: 44,
-    borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 16,
-    backgroundColor: '#fff',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -102,7 +111,6 @@ const styles = StyleSheet.create({
   },
   message: {
     marginTop: 16,
-    color: '#d32f2f',
     textAlign: 'center',
   },
 }); 

@@ -28,6 +28,7 @@ import Logger from '../utils/Logger';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
 import Constants from 'expo-constants';
+import { GOOGLE_MAPS_API_KEY_IOS } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -160,8 +161,7 @@ export default function MapScreen({ navigation, route }) {
 
   // Log API key and region on mount
   useEffect(() => {
-    const apiKey = Constants.expoConfig?.ios?.config?.googleMapsApiKey;
-    console.log('MapScreen: Google Maps API Key (iOS):', apiKey);
+    console.log('MapScreen: Google Maps API Key (iOS):', GOOGLE_MAPS_API_KEY_IOS);
     console.log('MapScreen: Current Position:', currentPosition);
   }, [currentPosition]);
 
@@ -423,8 +423,7 @@ export default function MapScreen({ navigation, route }) {
   }
 
   // Determine map provider: fallback to Apple Maps on iOS if Google Maps API key is missing
-  const googleMapsApiKey = Constants.expoConfig?.ios?.config?.googleMapsApiKey;
-  const useGoogleMaps = Platform.OS !== 'ios' || (googleMapsApiKey && googleMapsApiKey !== '${GOOGLE_MAPS_API_KEY_IOS}');
+  const useGoogleMaps = Platform.OS !== 'ios' || (GOOGLE_MAPS_API_KEY_IOS && GOOGLE_MAPS_API_KEY_IOS !== '${GOOGLE_MAPS_API_KEY_IOS}');
   const mapProvider = useGoogleMaps ? PROVIDER_GOOGLE : undefined; // PROVIDER_DEFAULT is undefined
 
   return (

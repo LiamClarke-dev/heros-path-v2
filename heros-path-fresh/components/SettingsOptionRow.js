@@ -17,13 +17,8 @@ export default function SettingsOptionRow({
   style,
   ...props
 }) {
-  // Zelda/Figma palette
-  const colorGainsboro100 = '#e2ded3';
-  const colorGainsboro300 = 'rgba(226, 222, 211, 0.4)';
-  const colorGainsboro400 = 'rgba(226, 222, 211, 0.2)';
-  const colorDimgray100 = '#66645d';
-  const colorBlueAccent = '#54c0fd';
-  const colorGoldAccent = '#ffea2e';
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
 
   const Container = onPress ? Pressable : View;
 
@@ -31,28 +26,35 @@ export default function SettingsOptionRow({
   let toggleContent = null;
   if (toggleType === 'onoff') {
     toggleContent = (
-      <Text style={isOn ? styles.toggleTextOn : styles.toggleTextOff}>
+      <Text style={[
+        isOn ? styles.toggleTextOn : styles.toggleTextOff,
+        { color: isOn ? colors.text : colors.secondaryText }
+      ]}>
         {toggleLabel ? toggleLabel : isOn ? 'ON' : 'OFF'}
       </Text>
     );
   } else if (toggleType === 'value') {
     toggleContent = (
-      <Text style={styles.toggleTextValue}>{toggleLabel ? toggleLabel : value}</Text>
+      <Text style={[styles.toggleTextValue, { color: colors.text }]}>
+        {toggleLabel ? toggleLabel : value}
+      </Text>
     );
   } else if (toggleType === 'multivalue') {
     toggleContent = (
       <View style={styles.multiValueRow}>
         {ToggleIconLeft && <ToggleIconLeft style={styles.arrowIcon} width={20} height={20} />}
-        <Text style={styles.toggleTextValue}>{toggleLabel ? toggleLabel : value}</Text>
+        <Text style={[styles.toggleTextValue, { color: colors.text }]}>
+          {toggleLabel ? toggleLabel : value}
+        </Text>
         {ToggleIconRight && <ToggleIconRight style={styles.arrowIcon} width={20} height={20} />}
       </View>
     );
   }
 
   // Distinguish toggle types visually
-  let toggleBg = colorGainsboro300;
-  if (toggleType === 'multivalue') toggleBg = 'rgba(84,192,253,0.10)'; // blue accent
-  if (toggleType === 'value') toggleBg = 'rgba(255,234,46,0.10)'; // gold accent
+  let toggleBg = colors.inputBackground;
+  if (toggleType === 'multivalue') toggleBg = colors.primary + '20'; // blue accent with opacity
+  if (toggleType === 'value') toggleBg = colors.secondary + '20'; // gold accent with opacity
 
   return (
     <Container
@@ -63,23 +65,26 @@ export default function SettingsOptionRow({
       {...props}
     >
       <View style={{ flex: 1 }}>
-        <Text style={styles.optionLabel}>{label}</Text>
-        {description && <Text style={styles.description}>{description}</Text>}
+        <Text style={[styles.optionLabel, { color: colors.text }]}>{label}</Text>
+        {description && <Text style={[styles.description, { color: colors.secondaryText }]}>{description}</Text>}
       </View>
       <View style={styles.valueContainer}>
         {isToggle ? (
-          <View
-            style={[
-              styles.toggleContainer,
-              { backgroundColor: toggleBg },
-              isOn && toggleType === 'onoff' ? styles.toggleOn : null,
-              !isOn && toggleType === 'onoff' ? styles.toggleOff : null,
-            ]}
-          >
-            {toggleContent}
-          </View>
+                      <View
+              style={[
+                styles.toggleContainer,
+                { 
+                  backgroundColor: toggleBg,
+                  borderColor: colors.border
+                },
+                isOn && toggleType === 'onoff' ? styles.toggleOn : null,
+                !isOn && toggleType === 'onoff' ? styles.toggleOff : null,
+              ]}
+            >
+              {toggleContent}
+            </View>
         ) : (
-          <Text style={styles.valueText}>{value}</Text>
+          <Text style={[styles.valueText, { color: colors.text }]}>{value}</Text>
         )}
         {Icon && <Icon style={styles.icon} width={24} height={24} />}
       </View>
@@ -136,20 +141,17 @@ const styles = StyleSheet.create({
   toggleOn: {},
   toggleOff: {},
   toggleTextOn: {
-    color: '#e2ded3',
     fontFamily: 'Roboto-Medium',
     fontSize: 27,
     fontWeight: '500',
   },
   toggleTextOff: {
-    color: '#66645d',
     fontFamily: 'Roboto-Medium',
     fontSize: 27,
     fontWeight: '500',
     opacity: 0.6,
   },
   toggleTextValue: {
-    color: '#e2ded3',
     fontFamily: 'Roboto-Medium',
     fontSize: 27,
     fontWeight: '500',

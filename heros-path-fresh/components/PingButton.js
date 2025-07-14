@@ -24,6 +24,8 @@ const PingButton = ({
   journeyId = null
 }) => {
   const { user } = useUser();
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
   const [isLoading, setIsLoading] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [creditsRemaining, setCreditsRemaining] = useState(50);
@@ -185,8 +187,12 @@ const PingButton = ({
       <TouchableOpacity
         style={[
           styles.button,
-          isDisabled && styles.buttonDisabled,
-          showNoCredits && styles.buttonNoCredits
+          { 
+            backgroundColor: showNoCredits ? colors.inputBackground : colors.primary,
+            shadowColor: colors.shadow
+          },
+          isDisabled && { backgroundColor: colors.secondaryText },
+          showNoCredits && { borderColor: colors.border }
         ]}
         onPress={handlePing}
         disabled={isDisabled}
@@ -194,27 +200,29 @@ const PingButton = ({
       >
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.buttonText} size="small" />
           ) : (
             <Ionicons 
               name="radio-outline" 
               size={24} 
-              color={showNoCredits ? "#666" : "#fff"} 
+              color={showNoCredits ? colors.secondaryText : colors.buttonText} 
             />
           )}
         </Animated.View>
         
         {showCooldown && (
-          <Text style={styles.cooldownText}>{cooldownRemaining}s</Text>
+          <Text style={[styles.cooldownText, { backgroundColor: colors.error, color: colors.onError }]}>
+            {cooldownRemaining}s
+          </Text>
         )}
       </TouchableOpacity>
       
       <View style={styles.infoContainer}>
-        <Text style={styles.creditsText}>
+        <Text style={[styles.creditsText, { color: colors.secondaryText }]}>
           {showNoCredits ? 'No credits' : `${creditsRemaining} credits`}
         </Text>
         {showCooldown && (
-          <Text style={styles.cooldownInfoText}>
+          <Text style={[styles.cooldownInfoText, { color: colors.secondaryText }]}>
             Cooldown: {cooldownRemaining}s
           </Text>
         )}
@@ -231,10 +239,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -244,19 +250,16 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    // Will be styled dynamically
   },
   buttonNoCredits: {
-    backgroundColor: '#f0f0f0',
     borderWidth: 2,
-    borderColor: '#ddd',
+    // Will be styled dynamically
   },
   cooldownText: {
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#FF3B30',
-    color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
     paddingHorizontal: 6,
@@ -271,12 +274,10 @@ const styles = StyleSheet.create({
   },
   creditsText: {
     fontSize: 12,
-    color: '#666',
     fontWeight: '500',
   },
   cooldownInfoText: {
     fontSize: 10,
-    color: '#999',
     marginTop: 2,
   },
 });

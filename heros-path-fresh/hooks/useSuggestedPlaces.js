@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import Toast from 'react-native-root-toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPassingPlaces } from '../../heros-path/services/DiscoveriesService';
+import { getPassingPlaces } from '../services/DiscoveriesService';
 
 const LAST_ROUTE_KEY = 'lastRoute';
 
