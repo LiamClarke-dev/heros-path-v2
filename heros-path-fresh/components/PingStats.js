@@ -12,10 +12,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import PingService from '../services/PingService';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 import Logger from '../utils/Logger';
 
 const PingStats = ({ style, onPingUsed }) => {
   const { user } = useUser();
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -72,11 +76,11 @@ const PingStats = ({ style, onPingUsed }) => {
   };
 
   const getCreditsColor = () => {
-    if (!stats) return '#666';
+    if (!stats) return colors.textSecondary;
     const percentage = (stats.creditsRemaining / stats.maxCreditsPerMonth) * 100;
-    if (percentage <= 20) return '#FF3B30';
-    if (percentage <= 50) return '#FF9500';
-    return '#34C759';
+    if (percentage <= 20) return colors.error;
+    if (percentage <= 50) return colors.warning;
+    return colors.success;
   };
 
   const getCreditsIcon = () => {
@@ -95,7 +99,7 @@ const PingStats = ({ style, onPingUsed }) => {
           onPress={handleRefresh}
           disabled={isLoading}
         >
-          <Ionicons name="refresh" size={16} color="#666" />
+          <Ionicons name="refresh" size={16} color={colors.textSecondary} />
           <Text style={styles.statsText}>Loading...</Text>
         </TouchableOpacity>
       </View>
@@ -116,7 +120,7 @@ const PingStats = ({ style, onPingUsed }) => {
         <Text style={[styles.statsText, { color: getCreditsColor() }]}>
           {stats.creditsRemaining}/{stats.maxCreditsPerMonth}
         </Text>
-        <Ionicons name="information-circle-outline" size={16} color="#666" />
+        <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
       </TouchableOpacity>
 
       <Modal
@@ -133,13 +137,13 @@ const PingStats = ({ style, onPingUsed }) => {
                 onPress={() => setShowModal(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color="#666" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
               <View style={styles.statRow}>
-                <Ionicons name="radio-outline" size={20} color="#007AFF" />
+                <Ionicons name="radio-outline" size={20} color={colors.primary} />
                 <Text style={styles.statLabel}>Credits Remaining:</Text>
                 <Text style={[styles.statValue, { color: getCreditsColor() }]}>
                   {stats.creditsRemaining}
@@ -147,19 +151,19 @@ const PingStats = ({ style, onPingUsed }) => {
               </View>
 
               <View style={styles.statRow}>
-                <Ionicons name="radio" size={20} color="#666" />
+                <Ionicons name="radio" size={20} color={colors.textSecondary} />
                 <Text style={styles.statLabel}>Total Pings Used:</Text>
                 <Text style={styles.statValue}>{stats.totalPingsUsed}</Text>
               </View>
 
               <View style={styles.statRow}>
-                <Ionicons name="calendar-outline" size={20} color="#666" />
+                <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.statLabel}>Monthly Limit:</Text>
                 <Text style={styles.statValue}>{stats.maxCreditsPerMonth}</Text>
               </View>
 
               <View style={styles.statRow}>
-                <Ionicons name="time-outline" size={20} color="#666" />
+                <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.statLabel}>Cooldown:</Text>
                 <Text style={styles.statValue}>{stats.cooldownTime / 1000}s</Text>
               </View>
@@ -202,7 +206,7 @@ const PingStats = ({ style, onPingUsed }) => {
                   setShowModal(false);
                 }}
               >
-                <Ionicons name="refresh" size={16} color="#007AFF" />
+                <Ionicons name="refresh" size={16} color={colors.primary} />
                 <Text style={styles.refreshButtonText}>Refresh</Text>
               </TouchableOpacity>
             </View>
@@ -220,12 +224,12 @@ const styles = StyleSheet.create({
   statsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.backgroundSecondary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: colors.border,
   },
   statsText: {
     fontSize: 12,
@@ -239,11 +243,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     borderRadius: 16,
     width: '90%',
     maxHeight: '80%',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -258,12 +262,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   closeButton: {
     padding: 4,
@@ -279,36 +283,36 @@ const styles = StyleSheet.create({
   statLabel: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     marginLeft: 12,
   },
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   infoSection: {
     marginTop: 24,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
+    borderTopColor: colors.border,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 12,
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
   },
   modalFooter: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
+    borderTopColor: colors.border,
     alignItems: 'center',
   },
   refreshButton: {
@@ -317,12 +321,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.backgroundSecondary,
   },
   refreshButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: colors.primary,
     marginLeft: 4,
   },
 });
