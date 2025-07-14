@@ -1,6 +1,6 @@
 # Git Workflow & Branch Management
 
-**Last Updated:** December 2024  
+**Last Updated:** 14 July 2025  
 **Project:** Hero's Path React Native/Expo App  
 
 ---
