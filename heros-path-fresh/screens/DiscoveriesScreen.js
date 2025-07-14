@@ -1,3 +1,101 @@
+/*
+ * DISCOVERIES SCREEN (CORE DISCOVERY INTERFACE)
+ * ==============================================
+ * 
+ * PURPOSE:
+ * This is one of the most important screens in Hero's Path - the main interface where
+ * users review, save, and dismiss places discovered during their walks. It orchestrates
+ * the entire discovery workflow from loading suggested places to handling user interactions
+ * like saving favorites and dismissing unwanted places. Think of it as the "discovery
+ * review center" where users decide which places interest them and deserve to be saved.
+ * 
+ * FUNCTIONALITY:
+ * - Loads and displays places discovered along completed walking routes
+ * - Provides swipe gestures for quick save/dismiss actions on discovered places
+ * - Handles undo functionality for both save and dismiss operations
+ * - Manages journey completion status tracking based on user interactions
+ * - Integrates with AI summary generation for enhanced place information
+ * - Provides filtering and categorization of discoveries by place type
+ * - Handles onboarding for new users with guided discovery workflows
+ * - Manages performance optimization with smart caching and API call reduction
+ * - Provides comprehensive error handling and loading states
+ * - Integrates with multiple services for data management and API calls
+ * 
+ * WHY IT EXISTS:
+ * The discovery system is Hero's Path's key differentiator - finding interesting places
+ * along your walking routes rather than just at destinations. This screen is where that
+ * value proposition comes to life for users. It needs to make the discovery review
+ * process engaging, efficient, and rewarding. Users spend significant time on this
+ * screen reviewing their discoveries, so the experience must be polished and intuitive.
+ * 
+ * KEY FEATURES:
+ * - Discovery Review: Comprehensive interface for reviewing discovered places
+ * - Swipe Actions: Intuitive swipe-to-save and swipe-to-dismiss gestures
+ * - Undo System: Ability to reverse save and dismiss actions
+ * - AI Summaries: Enhanced place information with AI-generated summaries
+ * - Filtering: Filter discoveries by place type and category
+ * - Performance: Optimized loading with smart caching and minimal API calls
+ * - Journey Tracking: Real-time journey completion status updates
+ * - Onboarding: Guided experience for new users
+ * - Error Handling: Comprehensive error recovery and user feedback
+ * - Performance: Optimized loading with smart caching and minimal API calls
+ * 
+ * RELATIONSHIPS:
+ * - Uses DiscoveriesService.js for place discovery and API coordination
+ * - Works with DiscoveryService.js for data persistence and management
+ * - Integrates with JourneyService.js for journey completion tracking
+ * - Uses NewPlacesService.js for AI summaries and enhanced place data
+ * - Connects with UserContext for authentication and user preferences
+ * - Uses ThemeContext for styling and theming
+ * - Works with useSuggestedPlaces hook for automatic place suggestions
+ * - Integrates with various UI components for consistent user experience
+ * 
+ * REFERENCED BY:
+ * - AppNavigator.js (as part of the Discoveries tab navigation)
+ * - Users spend significant time on this screen reviewing discoveries
+ * - Journey completion workflows that direct users to review discoveries
+ * - Onboarding flows that introduce the discovery system
+ * 
+ * REFERENCES:
+ * - DiscoveriesService.js (for place discovery algorithms)
+ * - DiscoveryService.js (for CRUD operations on discoveries)
+ * - JourneyService.js (for journey management)
+ * - NewPlacesService.js (for AI summaries and enhanced place data)
+ * - UserContext.js (for user authentication and preferences)
+ * - ThemeContext.js (for styling and theming)
+ * - Multiple UI components (Card, ListItem, AppButton, etc.)
+ * - Firebase Firestore (for data persistence)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This screen is absolutely essential to Hero's Path's value proposition.
+ * It's where users experience the core benefit of the app - discovering interesting
+ * places along their walks. The quality of this screen directly impacts user engagement,
+ * retention, and satisfaction. Poor discovery experience would make the entire app
+ * feel pointless, while great discovery experience creates lasting user engagement.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add discovery recommendations - AI-powered suggestions based on user history
+ * 2. Add discovery sharing - share interesting discoveries with friends
+ * 3. Add discovery collections - organize discoveries into custom collections
+ * 4. Add discovery notes - let users add personal notes to discoveries
+ * 5. Add discovery photos - attach personal photos to discovered places
+ * 6. Add discovery ratings - personal rating system for places
+ * 7. Add discovery search - search through discovery history
+ * 8. Add discovery analytics - insights about discovery patterns
+ * 9. Add discovery challenges - gamify discovery with goals and achievements
+ * 10. Add discovery verification - verify and update place information
+ * 11. Add discovery clustering - group nearby discoveries for better organization
+ * 12. Add discovery timeline - chronological view of discovery history
+ * 13. Add discovery export - export discovery data for external use
+ * 14. Add discovery social features - community discussions about discoveries
+ * 15. Add discovery notifications - alerts about interesting nearby places
+ * 16. Add discovery planning - plan future walks based on discovery potential
+ * 17. Add discovery insights - personalized insights about discovery behavior
+ * 18. Add discovery optimization - optimize discovery algorithms based on user feedback
+ * 19. Add discovery accessibility - improve accessibility for users with disabilities
+ * 20. Add discovery performance - further optimize loading and interaction performance
+ */
+
 // screens/DiscoveriesScreen.js
 import React, { useState, useEffect } from 'react';
 import {

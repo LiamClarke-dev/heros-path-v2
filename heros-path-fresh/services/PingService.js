@@ -1,3 +1,95 @@
+/*
+ * PING SERVICE (REAL-TIME DISCOVERY ENGINE)
+ * ==========================================
+ * 
+ * PURPOSE:
+ * This service manages the "ping" feature - Hero's Path's real-time place discovery
+ * system that lets users actively discover nearby places during their walks. It handles
+ * credit management, cooldown timers, nearby place searches, and result storage.
+ * Think of it as the "special power" system that transforms passive walking into
+ * active exploration with immediate feedback and discovery rewards.
+ * 
+ * FUNCTIONALITY:
+ * - Manages user ping credits with monthly limits (50 credits per month)
+ * - Enforces cooldown periods (10 seconds) to prevent spam and abuse
+ * - Performs real-time nearby place searches within 500m radius
+ * - Handles credit corruption detection and automatic data recovery
+ * - Stores ping results temporarily and archives them with journey completion
+ * - Integrates with user discovery preferences for personalized results
+ * - Provides comprehensive ping statistics and usage analytics
+ * - Ensures data consistency across ping operations and user accounts
+ * - Implements rate limiting and usage tracking for API cost control
+ * - Handles error recovery and graceful degradation
+ * 
+ * WHY IT EXISTS:
+ * Traditional walking apps only show discoveries after completing walks. Hero's Path
+ * is revolutionary because it allows real-time discovery during walks through the
+ * ping system. This service makes that possible while preventing abuse through
+ * credits and cooldowns. It's a key differentiator that makes walking feel interactive
+ * and engaging rather than passive.
+ * 
+ * KEY FEATURES:
+ * - Real-time place discovery: Find places immediately during walks
+ * - Credit system: Monthly limits to control API usage and costs
+ * - Cooldown management: Prevents spam with 10-second delays
+ * - Corruption recovery: Automatically fixes corrupted credit data
+ * - Preference integration: Respects user's place type preferences
+ * - Performance monitoring: Tracks ping success rates and response times
+ * - Data archival: Moves ping results to permanent storage after walks
+ * - Usage analytics: Comprehensive statistics for user insights
+ * 
+ * RELATIONSHIPS:
+ * - Used by PingButton.js component for user interaction
+ * - Works with NewPlacesService.js for actual place API calls
+ * - Integrates with DiscoveriesService.js for user preferences
+ * - Provides data to PingStats.js component for usage display
+ * - Stores results in Firebase Firestore with proper data structure
+ * - May integrate with DiscoveryConsolidationService.js for result merging
+ * - Connects with journey completion workflows for data archival
+ * 
+ * REFERENCED BY:
+ * - PingButton.js (primary user interface for ping functionality)
+ * - PingStats.js (for displaying ping usage statistics)
+ * - MapScreen.js (for ping button integration during walks)
+ * - Journey completion workflows (for archiving ping results)
+ * - User analytics and statistics systems
+ * 
+ * REFERENCES:
+ * - Firebase Firestore (for ping data and results storage)
+ * - NewPlacesService.js (for Google Places API calls)
+ * - DiscoveriesService.js (for user preferences)
+ * - Logger utility (for debugging and performance monitoring)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - The ping feature is one of Hero's Path's key differentiators from other
+ * walking apps. It transforms passive walking into active exploration and discovery.
+ * Without this service working reliably, users lose the interactive element that
+ * makes Hero's Path engaging and unique. The credit system also helps control
+ * API costs while maintaining fair usage.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add dynamic pricing - variable credits based on location popularity
+ * 2. Add premium features - enhanced ping capabilities for premium users
+ * 3. Add ping prediction - suggest when/where to ping for best results
+ * 4. Add ping achievements - gamify ping usage with achievements and rewards
+ * 5. Add social pinging - share ping results with friends or community
+ * 6. Add ping challenges - community challenges based on ping discoveries
+ * 7. Add ping analytics - detailed insights about ping success patterns
+ * 8. Add ping optimization - ML-powered suggestions for ping timing
+ * 9. Add ping customization - adjustable radius and result count
+ * 10. Add ping scheduling - automated pings at interesting locations
+ * 11. Add ping notifications - alerts when interesting places are nearby
+ * 12. Add ping history - detailed history of all ping activities
+ * 13. Add ping sharing - export and share interesting ping discoveries
+ * 14. Add ping competitions - competitive elements between users
+ * 15. Add ping rewards - earn credits through app engagement
+ * 16. Add ping intelligence - AI-powered place relevance scoring
+ * 17. Add ping clustering - group nearby ping results for better organization
+ * 18. Add ping filtering - advanced filtering of ping results
+ * 19. Add ping collaboration - collaborative discovery with other users
+ * 20. Add ping insights - personalized insights based on ping behavior
+ */
+
 // services/PingService.js
 import { 
   doc, 

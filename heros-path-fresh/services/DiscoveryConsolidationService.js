@@ -1,5 +1,94 @@
 /**
- * DiscoveryConsolidationService
+ * DISCOVERY CONSOLIDATION SERVICE (DATA MERGING ENGINE)
+ * ======================================================
+ * 
+ * PURPOSE:
+ * This service consolidates and deduplicates discovery data from multiple sources to create
+ * a unified, clean set of discoveries for each journey. It merges places found through
+ * Search Along Route (SAR) with places discovered via ping during walks, eliminates
+ * duplicates, and ensures data quality. Think of it as the "data cleaning engine" that
+ * takes messy, overlapping discovery data and transforms it into a clean, organized
+ * list of unique, high-quality discoveries.
+ * 
+ * FUNCTIONALITY:
+ * - Merges discovery data from SAR (Search Along Route) and ping results
+ * - Deduplicates places using proximity and similarity algorithms
+ * - Combines place information to create comprehensive discovery records
+ * - Validates and cleans discovery data for quality assurance
+ * - Saves consolidated results to Firestore with proper metadata
+ * - Provides statistics about consolidation operations and data quality
+ * - Handles edge cases like missing data or API failures gracefully
+ * - Ensures no orphaned or duplicate data remains in the database
+ * - Optimizes discovery presentation by removing redundant information
+ * - Maintains discovery source attribution for analytics and debugging
+ * 
+ * WHY IT EXISTS:
+ * Hero's Path discoveries can come from multiple sources: the main Search Along Route
+ * after completing a walk, and real-time pings during the walk. These sources often
+ * find the same places, creating duplicates and data inconsistencies. This service
+ * ensures users see a clean, unified list of discoveries without confusion or
+ * redundancy, while preserving the best information from each source.
+ * 
+ * KEY FEATURES:
+ * - Multi-source consolidation: Combines SAR and ping discovery results
+ * - Intelligent deduplication: Uses proximity and similarity to identify duplicates
+ * - Data merging: Combines information from duplicate places into comprehensive records
+ * - Quality validation: Ensures discovery data meets quality standards
+ * - Source attribution: Tracks where each discovery originated
+ * - Statistics generation: Provides insights about consolidation effectiveness
+ * - Error handling: Graceful handling of missing or invalid data
+ * - Performance optimization: Efficient processing of large discovery datasets
+ * 
+ * RELATIONSHIPS:
+ * - Uses DiscoveriesService.js for SAR (Search Along Route) functionality
+ * - Works with PingService.js to retrieve ping-based discovery results
+ * - Integrates with DiscoveryService.js for saving consolidated results
+ * - Called by JourneyService.js after journey completion
+ * - May be used by data cleanup and maintenance workflows
+ * - Provides data to discovery analytics and quality monitoring systems
+ * 
+ * REFERENCED BY:
+ * - JourneyService.js (after journey completion for data consolidation)
+ * - Journey completion workflows (to ensure clean discovery data)
+ * - Data maintenance and cleanup processes
+ * - Discovery analytics systems (for quality metrics)
+ * - Development tools for data validation and testing
+ * 
+ * REFERENCES:
+ * - DiscoveriesService.js (for SAR functionality)
+ * - PingService.js (for ping result retrieval)
+ * - DiscoveryService.js (for saving consolidated results)
+ * - Firebase Firestore (for data storage and retrieval)
+ * - Logger utility (for debugging and operation tracking)
+ * 
+ * IMPORTANCE TO APP:
+ * HIGH - This service is crucial for data quality and user experience. Without proper
+ * consolidation, users would see duplicate discoveries and confusing information.
+ * The service ensures that Hero's Path presents clean, organized discovery data
+ * regardless of how many different sources contributed to finding the places.
+ * Good consolidation significantly improves the perceived quality of the app.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add ML-based duplicate detection - use machine learning for better duplicate identification
+ * 2. Add place verification - verify place information against multiple data sources
+ * 3. Add quality scoring - score discoveries based on data completeness and accuracy
+ * 4. Add user feedback integration - learn from user corrections and preferences
+ * 5. Add real-time consolidation - consolidate discoveries as they're found
+ * 6. Add cross-journey deduplication - identify places discovered in multiple journeys
+ * 7. Add temporal consolidation - merge discoveries from different time periods
+ * 8. Add social consolidation - merge discoveries with community data
+ * 9. Add place enrichment - enhance discoveries with additional data sources
+ * 10. Add consolidation analytics - detailed metrics about consolidation effectiveness
+ * 11. Add place clustering - group related places for better organization
+ * 12. Add discovery ranking - rank consolidated discoveries by relevance or quality
+ * 13. Add automated validation - automatically validate discovery data quality
+ * 14. Add conflict resolution - handle conflicting information from different sources
+ * 15. Add place category detection - automatically categorize consolidated places
+ * 16. Add discovery insights - generate insights from consolidated discovery data
+ * 17. Add performance optimization - optimize consolidation for large datasets
+ * 18. Add data export - export consolidated discovery data for external analysis
+ * 19. Add consolidation history - track changes and improvements over time
+ * 20. Add user customization - let users influence consolidation rules and preferences
  *
  * Consolidates and deduplicates discovery data from multiple sources (e.g., SAR and cached locations).
  * - Merges, deduplicates, and cleans up discovery records.
