@@ -120,14 +120,14 @@ class JourneyService {
   // Delete a journey and all associated data
   async deleteJourney(userId, journeyId) {
     try {
-      console.log(`🗑️ [JOURNEY_SERVICE] Starting comprehensive deletion of journey: ${journeyId}`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Starting comprehensive deletion of journey: ${journeyId}`);
       
       // 1. Get all discoveries for this journey first
       const discoveriesRef = collection(db, 'journeys', userId, 'discoveries');
       const discoveriesQuery = query(discoveriesRef, where('journeyId', '==', journeyId));
       const discoveriesSnap = await getDocs(discoveriesQuery);
       
-      console.log(`🗑️ [JOURNEY_SERVICE] Found ${discoveriesSnap.size} discoveries to process`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Found ${discoveriesSnap.size} discoveries to process`);
       
       // 2. Separate saved discoveries from regular discoveries
       const savedDiscoveries = [];
@@ -142,15 +142,15 @@ class JourneyService {
         }
       });
       
-      console.log(`🗑️ [JOURNEY_SERVICE] Found ${savedDiscoveries.length} saved places to update`);
-      console.log(`🗑️ [JOURNEY_SERVICE] Found ${regularDiscoveries.length} regular discoveries to delete`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Found ${savedDiscoveries.length} saved places to update`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Found ${regularDiscoveries.length} regular discoveries to delete`);
       
       // 3. Get dismissed places that reference this journey
       const dismissedRef = collection(db, 'journeys', userId, 'dismissed');
       const dismissedQuery = query(dismissedRef, where('journeyId', '==', journeyId));
       const dismissedSnap = await getDocs(dismissedQuery);
       
-      console.log(`🗑️ [JOURNEY_SERVICE] Found ${dismissedSnap.size} dismissed places to delete`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Found ${dismissedSnap.size} dismissed places to delete`);
       
       // 4. First batch: Delete journey, regular discoveries, and dismissed places
       const deleteBatch = writeBatch(db);
@@ -186,7 +186,7 @@ class JourneyService {
         await updateBatch.commit();
       }
       
-      console.log(`🗑️ [JOURNEY_SERVICE] Successfully deleted journey ${journeyId} and all associated data`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Successfully deleted journey ${journeyId} and all associated data`);
       return { success: true };
     } catch (error) {
       console.error('Error deleting journey:', error);
@@ -291,24 +291,24 @@ class JourneyService {
   // Delete all journeys for a user (for development/clean slate)
   async deleteAllJourneys(userId) {
     try {
-      console.log(`🗑️ [JOURNEY_SERVICE] Starting deletion of ALL journeys for user: ${userId}`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Starting deletion of ALL journeys for user: ${userId}`);
       
       // Get all journeys first
       const journeysResult = await this.getUserJourneys(userId);
       if (!journeysResult.success || journeysResult.journeys.length === 0) {
-        console.log(`🗑️ [JOURNEY_SERVICE] No journeys found to delete`);
+        Logger.debug(`🗑️ [JOURNEY_SERVICE] No journeys found to delete`);
         return { success: true, deletedCount: 0 };
       }
       
       const journeyIds = journeysResult.journeys.map(j => j.id);
-      console.log(`🗑️ [JOURNEY_SERVICE] Found ${journeyIds.length} journeys to delete:`, journeyIds);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Found ${journeyIds.length} journeys to delete:`, journeyIds);
       
       // Delete each journey with full cleanup
       for (const journeyId of journeyIds) {
         await this.deleteJourney(userId, journeyId);
       }
       
-      console.log(`🗑️ [JOURNEY_SERVICE] Successfully deleted all ${journeyIds.length} journeys`);
+      Logger.debug(`🗑️ [JOURNEY_SERVICE] Successfully deleted all ${journeyIds.length} journeys`);
       return { success: true, deletedCount: journeyIds.length };
     } catch (error) {
       console.error('Error deleting all journeys:', error);

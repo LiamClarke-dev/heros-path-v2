@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import UserProfileService from '../services/UserProfileService';
 import DataMigrationService from '../services/DataMigrationService';
+import Logger from '../utils/Logger';
 
 const UserContext = createContext();
 
@@ -242,10 +243,10 @@ export const UserProvider = ({ children }) => {
       
       // If not migrated and has data to migrate, start migration
       if (!status.hasMigrated && (status.stats.hasJourneys || status.stats.hasSavedPlaces || status.stats.hasDismissedPlaces)) {
-        console.log('Starting data migration for user:', userId);
+        Logger.debug('Starting data migration for user:', userId);
         const migrationResult = await DataMigrationService.migrateAllData(userId);
         setMigrationStatus(prev => ({ ...prev, migrationResult }));
-        console.log('Migration completed:', migrationResult);
+        Logger.debug('Migration completed:', migrationResult);
       }
     } catch (error) {
       console.error('Error during migration check:', error);

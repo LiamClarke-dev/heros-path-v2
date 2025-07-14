@@ -7,12 +7,18 @@
  * - Extends NewPlacesService without duplicating logic.
  */
 // services/EnhancedPlacesService.js
-import { GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
+import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from '../config';
 import { 
   getPlaceDetails, 
   getPlaceSummaries as getNewPlaceSummaries,
   searchNearbyPlaces as searchNearbyPlacesNew
 } from './NewPlacesService';
+import Logger from '../utils/Logger';
+
+// Use platform-specific API key for Places API
+const getPlacesAPIKey = () => {
+  return GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+};
 
 /**
  * Get enhanced place details including AI summaries
@@ -31,7 +37,7 @@ export async function getEnhancedPlaceDetails(placeId, language = 'en') {
       summaries
     };
   } catch (error) {
-    console.warn('Failed to get enhanced place details:', error);
+    Logger.warn('Failed to get enhanced place details:', error);
     // Fallback to basic details only
     return await getPlaceDetails(placeId, { language, useNewAPI: false });
   }
@@ -66,7 +72,7 @@ export async function getNearbyPlacesEnhanced(latitude, longitude, radius, optio
         });
         allResults = [...allResults, ...results];
       } catch (error) {
-        console.warn(`Failed to search for type ${type}:`, error);
+        Logger.warn(`Failed to search for type ${type}:`, error);
       }
     }
   } else {
@@ -106,11 +112,11 @@ export function getPlacePhotoUrl(photoReference, maxWidth = 400) {
   
   // Check if it's a new API photo reference (contains 'places/')
   if (photoReference.includes('places/')) {
-    return `https://places.googleapis.com/v1/${photoReference}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_MAPS_API_KEY_ANDROID}`;
+    return `https://places.googleapis.com/v1/${photoReference}/media?maxWidthPx=${maxWidth}&key=${getPlacesAPIKey()}`;
   }
   
   // Legacy photo reference
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${GOOGLE_MAPS_API_KEY_ANDROID}`;
+  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${getPlacesAPIKey()}`;
 }
 
 /**

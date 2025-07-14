@@ -18,11 +18,7 @@ import {
 
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
-
-// Add: Log all Google client IDs at startup
-console.log('GOOGLE_WEB_CLIENT_ID:', GOOGLE_WEB_CLIENT_ID);
-console.log('GOOGLE_IOS_CLIENT_ID:', GOOGLE_IOS_CLIENT_ID);
-console.log('GOOGLE_ANDROID_CLIENT_ID:', GOOGLE_ANDROID_CLIENT_ID);
+import Logger from '../utils/Logger';
 
 // Use platform-specific client IDs
 const getClientId = () => {
@@ -36,7 +32,7 @@ const getClientId = () => {
 };
 
 const clientId = getClientId();
-console.log('Using Google Client ID for', Platform.OS, ':', clientId);
+Logger.debug('Using Google Client ID for', Platform.OS, ':', clientId);
 
 // discovery endpoints for Google
 const discovery = {
@@ -63,7 +59,7 @@ export default function SignInScreen() {
 
   // Add: Log the request object
   useEffect(() => {
-    console.log('Google Auth Request object:', request);
+    Logger.debug('Google Auth Request object:', request);
   }, [request]);
 
   useEffect(() => {
@@ -75,15 +71,15 @@ export default function SignInScreen() {
           const credential = GoogleAuthProvider.credential(null, authentication.accessToken);
           const userCredential = await signInWithCredential(auth, credential);
         } catch (error) {
-          console.error('Sign-in error details:', error);
-          console.error('Error code:', error.code);
-          console.error('Error message:', error.message);
+          Logger.error('Sign-in error details:', error);
+          Logger.error('Error code:', error.code);
+          Logger.error('Error message:', error.message);
           Alert.alert('Sign-in error', `Error: ${error.message}\nCode: ${error.code}`);
         } finally {
           setLoading(false);
         }
       } else if (response?.type === 'error') {
-        console.error('Google auth error:', response.error);
+        Logger.error('Google auth error:', response.error);
         Alert.alert('Google Auth Error', response.error?.message || 'Unknown error occurred');
       }
     };
@@ -97,7 +93,7 @@ export default function SignInScreen() {
         webBrowserRedirectMode: 'browser'
       });
     } catch (error) {
-      console.error('Google promptAsync error:', error);
+      Logger.error('Google promptAsync error:', error);
     }
   };
 

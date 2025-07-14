@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import Logger from '../utils/Logger';
 
 const LOCATION_DATA_KEY = '@background_location_data';
 
@@ -114,7 +115,7 @@ class BackgroundLocationService {
   // Start tracking with optimized settings
   async startTracking(journeyId, options = {}) {
     if (this.isTracking) {
-      console.warn('Location tracking already active');
+      Logger.warn('Location tracking already active');
       return false;
     }
 
@@ -167,7 +168,7 @@ class BackgroundLocationService {
       );
 
       this.isTracking = true;
-      console.log('Location tracking started');
+      Logger.debug('Location tracking started');
       return true;
 
     } catch (error) {
@@ -231,7 +232,7 @@ class BackgroundLocationService {
       // Clear stored background data
       await this.clearStoredLocationData();
 
-      console.log('Location tracking stopped');
+      Logger.debug('Location tracking stopped');
       return journeyData;
 
     } catch (error) {

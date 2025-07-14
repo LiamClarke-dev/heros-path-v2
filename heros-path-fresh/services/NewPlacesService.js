@@ -17,13 +17,18 @@ import Logger from '../utils/Logger';
 const NEW_BASE_URL = 'https://places.googleapis.com/v1';
 const LEGACY_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
+// Use platform-specific API key for Places API
+const getPlacesAPIKey = () => {
+  return GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+};
+
 // Search for nearby places using either new or legacy API
 export async function searchNearbyPlaces(latitude, longitude, radius, type, options = {}) {
   const startTime = Date.now();
   Logger.debug('NEW_PLACES_SERVICE', `Searching for ${type} near (${latitude}, ${longitude})`, { radius, options });
   
   const { maxResults = 1, useNewAPI = true } = options;
-  const apiKey = GOOGLE_MAPS_API_KEY_ANDROID;
+  const apiKey = getPlacesAPIKey();
 
   try {
     if (useNewAPI) {
@@ -265,7 +270,7 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
     
     const response = await fetch(url, {
       headers: {
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
+        'X-Goog-Api-Key': getPlacesAPIKey(),
         'X-Goog-FieldMask': fieldMask
       }
     });
@@ -326,7 +331,7 @@ async function getPlaceDetailsNew(placeId, language = 'en') {
 async function getPlaceDetailsLegacy(placeId, language = 'en') {
   const url = `${LEGACY_BASE_URL}/details/json` +
     `?place_id=${placeId}` +
-    `&key=${GOOGLE_MAPS_API_KEY_ANDROID}` +
+    `&key=${getPlacesAPIKey()}` +
     `&language=${language}` +
     `&fields=place_id,name,formatted_address,geometry,types,rating,user_ratings_total,photos,opening_hours,price_level,website,formatted_phone_number,reviews`;
 
@@ -394,7 +399,7 @@ export async function getPlaceSummaries(placeId, language = 'en') {
 
     const response = await fetch(detailsUrl, {
       headers: {
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY_ANDROID,
+        'X-Goog-Api-Key': getPlacesAPIKey(),
         'X-Goog-FieldMask': fieldMask
       }
     });
@@ -434,7 +439,7 @@ export async function getPlaceSummaries(placeId, language = 'en') {
  */
 function getNewPlacePhotoUrl(placeId, photoName, maxWidth = 400) {
   if (!photoName) return null;
-  return `${NEW_BASE_URL}/${photoName}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_MAPS_API_KEY_ANDROID}`;
+  return `${NEW_BASE_URL}/${photoName}/media?maxWidthPx=${maxWidth}&key=${getPlacesAPIKey()}`;
 }
 
 /**
@@ -442,7 +447,7 @@ function getNewPlacePhotoUrl(placeId, photoName, maxWidth = 400) {
  */
 function getLegacyPlacePhotoUrl(photoReference, maxWidth = 400) {
   if (!photoReference) return null;
-  return `${LEGACY_BASE_URL}/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${GOOGLE_MAPS_API_KEY_ANDROID}`;
+  return `${LEGACY_BASE_URL}/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${getPlacesAPIKey()}`;
 }
 
 /**

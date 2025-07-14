@@ -33,11 +33,13 @@ import {
   FIREBASE_MEASUREMENT_ID,
 } from "./config";
 
+import Logger from './utils/Logger';
+
 // Debug: Log Firebase config values
-console.log('Firebase config values:');
-console.log('apiKey:', FIREBASE_API_KEY ? 'SET' : 'EMPTY');
-console.log('authDomain:', FIREBASE_AUTH_DOMAIN ? 'SET' : 'EMPTY');
-console.log('projectId:', FIREBASE_PROJECT_ID ? 'SET' : 'EMPTY');
+Logger.debug('Firebase config values:');
+Logger.debug('apiKey:', FIREBASE_API_KEY ? 'SET' : 'EMPTY');
+Logger.debug('authDomain:', FIREBASE_AUTH_DOMAIN ? 'SET' : 'EMPTY');
+Logger.debug('projectId:', FIREBASE_PROJECT_ID ? 'SET' : 'EMPTY');
 
 // Check if required Firebase config values are available
 const requiredConfig = {
@@ -73,7 +75,7 @@ if (missingValues.length > 0) {
     measurementId: FIREBASE_MEASUREMENT_ID || '',
   };
   
-  console.log('Using fallback config to prevent crash');
+  Logger.debug('Using fallback config to prevent crash');
   app = initializeApp(fallbackConfig);
   
   // Initialize auth with error handling
@@ -110,8 +112,8 @@ if (missingValues.length > 0) {
     measurementId: FIREBASE_MEASUREMENT_ID,
   };
 
-  console.log('Full Firebase config:', {
-    apiKey: FIREBASE_API_KEY ? '***' : 'EMPTY',
+  Logger.debug('Full Firebase config:', {
+    apiKey: FIREBASE_API_KEY ? 'SET' : 'EMPTY',
     authDomain: FIREBASE_AUTH_DOMAIN,
     projectId: FIREBASE_PROJECT_ID,
     storageBucket: FIREBASE_STORAGE_BUCKET,
