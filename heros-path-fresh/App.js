@@ -32,7 +32,12 @@ function MainDrawer() {
   const { getCurrentThemeColors, isLoading } = useTheme();
   Logger.debug('APP', 'MainDrawer useTheme result', { isLoading, hasGetCurrentThemeColors: !!getCurrentThemeColors });
   
-  const colors = getCurrentThemeColors() || Colors; // Fallback to default colors if theme not ready
+  const colors = getCurrentThemeColors() || { 
+    background: '#FFFFFF', 
+    text: '#000000', 
+    primary: '#007AFF', 
+    tabInactive: '#8E8E93' 
+  }; // Fallback to static colors if theme not ready
   Logger.debug('APP', 'MainDrawer colors result', { 
     colorsExists: !!colors, 
     colorsType: typeof colors, 
