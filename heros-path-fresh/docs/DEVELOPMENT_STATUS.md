@@ -1,5 +1,12 @@
 # Hero's Path App - Development Status
 
+## 14 July 2025 — Service Layer Documentation & Audit
+
+- Service documentation complete: All files in `/services/` now have top-of-file JSDoc comments describing their role and interactions.
+- Service boundaries clarified: No redundant or confusing overlap remains; each service’s responsibility is explicit.
+- DiscoveryConsolidationService: Retained as a dedicated utility for merging SAR and cached discoveries after a trip or ping event.
+- Next developer: Can quickly understand and extend the service layer thanks to improved documentation and clear separation of concerns.
+
 # Next Priorities
 
 ## 1. Ping Animation Overhaul (Future Enhancement)
@@ -556,3 +563,11 @@ Users were not seeing location permission prompts when needed, and those with "W
 3. Move navigation logic to a `navigation/` directory and split into logical stacks.
 4. Adopt card-based, sectioned layout across all screens.
 5. Use the theme system for all colors, spacing, and typography.
+
+### ⚠️ Known Issues (14 July 2025)
+- **Apple Maps/Google Maps Fallback:**
+  - On iOS, if the Google Maps API key is missing or not injected, the app falls back to Apple Maps (MapKit). This is a temporary workaround; Google Maps integration is preferred and should be fixed in a future sprint.
+  - The Google Maps API key is confirmed present in EAS, but is not being injected at runtime. This prevents Google Maps tiles from loading, resulting in no map background.
+- **Link Sprite Rendering Bug:**
+  - The animated Link sprite (GIF) appears as a white silhouette on iOS. This is likely due to iOS not supporting animated GIFs natively in React Native's <Image /> component.
+  - As a workaround, a static PNG can be used for iOS, or a library such as react-native-fast-image or a sprite sheet animation should be considered for future support.

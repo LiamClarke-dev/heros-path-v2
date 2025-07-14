@@ -8,6 +8,7 @@ import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { useUser } from '../contexts/UserContext';
 import { Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../contexts/ThemeContext';
 
 import { 
   GOOGLE_WEB_CLIENT_ID, 
@@ -48,6 +49,8 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const { createOrUpdateProfile } = useUser();
   const navigation = useNavigation();
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
   
   const [request, response, promptAsync] = Google.useAuthRequest(
     {
@@ -99,15 +102,15 @@ export default function SignInScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Sign In" />
-      <Text style={styles.title}>Hero's Path</Text>
-      <Text style={styles.subtitle}>Discover your journey</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Hero's Path</Text>
+      <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Discover your journey</Text>
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Signing you in...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.secondaryText }]}>Signing you in...</Text>
         </View>
       ) : (
         <View style={styles.buttonContainer}>
@@ -115,13 +118,13 @@ export default function SignInScreen() {
             disabled={!request}
             title="Sign in with Google"
             onPress={handleSignIn}
-            color="#007AFF"
+            variant="primary"
           />
           <View style={{ height: 16 }} />
           <AppButton
             title="Sign in with Email"
             onPress={() => navigation.navigate('EmailAuth')}
-            color="#888"
+            variant="secondary"
           />
         </View>
       )}
@@ -134,18 +137,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
     padding: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
     marginBottom: 40,
     textAlign: 'center',
   },
@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   buttonContainer: {
     width: '100%',

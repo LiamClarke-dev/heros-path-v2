@@ -24,6 +24,7 @@ import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 import DiscoveryService from '../services/DiscoveryService';
 import JourneyService from '../services/JourneyService';
 import { 
@@ -52,6 +53,9 @@ const ROUTES_KEY   = '@saved_routes';
 
 export default function DiscoveriesScreen({ navigation, route }) {
   const { user, migrationStatus } = useUser();
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
   const [filterType, setFilterType]               = useState(null);
@@ -414,9 +418,20 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
-        if (route.params?.selectedRoute) {
+        if (route.params?.journeyId) {
+          // Find the journey by ID from the passed parameter
+          const journey = journeys.find(j => j.id === route.params.journeyId);
+          if (journey) {
+            setSelectedRoute(journey);
+          } else {
+            Logger.warn('DISCOVERIES_SCREEN', 'Journey not found for ID:', route.params.journeyId);
+            if (journeys.length > 0) {
+              setSelectedRoute(journeys[0]);
+            }
+          }
+        } else if (route.params?.selectedRoute) {
           setSelectedRoute(route.params.selectedRoute);
-        } else if (journeys.length) {
+        } else if (journeys.length > 0) {
           setSelectedRoute(journeys[0]);
         }
       } else {
@@ -439,9 +454,20 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
-        if (route.params?.selectedRoute) {
+        if (route.params?.journeyId) {
+          // Find the journey by ID from the passed parameter
+          const journey = journeys.find(j => j.id === route.params.journeyId);
+          if (journey) {
+            setSelectedRoute(journey);
+          } else {
+            Logger.warn('DISCOVERIES_SCREEN', 'Journey not found for ID:', route.params.journeyId);
+            if (journeys.length > 0) {
+              setSelectedRoute(journeys[0]);
+            }
+          }
+        } else if (route.params?.selectedRoute) {
           setSelectedRoute(route.params.selectedRoute);
-        } else if (journeys.length) {
+        } else if (journeys.length > 0) {
           setSelectedRoute(journeys[0]);
         }
       } catch (fallbackError) {
@@ -1229,7 +1255,14 @@ export default function DiscoveriesScreen({ navigation, route }) {
         title={item.name}
         subtitle={item.formatted_address}
         left={item.photos && item.photos[0] ? (
-          <Image source={{ uri: item.photos[0].photo_reference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=YOUR_API_KEY` : undefined }} style={{ width: 48, height: 48, borderRadius: 8 }} />
+          <Image 
+            source={{ 
+              uri: item.photos[0].photo_reference 
+                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=YOUR_API_KEY` 
+                : undefined 
+            }} 
+            style={{ width: 48, height: 48, borderRadius: 8 }} 
+          />
         ) : null}
         right={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -1261,19 +1294,133 @@ export default function DiscoveriesScreen({ navigation, route }) {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Discoveries" />
+      
+      {/* Filter Controls */}
+      <View style={[styles.filterContainer, { borderBottomColor: colors.tabInactive + '20' }]}>
+        {/* Route Selection */}
+        <View style={styles.dropdownWrapper}>
+          <TouchableOpacity
+            style={[styles.pickerToggle, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => setRouteDropdownVisible(!routeDropdownVisible)}
+          >
+            <Text style={[styles.pickerToggleText, { color: colors.text }]}>
+              {selectedRoute?.name || 'Select Journey'}
+            </Text>
+            <MaterialIcons 
+              name={routeDropdownVisible ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
+              size={20} 
+              color={colors.text} 
+            />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Type Filter */}
+        <View style={styles.dropdownWrapper}>
+          <TouchableOpacity
+            style={[styles.pickerToggle, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => setTypeDropdownVisible(!typeDropdownVisible)}
+          >
+            <Text style={[styles.pickerToggleText, { color: colors.text }]}>
+              {filterType ? PLACE_TYPES.find(type => type.key === filterType)?.label || filterType : 'All Types'}
+            </Text>
+            <MaterialIcons 
+              name={typeDropdownVisible ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
+              size={20} 
+              color={colors.text} 
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Route Selection Modal */}
+      <Modal
+        visible={routeDropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setRouteDropdownVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setRouteDropdownVisible(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <ScrollView style={styles.modalScrollView}>
+              {savedRoutes.map((route) => (
+                <TouchableOpacity
+                  key={route.id}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setSelectedRoute(route);
+                    setRouteDropdownVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }]}>
+                    {route.name || `${new Date(route.date).toLocaleDateString()} ${new Date(route.date).toLocaleTimeString()}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Filter Dropdown Modal */}
+      <Modal
+        visible={typeDropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setTypeDropdownVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setTypeDropdownVisible(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <ScrollView style={styles.modalScrollView}>
+              {PLACE_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type.key}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setFilterType(type.key === 'all' ? null : type.key);
+                    setTypeDropdownVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.text }]}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Content */}
       {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       ) : (
         <FlatList
-          data={suggestions}
+          data={filteredSuggestions}
           keyExtractor={item => item.placeId}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={styles.listContent}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
           ListEmptyComponent={() => (
-            <Text style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
-              No discoveries found for this journey.
-            </Text>
+            <View style={styles.center}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {filterType && filterType !== 'all' 
+                  ? `No ${PLACE_TYPES.find(type => type.key === filterType)?.label?.toLowerCase()} found for this journey.`
+                  : 'No discoveries found for this journey.'
+                }
+              </Text>
+            </View>
           )}
           renderItem={renderSuggestion}
         />
@@ -1806,6 +1953,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  // Filter Styles
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.tabInactive + '20',
+  },
+  emptyText: {
+    ...Typography.body,
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  
   // Shake to Undo Button Styles
   shakeButton: {
     position: 'absolute',

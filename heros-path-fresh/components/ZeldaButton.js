@@ -6,13 +6,15 @@ import { useTheme } from '../contexts/ThemeContext';
 
 export default function ZeldaButton({ onPress, children, disabled, selected, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
-  // Figma palette
-  const colorGray200 = 'rgba(0, 0, 0, 0.6)';
-  const colorGray100 = 'rgba(0, 0, 0, 0.9)';
-  const colorGainsboro200 = 'rgba(226, 222, 211, 0.3)';
-  const colorGainsboro100 = '#e2ded3';
-  const colorDimgray = '#66645d';
-  const colorBeige = 'rgba(227, 227, 200, 0.8)';
+  const colors = getCurrentThemeColors();
+  
+  // Zelda-specific palette with theme integration
+  const colorGray200 = selected ? colors.surface : colors.surface + '99'; // 60% opacity
+  const colorGray100 = colors.surface;
+  const colorGainsboro200 = colors.border + '4D'; // 30% opacity
+  const colorGainsboro100 = colors.border;
+  const colorDimgray = colors.secondaryText;
+  const colorBeige = colors.primary + 'CC'; // 80% opacity
 
   return (
     <TouchableOpacity
@@ -54,7 +56,7 @@ export default function ZeldaButton({ onPress, children, disabled, selected, sty
           style={[
             styles.buttonText,
             {
-              color: colorGainsboro100,
+              color: colors.text,
               fontFamily: 'Roboto-MediumItalic',
             },
           ]}

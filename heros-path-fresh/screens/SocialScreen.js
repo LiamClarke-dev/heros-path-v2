@@ -1,14 +1,46 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 import SectionHeader from '../components/ui/SectionHeader';
 
 export default function SocialScreen() {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Social" />
-      <Text>Social</Text>
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: colors.text }]}>Coming Soon!</Text>
+        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
+          Social features are in development. Share your journeys and discoveries with friends!
+        </Text>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({ container: { flex: 1, alignItems: 'center', justifyContent: 'center' } });
+const styles = StyleSheet.create({ 
+  container: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+});
