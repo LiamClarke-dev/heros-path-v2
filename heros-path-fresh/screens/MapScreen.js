@@ -1,3 +1,94 @@
+/*
+ * MAP SCREEN (CORE APP SCREEN)
+ * ============================
+ * 
+ * PURPOSE:
+ * This is the heart of Hero's Path - the main screen where users track their walks,
+ * see their progress in real-time, and interact with the core features. It displays
+ * a Google Maps interface with GPS tracking, route recording, animated Link sprite,
+ * saved places, and the ping functionality. Think of it as the "adventure interface"
+ * where all the walking and discovery magic happens.
+ * 
+ * FUNCTIONALITY:
+ * - Real-time GPS location tracking with animated Link sprite that moves and faces direction
+ * - Route recording with glowing polylines that show the user's walking path
+ * - Location permission management with automatic requests and background permission warnings
+ * - Journey saving with distance calculation, duration tracking, and Firestore storage
+ * - Ping functionality for real-time place discovery during walks
+ * - Display of saved places and past journey routes on the map
+ * - Theme-aware map styling with 5 different map styles (Standard, Satellite, etc.)
+ * - Background location permission warnings to ensure accurate tracking
+ * - Error handling for location services and map rendering issues
+ * 
+ * WHY IT EXISTS:
+ * This is the primary interface for Hero's Path's core value proposition: gamified
+ * walking with discovery. Users spend most of their time on this screen during active
+ * walks. It needs to be engaging, accurate, and responsive to make walking feel like
+ * an adventure rather than just exercise. The animated sprite and visual feedback
+ * transform mundane walks into engaging experiences.
+ * 
+ * KEY FEATURES:
+ * - Animated Link sprite that shows walking direction and movement
+ * - Real-time route tracking with glowing polylines
+ * - Ping button for discovering places during walks (with credits and cooldown)
+ * - Map style switching (Adventure, Night, Satellite, etc.)
+ * - Background permission warnings for accurate GPS tracking
+ * - Journey completion workflow with automatic saving
+ * - Display of past journeys and saved places for context
+ * - Theme integration for consistent visual experience
+ * 
+ * RELATIONSHIPS:
+ * - Uses multiple contexts: UserContext (auth), ThemeContext (styling), ExplorationContext (history)
+ * - Integrates with JourneyService for saving completed walks
+ * - Uses DiscoveryService for managing place discoveries
+ * - Works with PingButton and PingStats components for real-time discovery
+ * - Uses PingAnimation for visual feedback (currently disabled)
+ * - Connects to various services for data persistence and API calls
+ * 
+ * REFERENCED BY:
+ * - AppNavigator.js (as the main screen in Map stack)
+ * - Most users spend majority of their time on this screen during active use
+ * - Other screens reference this as the "home" or main app experience
+ * 
+ * REFERENCES:
+ * - ThemeContext (for map styling and UI theming)
+ * - UserContext (for user authentication and data)
+ * - ExplorationContext (for tracking exploration history)
+ * - JourneyService (for saving completed journeys)
+ * - DiscoveryService (for managing place discoveries)
+ * - PingButton, PingStats, PingAnimation components
+ * - Location services (expo-location)
+ * - Google Maps (react-native-maps)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This is the most important screen in the entire app. It's where users
+ * spend most of their time and experience the core value proposition. If this screen
+ * doesn't work well, the entire app fails. The GPS tracking, visual feedback, and
+ * user experience on this screen determine whether users continue using the app.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add offline map support - download map tiles for offline use
+ * 2. Add route planning - let users plan routes before walking
+ * 3. Add compass mode - show traditional compass for navigation
+ * 4. Add AR integration - augmented reality for enhanced discovery
+ * 5. Add weather overlay - show weather conditions on the map
+ * 6. Add traffic information - real-time traffic data for route planning
+ * 7. Add elevation profile - show terrain elevation for hiking
+ * 8. Add social features - see friends' locations and journeys
+ * 9. Add guided tours - pre-planned discovery routes
+ * 10. Add voice navigation - audio cues for route following
+ * 11. Add fitness tracking - heart rate, calories, step counting
+ * 12. Add photo integration - take and associate photos with locations
+ * 13. Add landmark recognition - automatic identification of notable places
+ * 14. Add route sharing - share interesting routes with other users
+ * 15. Add achievement notifications - celebrate milestones during walks
+ * 16. Add better error recovery - handle GPS and network failures gracefully
+ * 17. Add performance optimization - reduce battery usage and improve responsiveness
+ * 18. Add accessibility improvements - better support for users with disabilities
+ * 19. Add customizable UI - let users customize button placement and visibility
+ * 20. Add emergency features - SOS functionality and emergency contacts
+ */
+
 // screens/MapScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
