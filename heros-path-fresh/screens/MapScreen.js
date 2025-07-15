@@ -37,7 +37,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import MapView, { Polyline, Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
+import { MapView, Camera, Marker, Polyline } from 'expo-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -448,9 +448,6 @@ export default function MapScreen({ navigation, route }) {
     );
   }
 
-  // Determine map provider for iOS fallback
-  const mapProvider = Platform.OS === 'ios' && GOOGLE_MAPS_API_KEY_IOS ? PROVIDER_GOOGLE : undefined;
-
   return (
     <View style={styles.container}>
       <SectionHeader title="Map" />
@@ -471,32 +468,27 @@ export default function MapScreen({ navigation, route }) {
         <MapView
           ref={mapRef}
           style={styles.map}
-          provider={mapProvider}
-          initialRegion={{
-            latitude: currentPosition.latitude,
-            longitude: currentPosition.longitude,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
+          initialCamera={{
+            center: {
+              latitude: currentPosition.latitude,
+              longitude: currentPosition.longitude,
+            },
+            zoom: 15,
           }}
-          customMapStyle={mapStyleArray}
-          region={currentPosition ? { ...currentPosition, latitudeDelta: 0.01, longitudeDelta: 0.01 } : undefined}
-          showsUserLocation={false} // Remove blue dot
-          onError={handleMapError}
         >
           {renderSavedRoutes()}
-          {/* ─── show snapped preview if ready, else raw */}
           {(previewRoadCoords.length > 0 || previewRoute) && (
             <Polyline
               coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
-              strokeColor={colors.routePreview}
-              strokeWidth={4}
+              color={colors.routePreview}
+              width={4}
             />
           )}
           {pathToRender.length > 0 && (
             <Polyline 
               coordinates={pathToRender} 
-              strokeColor={colors.routeLine} 
-              strokeWidth={6} 
+              color={colors.routeLine} 
+              width={6} 
             />
           )}
           <Marker coordinate={currentPosition} anchor={{ x: 0.5, y: 0.9 }}>
