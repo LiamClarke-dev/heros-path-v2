@@ -1,3 +1,26 @@
+/*
+  DiscoveryPreferencesScreen.js
+  -----------------------------
+  What this page does:
+  - Lets users customize their discovery preferences (e.g., which types of places to suggest, minimum rating).
+  - Organizes preferences by category and allows resetting to defaults.
+
+  Why this page exists & its importance:
+  - Empowers users to personalize their discovery experience, making suggestions more relevant.
+  - Improves user satisfaction and engagement by respecting preferences.
+
+  References & dependencies:
+  - Uses AsyncStorage for local persistence of preferences.
+  - Relies on the theme system (Colors, Spacing, Typography) for styling.
+  - Uses DiscoveryService for loading and resetting preferences.
+  - Integrates with custom UI components (SectionHeader, AppButton).
+
+  Suggestions for improvement:
+  - Add more comments explaining the preference loading and saving logic.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Consider extracting category and rating selectors into reusable components.
+  - Improve accessibility for switches and touchable elements.
+*/
 // screens/DiscoveryPreferencesScreen.js
 import React, { useState, useEffect } from 'react';
 import { 
@@ -11,8 +34,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Spacing, Typography, getFallbackTheme } from '../styles/theme';
-import { useTheme } from '../contexts/ThemeContext';
+import { Colors, Spacing, Typography } from '../styles/theme';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getUserDiscoveryPreferences, resetDiscoveryPreferences } from '../services/DiscoveriesService';
 import SectionHeader from '../components/ui/SectionHeader';
@@ -56,9 +78,6 @@ const PLACE_CATEGORIES = [
 ];
 
 export default function DiscoveryPreferencesScreen({ navigation }) {
-  const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
-  const styles = getStyles(colors);
   const [discoveryPreferences, setDiscoveryPreferences] = useState({});
   const [minRating, setMinRating] = useState(3.0);
   const [expandedCategories, setExpandedCategories] = useState({});
@@ -232,10 +251,10 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
   );
 }
 
-const getStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -243,14 +262,14 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.tabInactive + '30',
+    borderBottomColor: Colors.tabInactive + '30',
   },
   backButton: {
     padding: Spacing.sm,
   },
   headerTitle: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -260,16 +279,16 @@ const getStyles = (colors) => StyleSheet.create({
   section: {
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.tabInactive + '30',
+    borderBottomColor: Colors.tabInactive + '30',
   },
   sectionHeader: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.md,
   },
   sectionDescription: {
     ...Typography.body,
-    color: colors.text + '80',
+    color: Colors.text + '80',
     marginBottom: Spacing.md,
     fontStyle: 'italic',
   },
@@ -283,20 +302,20 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.tabInactive + '50',
-    backgroundColor: colors.background,
+    borderColor: Colors.tabInactive + '50',
+    backgroundColor: Colors.background,
   },
   ratingOptionActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   ratingOptionText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontWeight: '600',
   },
   ratingOptionTextActive: {
-    color: colors.background,
+    color: Colors.background,
   },
   categoryContainer: {
     marginBottom: Spacing.md,
@@ -307,7 +326,7 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
-    backgroundColor: colors.tabInactive + '20',
+    backgroundColor: Colors.tabInactive + '20',
     borderRadius: 8,
   },
   categoryTitleRow: {
@@ -317,14 +336,14 @@ const getStyles = (colors) => StyleSheet.create({
   },
   categoryTitle: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontWeight: '600',
     marginLeft: Spacing.sm,
     flex: 1,
   },
   categoryCount: {
     ...Typography.body,
-    color: colors.text + '80',
+    color: Colors.text + '80',
     fontSize: 12,
   },
   categoryContent: {
@@ -342,7 +361,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   preferenceLabel: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     flex: 1,
   },
 }); 

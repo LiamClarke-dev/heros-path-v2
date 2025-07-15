@@ -1,3 +1,28 @@
+/*
+  SavedPlacesScreen.js
+  ---------------------
+  What this page does:
+  - Displays a list of all places the user has saved/discovered.
+  - Allows filtering by place type and removing places from the saved list.
+  - Lets users open places in Google Maps for more details.
+
+  Why this page exists & its importance:
+  - Provides users with a way to review and manage their saved discoveries, which is a core part of the app's value.
+  - Acts as a personal archive of explored locations, encouraging continued use.
+
+  References & dependencies:
+  - Uses DiscoveryService for loading and updating saved places.
+  - Relies on the theme system (Colors, Spacing, Typography, Layout) and user context.
+  - Uses UI components like Card, ListItem, AppButton, SectionHeader.
+  - Integrates with navigation and Google Maps links.
+
+  Suggestions for improvement:
+  - Refactor filter and dropdown UI into reusable components for clarity.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Add more comments explaining the data transformation logic.
+  - Improve accessibility for list items and buttons.
+  - Consider paginating or virtualizing the list for better performance with many saved places.
+*/
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
 import {
@@ -15,9 +40,8 @@ import {
 import { Swipeable } from 'react-native-gesture-handler';
 import { useIsFocused } from '@react-navigation/native';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Spacing, Typography, Layout, getFallbackTheme } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
-import { useTheme } from '../contexts/ThemeContext';
 import DiscoveryService from '../services/DiscoveryService';
 import Card from '../components/ui/Card';
 import ListItem from '../components/ui/ListItem';
@@ -26,9 +50,6 @@ import SectionHeader from '../components/ui/SectionHeader';
 
 export default function SavedPlacesScreen() {
   const { user, migrationStatus } = useUser();
-  const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
-  const styles = getStyles(colors);
   const [allPlaces, setAllPlaces] = useState([]);
   const [filterType, setFilterType] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -169,12 +190,12 @@ export default function SavedPlacesScreen() {
   );
 }
 
-const getStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
   headerRow: {
     flexDirection: 'row',
     padding: Spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
   },
   dropdownWrapper: {
     flex: 1,
@@ -182,14 +203,14 @@ const getStyles = (colors) => StyleSheet.create({
   },
   pickerToggle: {
     padding: Spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     borderWidth: 1,
-    borderColor: colors.tabInactive,
+    borderColor: Colors.tabInactive,
   },
   pickerToggleText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
   },
   modalBackdrop: {
     flex: 1,
@@ -198,7 +219,7 @@ const getStyles = (colors) => StyleSheet.create({
     padding: Spacing.lg,
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.md,
     maxHeight: 300, // Limit height to prevent overflow
@@ -211,11 +232,11 @@ const getStyles = (colors) => StyleSheet.create({
   },
   modalItemText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
   },
   listContent: { paddingVertical: Spacing.sm },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { ...Typography.body, textAlign: 'center', color: colors.text },
+  emptyText: { ...Typography.body, textAlign: 'center', color: Colors.text },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
@@ -223,7 +244,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     padding: Spacing.md,
     margin: Spacing.sm,
     borderRadius: Layout.borderRadius,
@@ -240,26 +261,26 @@ const getStyles = (colors) => StyleSheet.create({
   category: {
     ...Typography.body,
     fontStyle: 'italic',
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     marginVertical: Spacing.xs / 2,
   },
   combinedTypes: {
     ...Typography.body,
     fontStyle: 'italic',
-    color: colors.primary,
+    color: Colors.primary,
     fontSize: 12,
   },
   description: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: colors.tabInactive },
-  link: { ...Typography.body, color: colors.primary, marginTop: Spacing.xs },
+  meta: { ...Typography.body, color: Colors.tabInactive },
+  link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   dismiss: {
     justifyContent: 'center',
-    backgroundColor: colors.swipeDismiss,
+    backgroundColor: Colors.swipeDismiss,
     paddingHorizontal: Spacing.md,
   },
-  actionText: { ...Typography.body, color: colors.background },
+  actionText: { ...Typography.body, color: Colors.background },
 });

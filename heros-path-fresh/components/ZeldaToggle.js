@@ -1,10 +1,11 @@
 import React from 'react';
 import { Pressable, View, StyleSheet, Animated } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 
 export default function ZeldaToggle({ value, onValueChange, disabled, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
 
   return (
     <Pressable

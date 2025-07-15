@@ -1,31 +1,16 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getFallbackTheme } from '../../styles/theme';
 
 export default function Divider({ style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
-  
-  // Defensive check - if colors is undefined, use fallback
-  if (!colors) {
-    return (
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: '#38383A' },
-          style,
-        ]}
-        accessibilityRole="none"
-        {...props}
-      />
-    );
-  }
-  
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <View
       style={[
         styles.divider,
-        { backgroundColor: colors?.divider || '#38383A' },
+        { backgroundColor: colors.divider },
         style,
       ]}
       accessibilityRole="none"

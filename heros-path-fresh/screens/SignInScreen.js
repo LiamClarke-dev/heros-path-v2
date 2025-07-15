@@ -70,56 +70,14 @@ export default function SignInScreen() {
   const { createOrUpdateProfile } = useUser();
   const navigation = useNavigation();
   const { getCurrentThemeColors } = useTheme();
-  
-  console.log('[SignInScreen]', 'getCurrentThemeColors function exists:', !!getCurrentThemeColors);
-  
   const colors = getCurrentThemeColors() || getFallbackTheme();
-  
-  console.log('[SignInScreen]', 'colors result:', { 
-    colorsExists: !!colors, 
-    colorsType: typeof colors, 
-    colorsKeys: colors ? Object.keys(colors) : null,
-    usingFallback: !getCurrentThemeColors()
-  });
-  
   Logger.debug('SIGNIN_SCREEN', 'Theme colors loaded', {
     colorsExists: !!colors,
     colorsType: typeof colors,
     colorsKeys: colors ? Object.keys(colors) : null
   });
-  
-  // Defensive check - if colors is undefined/null, use fallback rendering
   if (!colors) {
-    Logger.warn('SIGNIN_SCREEN', 'Colors is undefined, using fallback rendering');
-    return (
-      <View style={[styles.container, { backgroundColor: '#1E1E1E' }]}>
-        <SectionHeader title="Sign In" />
-        <Text style={[styles.title, { color: '#FFFFFF' }]}>Hero's Path</Text>
-        <Text style={[styles.subtitle, { color: '#8E8E93' }]}>Discover your journey</Text>
-        
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={[styles.loadingText, { color: '#8E8E93' }]}>Signing you in...</Text>
-          </View>
-        ) : (
-          <View style={styles.buttonContainer}>
-            <AppButton
-              disabled={!request}
-              title="Sign in with Google"
-              onPress={handleSignIn}
-              variant="primary"
-            />
-            <View style={{ height: 16 }} />
-            <AppButton
-              title="Sign in with Email"
-              onPress={() => navigation.navigate('EmailAuth')}
-              variant="secondary"
-            />
-          </View>
-        )}
-      </View>
-    );
+    Logger.warn('SIGNIN_SCREEN', 'Colors is undefined after getCurrentThemeColors!');
   }
   
   const [request, response, promptAsync] = Google.useAuthRequest(
@@ -172,15 +130,15 @@ export default function SignInScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors?.background || '#1E1E1E' }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Sign In" />
-      <Text style={[styles.title, { color: colors?.text || '#FFFFFF' }]}>Hero's Path</Text>
-      <Text style={[styles.subtitle, { color: colors?.secondaryText || '#8E8E93' }]}>Discover your journey</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Hero's Path</Text>
+      <Text style={[styles.subtitle, { color: colors.secondaryText }]}>Discover your journey</Text>
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors?.primary || '#007AFF'} />
-          <Text style={[styles.loadingText, { color: colors?.secondaryText || '#8E8E93' }]}>Signing you in...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.secondaryText }]}>Signing you in...</Text>
         </View>
       ) : (
         <View style={styles.buttonContainer}>

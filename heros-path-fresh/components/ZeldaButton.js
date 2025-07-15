@@ -3,10 +3,11 @@ import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Corner from '../assets/Corner.svg';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 
 export default function ZeldaButton({ onPress, children, disabled, selected, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   // Zelda-specific palette with theme integration - moved inside component
   const colorGray200 = selected ? colors.surface : colors.surface + '99'; // 60% opacity

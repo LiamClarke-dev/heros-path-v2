@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 
 export default function SettingsOptionRow({
   label,
@@ -18,7 +19,7 @@ export default function SettingsOptionRow({
   ...props
 }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
 
   const Container = onPress ? Pressable : View;
 

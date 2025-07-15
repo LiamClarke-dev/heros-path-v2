@@ -21,43 +21,19 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 import SectionHeader from '../components/ui/SectionHeader';
 
 export default function SocialScreen() {
   const { getCurrentThemeColors } = useTheme();
-  
-  console.log('[SocialScreen]', 'getCurrentThemeColors function exists:', !!getCurrentThemeColors);
-  
-  const colors = getCurrentThemeColors();
-  
-  console.log('[SocialScreen]', 'colors result:', { 
-    colorsExists: !!colors, 
-    colorsType: typeof colors, 
-    colorsKeys: colors ? Object.keys(colors) : null 
-  });
-  
-  // Defensive check - if colors is undefined/null, use fallback
-  if (!colors) {
-    console.warn('[SocialScreen]', 'colors is null/undefined, using fallback');
-    return (
-      <View style={[styles.container, { backgroundColor: '#1E1E1E' }]}>
-        <SectionHeader title="Social" />
-        <View style={styles.content}>
-          <Text style={[styles.title, { color: '#FFFFFF' }]}>Coming Soon!</Text>
-          <Text style={[styles.subtitle, { color: '#8E8E93' }]}>
-            Social features are in development. Share your journeys and discoveries with friends!
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   return (
-    <View style={[styles.container, { backgroundColor: colors?.background || '#1E1E1E' }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionHeader title="Social" />
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors?.text || '#FFFFFF' }]}>Coming Soon!</Text>
-        <Text style={[styles.subtitle, { color: colors?.secondaryText || '#8E8E93' }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Coming Soon!</Text>
+        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
           Social features are in development. Share your journeys and discoveries with friends!
         </Text>
       </View>

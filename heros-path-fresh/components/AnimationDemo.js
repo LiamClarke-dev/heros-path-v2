@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 import PingAnimation from './PingAnimation';
 
 const AnimationDemo = () => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [activeAnimation, setActiveAnimation] = useState(null);
   const [selectedType, setSelectedType] = useState('ripple');

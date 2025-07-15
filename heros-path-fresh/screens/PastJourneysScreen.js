@@ -34,6 +34,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import { useFocusEffect } from '@react-navigation/native';
@@ -48,7 +49,7 @@ export default function PastJourneysScreen({ navigation }) {
   const [journeyStatuses, setJourneyStatuses] = useState({});
   const { user, migrationStatus } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', loadJourneys);

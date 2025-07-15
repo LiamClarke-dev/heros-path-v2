@@ -17,7 +17,7 @@ import EmailAuthScreen from './screens/EmailAuthScreen';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { ExplorationProvider } from './contexts/ExplorationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { Spacing, Typography, getFallbackTheme } from './styles/theme';
+import { Colors, Spacing, Typography, getFallbackTheme } from './styles/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import Logger from './utils/Logger';
 
@@ -45,7 +45,7 @@ function MainDrawer() {
     Logger.debug('APP', 'MainDrawer showing loading state');
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading theme...</Text>
       </View>
     );
@@ -161,7 +161,7 @@ function RootNavigation() {
     Logger.debug('APP', 'RootNavigation showing loading state', { profileLoading, themeLoading });
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>
           {profileLoading ? 'Loading profile...' : 'Loading theme...'}
         </Text>
@@ -215,7 +215,7 @@ export default function App() {
   if (!appIsReady) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Colors.primary} />
         <Text style={styles.loadingText}>Loading Hero's Path...</Text>
       </View>
     );
@@ -239,12 +239,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.background,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#000000',
+    marginTop: Spacing.md,
+    ...Typography.body,
+    color: Colors.text,
   },
 });

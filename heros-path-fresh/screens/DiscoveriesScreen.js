@@ -1,3 +1,28 @@
+/*
+  DiscoveriesScreen.js
+  ---------------------
+  What this page does:
+  - Manages the discovery process for the user. Shows suggested places to discover along a journey, allows saving or dismissing places, and manages discovery history.
+  - Handles filtering by journey and place type, onboarding, and AI-generated summaries for places.
+  - Loads, saves, and dismisses places using Firestore and local storage as fallback.
+
+  Why this page exists & its importance:
+  - This screen is key for the "discovery" aspect of the app, letting users find and manage interesting places along their journeys.
+  - It connects journey data, user preferences, and place suggestions, making it a central hub for user engagement.
+
+  References & dependencies:
+  - Uses DiscoveryService, JourneyService, and NewPlacesService for data and suggestions.
+  - Relies on the theme system (useTheme), user context, and navigation.
+  - Uses many UI components (Card, ListItem, AppButton, SectionHeader).
+  - Interacts with Firestore and AsyncStorage for data persistence.
+
+  Suggestions for improvement:
+  - The file is very large and complex. Strongly consider splitting into smaller components and custom hooks (e.g., for filtering, onboarding, modals, and data loading).
+  - Add more inline comments to explain non-obvious logic, especially around data loading and error handling.
+  - Ensure all UI elements use the theme system for colors and styles.
+  - Improve accessibility for list items and modals.
+  - Consider optimizing data fetching and state management for better performance.
+*/
 // screens/DiscoveriesScreen.js
 import React, { useState, useEffect } from 'react';
 import {
@@ -21,7 +46,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Spacing, Typography, Layout, getFallbackTheme } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -54,8 +79,7 @@ const ROUTES_KEY   = '@saved_routes';
 export default function DiscoveriesScreen({ navigation, route }) {
   const { user, migrationStatus } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
-  const styles = getStyles(colors);
+  const colors = getCurrentThemeColors();
   
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
@@ -1430,10 +1454,10 @@ export default function DiscoveriesScreen({ navigation, route }) {
   );
 }
 
-const getStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
   },
   // Enhanced Header Styles
   headerRow: {
@@ -1441,16 +1465,16 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.md,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.tabInactive + '20',
+    borderBottomColor: Colors.tabInactive + '20',
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
   headerStats: {
@@ -1459,7 +1483,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   headerStatText: {
     ...Typography.caption,
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     fontSize: 12,
   },
   headerRight: {
@@ -1470,16 +1494,16 @@ const getStyles = (colors) => StyleSheet.create({
   gearButton: {
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
   },
   manageButton: {
     padding: Spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: Colors.primary,
     borderRadius: Layout.borderRadius,
   },
   manageButtonText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
     fontWeight: '600',
   },
   dropdownWrapper: {
@@ -1488,14 +1512,14 @@ const getStyles = (colors) => StyleSheet.create({
   },
   pickerToggle: {
     padding: Spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     borderWidth: 1,
-    borderColor: colors.tabInactive,
+    borderColor: Colors.tabInactive,
   },
   pickerToggleText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
   },
   modalBackdrop: {
     flex: 1,
@@ -1504,7 +1528,7 @@ const getStyles = (colors) => StyleSheet.create({
     padding: Spacing.lg,
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.md,
     maxHeight: 300, // Limit height to prevent overflow
@@ -1517,9 +1541,9 @@ const getStyles = (colors) => StyleSheet.create({
   },
   modalItemText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
   },
-  tabBarContainer: { backgroundColor: colors.background },
+  tabBarContainer: { backgroundColor: Colors.background },
   tabBar: {
     height: Layout.buttonHeight,
     flexDirection: 'row',
@@ -1532,18 +1556,18 @@ const getStyles = (colors) => StyleSheet.create({
     borderRadius: Layout.borderRadius * 2,
     marginHorizontal: Spacing.xs,
   },
-  tabButtonActive: { backgroundColor: colors.primary },
-  tabText: { ...Typography.body, color: colors.text },
+  tabButtonActive: { backgroundColor: Colors.primary },
+  tabText: { ...Typography.body, color: Colors.text },
   tabTextActive: {
-    color: colors.background,
+    color: Colors.background,
     fontWeight: Typography.body.fontWeight,
   },
-  listContainer: { flex: 1, backgroundColor: colors.background },
+  listContainer: { flex: 1, backgroundColor: Colors.background },
   listContent: { paddingVertical: Spacing.sm },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     flexDirection: 'row',
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     padding: Spacing.md,
     margin: Spacing.sm,
     borderRadius: Layout.borderRadius,
@@ -1560,22 +1584,22 @@ const getStyles = (colors) => StyleSheet.create({
   category: {
     ...Typography.body,
     fontStyle: 'italic',
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     marginVertical: Spacing.xs / 2,
   },
   combinedTypes: {
     ...Typography.body,
     fontStyle: 'italic',
-    color: colors.primary,
+    color: Colors.primary,
     fontSize: 12,
   },
   description: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: colors.tabInactive },
-  link: { ...Typography.body, color: colors.primary, marginTop: Spacing.xs },
+  meta: { ...Typography.body, color: Colors.tabInactive },
+  link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   action: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -1583,14 +1607,14 @@ const getStyles = (colors) => StyleSheet.create({
     marginVertical: Spacing.sm,
     borderRadius: Layout.borderRadius,
   },
-  save: { backgroundColor: colors.swipeSave },
-  dismiss: { backgroundColor: colors.swipeDismiss },
+  save: { backgroundColor: Colors.swipeSave },
+  dismiss: { backgroundColor: Colors.swipeDismiss },
   actionText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
   },
   summaryContainer: {
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
     marginVertical: Spacing.xs,
@@ -1598,26 +1622,26 @@ const getStyles = (colors) => StyleSheet.create({
   summaryTitle: {
     ...Typography.body,
     fontWeight: '600',
-    color: colors.primary,
+    color: Colors.primary,
     marginBottom: Spacing.xs / 2,
   },
   summaryText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontSize: 14,
     lineHeight: 20,
   },
   summaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
     marginVertical: Spacing.xs,
   },
   summaryButtonText: {
     ...Typography.body,
-    color: colors.primary,
+    color: Colors.primary,
     fontWeight: '600',
     marginLeft: Spacing.xs,
   },
@@ -1629,37 +1653,37 @@ const getStyles = (colors) => StyleSheet.create({
   },
   summaryLoadingText: {
     ...Typography.body,
-    color: colors.text + '80',
+    color: Colors.text + '80',
     marginLeft: Spacing.xs,
   },
   retryButton: {
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
     marginTop: Spacing.xs,
   },
   retryButtonText: {
     ...Typography.body,
-    color: colors.primary,
+    color: Colors.primary,
     fontWeight: '600',
   },
   testButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
     marginLeft: Spacing.xs,
   },
   testButtonText: {
     ...Typography.body,
-    color: colors.primary,
+    color: Colors.primary,
     fontWeight: '600',
     marginLeft: Spacing.xs,
   },
   disclosureText: {
     ...Typography.body,
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     fontSize: 12,
     marginTop: Spacing.xs / 2,
   },
@@ -1671,20 +1695,20 @@ const getStyles = (colors) => StyleSheet.create({
   flagButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     padding: Spacing.xs,
     borderRadius: Layout.borderRadius,
     marginLeft: Spacing.xs,
   },
   flagButtonText: {
     ...Typography.body,
-    color: colors.primary,
+    color: Colors.primary,
     fontWeight: '600',
     marginLeft: Spacing.xs,
   },
   summaryTypeIndicator: {
     ...Typography.body,
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     fontSize: 12,
     marginTop: Spacing.xs / 2,
     fontStyle: 'italic',
@@ -1692,7 +1716,7 @@ const getStyles = (colors) => StyleSheet.create({
 
   // Onboarding Modal Styles
   onboardingModal: {
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.lg,
     margin: Spacing.lg,
@@ -1700,7 +1724,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   onboardingTitle: {
     ...Typography.h1,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
   },
@@ -1713,12 +1737,12 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.md,
     padding: Spacing.sm,
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     borderRadius: Layout.borderRadius,
   },
   onboardingText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     marginLeft: Spacing.md,
     flex: 1,
   },
@@ -1729,35 +1753,35 @@ const getStyles = (colors) => StyleSheet.create({
   onboardingButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: colors.primary,
+    backgroundColor: Colors.primary,
     borderRadius: Layout.borderRadius,
   },
   onboardingButtonText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
     fontWeight: '600',
   },
   onboardingButtonSecondary: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: colors.tabInactive + '20',
+    backgroundColor: Colors.tabInactive + '20',
     borderRadius: Layout.borderRadius,
   },
   onboardingButtonTextSecondary: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
   },
 
   // Dismiss Modal Styles
   dismissModal: {
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.lg,
     margin: Spacing.lg,
   },
   dismissModalTitle: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
   },
@@ -1769,12 +1793,12 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    backgroundColor: colors.primary + '10',
+    backgroundColor: Colors.primary + '10',
     borderRadius: Layout.borderRadius,
   },
   dismissOptionText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     marginLeft: Spacing.md,
     flex: 1,
   },
@@ -1783,13 +1807,13 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.tabInactive + '20',
+    borderTopColor: Colors.tabInactive + '20',
   },
   checkbox: {
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: Colors.primary,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1797,20 +1821,20 @@ const getStyles = (colors) => StyleSheet.create({
   },
   rememberChoiceText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontSize: 14,
   },
 
   // Settings Modal Styles
   settingsModal: {
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.lg,
     margin: Spacing.lg,
   },
   settingsModalTitle: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
   },
@@ -1819,7 +1843,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   settingsSectionTitle: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontWeight: '600',
     marginBottom: Spacing.md,
   },
@@ -1828,34 +1852,34 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    backgroundColor: colors.tabInactive + '10',
+    backgroundColor: Colors.tabInactive + '10',
     borderRadius: Layout.borderRadius,
   },
   settingsOptionActive: {
-    backgroundColor: colors.primary + '20',
+    backgroundColor: Colors.primary + '20',
   },
   settingsOptionText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     marginLeft: Spacing.md,
     flex: 1,
   },
   settingsButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: colors.primary,
+    backgroundColor: Colors.primary,
     borderRadius: Layout.borderRadius,
     alignItems: 'center',
   },
   settingsButtonText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
     fontWeight: '600',
   },
 
   // Manage History Modal Styles
   manageHistoryModal: {
-    backgroundColor: colors.background,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     margin: Spacing.md,
     maxHeight: '80%',
@@ -1866,11 +1890,11 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.tabInactive + '20',
+    borderBottomColor: Colors.tabInactive + '20',
   },
   manageHistoryTitle: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     flex: 1,
   },
   closeButton: {
@@ -1882,7 +1906,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   manageHistorySectionTitle: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontWeight: '600',
     marginBottom: Spacing.md,
     marginTop: Spacing.lg,
@@ -1892,7 +1916,7 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.md,
-    backgroundColor: colors.tabInactive + '10',
+    backgroundColor: Colors.tabInactive + '10',
     borderRadius: Layout.borderRadius,
     marginBottom: Spacing.sm,
   },
@@ -1902,7 +1926,7 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    backgroundColor: colors.tabInactive + '10',
+    backgroundColor: Colors.tabInactive + '10',
     borderRadius: Layout.borderRadius,
   },
   manageHistoryItemInfo: {
@@ -1910,18 +1934,18 @@ const getStyles = (colors) => StyleSheet.create({
   },
   manageHistoryItemName: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     fontWeight: '600',
   },
   manageHistoryItemCategory: {
     ...Typography.body,
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     fontSize: 12,
     marginTop: 2,
   },
   manageHistoryItemTime: {
     ...Typography.body,
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     fontSize: 12,
     marginTop: 2,
   },
@@ -1932,24 +1956,24 @@ const getStyles = (colors) => StyleSheet.create({
   restoreButton: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: Colors.primary,
     borderRadius: Layout.borderRadius,
   },
   restoreButtonText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
     fontWeight: '600',
     fontSize: 12,
   },
   dismissButton: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: colors.swipeDismiss,
+    backgroundColor: Colors.swipeDismiss,
     borderRadius: Layout.borderRadius,
   },
   dismissButtonText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
     fontWeight: '600',
     fontSize: 12,
   },
@@ -1960,7 +1984,7 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.tabInactive + '20',
+    borderBottomColor: Colors.tabInactive + '20',
   },
   emptyText: {
     ...Typography.body,
@@ -1977,7 +2001,7 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: Colors.primary,
     borderRadius: Layout.borderRadius * 2,
     elevation: 4,
     shadowColor: '#000',
@@ -1987,7 +2011,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   shakeButtonText: {
     ...Typography.body,
-    color: colors.background,
+    color: Colors.background,
     fontWeight: '600',
     marginLeft: Spacing.xs,
   },
@@ -2005,21 +2029,21 @@ const getStyles = (colors) => StyleSheet.create({
   },
   completionTitle: {
     ...Typography.h2,
-    color: colors.text,
+    color: Colors.text,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   completionText: {
     ...Typography.body,
-    color: colors.text,
+    color: Colors.text,
     marginBottom: Spacing.sm,
     textAlign: 'center',
     fontSize: 16,
   },
   completionSubtext: {
     ...Typography.body,
-    color: colors.tabInactive,
+    color: Colors.tabInactive,
     textAlign: 'center',
     fontSize: 16,
   },

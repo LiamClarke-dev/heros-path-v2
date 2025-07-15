@@ -1,34 +1,16 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getFallbackTheme } from '../../styles/theme';
 
 export default function Card({ children, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
-  
-  // Defensive check - if colors is undefined, use fallback
-  if (!colors) {
-    return (
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: '#1C1C1E', shadowColor: '#000000' },
-          style,
-        ]}
-        accessible
-        accessibilityRole="summary"
-        {...props}
-      >
-        {children}
-      </View>
-    );
-  }
-  
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <View
       style={[
         styles.card,
-        { backgroundColor: colors?.surface || '#1C1C1E', shadowColor: colors?.shadow || '#000000' },
+        { backgroundColor: colors.surface, shadowColor: colors.shadow },
         style,
       ]}
       accessible
