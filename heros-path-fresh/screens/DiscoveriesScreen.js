@@ -98,6 +98,7 @@
 
 // screens/DiscoveriesScreen.js
 import React, { useState, useEffect } from 'react';
+import { GOOGLE_MAPS_API_KEY_IOS, GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
 import {
   View,
   Text,
@@ -1409,7 +1410,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
           <Image 
             source={{ 
               uri: item.photos[0].photo_reference 
-                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=YOUR_API_KEY` 
+                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID}` 
                 : undefined 
             }} 
             style={[styles.thumb, { backgroundColor: colors.surface }]} 

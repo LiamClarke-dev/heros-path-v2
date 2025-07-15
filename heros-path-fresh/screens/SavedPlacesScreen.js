@@ -92,6 +92,7 @@
  */
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
+import { GOOGLE_MAPS_API_KEY_IOS, GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
 import {
   View,
   Text,
@@ -144,7 +145,7 @@ export default function SavedPlacesScreen() {
           userRatingsTotal: discovery.placeData?.user_ratings_total,
           description: discovery.placeData?.formatted_address,
           thumbnail: discovery.placeData?.photos?.[0]?.photo_reference 
-            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${discovery.placeData.photos[0].photo_reference}&key=YOUR_API_KEY`
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${discovery.placeData.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID}`
             : null,
           // Preserve original place data for compatibility
           ...discovery.placeData

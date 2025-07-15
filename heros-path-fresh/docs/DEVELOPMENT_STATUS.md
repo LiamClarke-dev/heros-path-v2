@@ -9,22 +9,23 @@
 
 # Next Priorities
 
-## 1. Ping Animation Overhaul (Future Enhancement)
-- Redesign the ping animation to feel like a "special power" charge and release.
-- Animation should last 3–5 seconds, with a dramatic, screen-dominating effect.
-- Should include a "charging up" phase (inward pulse/glow), then a powerful outward ripple.
-- Consider future addition of vibration and sound for extra feedback.
-- **Note**: Currently disabled with scaffolding in place for future implementation
-- See user notes for vision:
-  - Gamified, impactful, not subtle
-  - User should feel like they're charging and releasing energy
-  - (Future) Add vibration on release
+## 1. Production Deployment Preparation (High Priority)
+- **Remove Development Utilities**: The "🚨 PURGE EVERYTHING" button is still present in SettingsScreen and should be removed or guarded for production
+- **Final API Key Validation**: Ensure all environment variables are properly configured in production environment
+- **Performance Testing**: Conduct final performance testing with production data volumes
+- **Error Monitoring**: Set up production error monitoring and logging systems
 
-## 2. React Native Warning: useInsertionEffect must not schedule updates
-- Terminal log:
-  - `ERROR  Warning: useInsertionEffect must not schedule updates.`
-  - Call Stack: DrawerNavigator, RNSScreenContainer, RNCSafeAreaProvider, MainStackScreen, Root, App
-- This warning appears in the terminal and should be investigated and resolved.
+## 2. Ping Animation Enhancement (Medium Priority)
+- Current ping animation system is working with 4 different animation styles
+- Consider enhancing with more dramatic "special power" charge and release effects
+- Animation could last 3–5 seconds with charging phase and powerful outward ripple
+- Future addition of vibration and sound for extra feedback
+- See user notes for gamified, impactful experience vision
+
+## 3. React Native Warning Investigation (Low Priority)
+- Terminal log: `ERROR  Warning: useInsertionEffect must not schedule updates.`
+- Call Stack: DrawerNavigator, RNSScreenContainer, RNCSafeAreaProvider, MainStackScreen, Root, App
+- This warning appears but doesn't seem to affect functionality - investigate when convenient
 
 ---
 
