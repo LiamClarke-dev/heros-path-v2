@@ -330,18 +330,18 @@ export default function MapScreen({ navigation, route }) {
       };
 
       // Save journey
-      const result = await JourneyService.saveJourney(journeyData);
+      const result = await JourneyService.createJourney(user.uid, journeyData);
       
       if (result.success) {
         Logger.info('MAP_SCREEN', 'Journey saved successfully', { 
-          journeyId: result.journeyId 
+          journeyId: result.journey.id 
         });
 
         // Trigger discovery process
         try {
-          await DiscoveryService.processJourneyForDiscoveries(
+          await JourneyService.consolidateJourneyDiscoveries(
             user.uid, 
-            result.journeyId, 
+            result.journey.id, 
             journeyData.route
           );
           Logger.info('MAP_SCREEN', 'Discovery process completed');

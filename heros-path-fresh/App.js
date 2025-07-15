@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
-import { ActivityIndicator, View, Text, StyleSheet, Alert } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { RootSiblingParent } from 'react-native-root-siblings';
 import * as SplashScreen from 'expo-splash-screen';
-import MapScreen from './screens/MapScreen_expo-maps';
+import MapScreen from './screens/MapScreen';
 import PastJourneysScreen from './screens/PastJourneysScreen';
 import DiscoveriesScreen from './screens/DiscoveriesScreen';
 import SavedPlacesScreen from './screens/SavedPlacesScreen';
@@ -27,22 +27,10 @@ const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
 
 function MainDrawer() {
-  Logger.debug('APP', 'MainDrawer rendering', { component: 'MainDrawer' });
-  
   const { getCurrentThemeColors, isLoading } = useTheme();
-  Logger.debug('APP', 'MainDrawer useTheme result', { isLoading, hasGetCurrentThemeColors: !!getCurrentThemeColors });
-  
-  const colors = getCurrentThemeColors() || getFallbackTheme(); // Fallback to default colors if theme not ready
-  Logger.debug('APP', 'MainDrawer colors result', { 
-    colorsExists: !!colors, 
-    colorsType: typeof colors, 
-    colorsKeys: colors ? Object.keys(colors) : null,
-    usingFallback: !getCurrentThemeColors() 
-  });
-  
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   // Don't render until theme is ready
   if (isLoading) {
-    Logger.debug('APP', 'MainDrawer showing loading state');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -73,7 +61,10 @@ function MainDrawer() {
         name="Map" 
         component={MapScreen}
         options={{
-          title: "Hero's Path",
+          headerTitle: '',
+          headerRight: () => (
+            <Image source={require('./assets/icon.png')} style={{ width: 36, height: 36, marginRight: 16 }} resizeMode="contain" />
+          ),
           drawerIcon: ({ color, size }) => (
             <MaterialIcons name="map" size={size} color={color} />
           ),
@@ -144,37 +135,18 @@ function MainDrawer() {
 }
 
 function RootNavigation() {
-  Logger.debug('APP', 'RootNavigation rendering', { component: 'RootNavigation' });
-  
-  const { user, profileLoading } = useUser();
-  const { getNavigationTheme, isLoading: themeLoading } = useTheme();
-  
-  Logger.debug('APP', 'RootNavigation state', { 
-    hasUser: !!user, 
-    profileLoading, 
-    themeLoading, 
-    hasGetNavigationTheme: !!getNavigationTheme 
-  });
-  
-  // Don't render until both user profile and theme are ready
-  if (profileLoading || themeLoading) {
-    Logger.debug('APP', 'RootNavigation showing loading state', { profileLoading, themeLoading });
+  const { getNavigationTheme, isLoading } = useTheme();
+  const { user } = useUser();
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>
-          {profileLoading ? 'Loading profile...' : 'Loading theme...'}
-        </Text>
+        <Text style={styles.loadingText}>Loading theme...</Text>
       </View>
     );
   }
 
-  Logger.debug('APP', 'RootNavigation calling getNavigationTheme');
   const navigationTheme = getNavigationTheme ? getNavigationTheme() : undefined;
-  Logger.debug('APP', 'RootNavigation navigationTheme result', { 
-    hasNavigationTheme: !!navigationTheme,
-    navigationThemeKeys: navigationTheme ? Object.keys(navigationTheme) : null
-  });
 
   return (
     <NavigationContainer theme={navigationTheme}>

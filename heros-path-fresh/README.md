@@ -69,6 +69,25 @@ This transforms the app's core value proposition - users now discover places alo
 
 ## 🚀 **Latest Updates (12 July 2025)**
 
+### 🆕 **July 2025: Major UI/UX Refactor & Bugfixes**
+
+- **Settings Screen Revamp:**
+  - Theme & Map Style selectors now use a grid/wrap layout with min/max button widths, preventing text overflow and ugly wrapping.
+  - Button text truncates with ellipsis if too long, and all buttons are accessible with proper labels.
+  - Section headers are larger and bolder, with more vertical spacing for clarity.
+  - All buttons have a minimum height/width for accessibility, and touch feedback is improved.
+  - Typography is standardized for headers, labels, and buttons; button text never wraps.
+  - Destructive actions (like Sign Out) are clearly marked and accessible.
+  - General polish: consistent icon sizing, alignment, and accessibility labels throughout.
+- **Bugfixes:**
+  - Fixed journey saving bug: `JourneyService.createJourney` now called with correct arguments, preventing TypeError.
+  - Fixed reference to `result.journeyId` (now `result.journey.id`).
+  - Fixed discovery process call: now uses `JourneyService.consolidateJourneyDiscoveries`.
+  - Removed excessive theme debug logging for cleaner logs.
+- **Accessibility & UX:**
+  - All interactive elements have accessibility labels.
+  - Improved spacing and layout for better readability and usability.
+
 ### 🎨 **NEW: UI Theme & Map Style System**
 - **3 UI Themes**: Light, Dark, and Adventure (Zelda-inspired) themes with complete color schemes
 - **5 Map Styles**: Standard, Satellite, Terrain, Night, and Adventure map styles with custom Google Maps styling

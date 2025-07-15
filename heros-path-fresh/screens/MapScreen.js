@@ -38,6 +38,7 @@ import {
   Dimensions,
   Platform,
   Linking,
+  AppState,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -116,6 +117,7 @@ export default function MapScreen({ navigation, route }) {
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [appState, setAppState] = useState(AppState.currentState);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -177,6 +179,16 @@ export default function MapScreen({ navigation, route }) {
     checkBackgroundPermissions();
   }, []);
 
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        checkBackgroundPermissions();
+      }
+      setAppState(nextAppState);
+    });
+    return () => subscription.remove();
+  }, [appState]);
+
   // Update sprite state based on movement
   useEffect(() => {
     if (pathToRender.length >= 2) {
@@ -186,12 +198,6 @@ export default function MapScreen({ navigation, route }) {
       setSpriteState(SPRITE_STATES.IDLE);
     }
   }, [pathToRender]);
-
-  // Log API key and region on mount
-  useEffect(() => {
-    Logger.debug('MapScreen: Google Maps API Key (iOS):', GOOGLE_MAPS_API_KEY_IOS);
-    Logger.debug('MapScreen: Current Position:', currentPosition);
-  }, [currentPosition]);
 
   const spriteSource = SPRITE_SOURCES[spriteState];
 
@@ -268,18 +274,18 @@ export default function MapScreen({ navigation, route }) {
       };
 
       // Save journey
-      const result = await JourneyService.saveJourney(journeyData);
+      const result = await JourneyService.createJourney(user.uid, journeyData);
       
       if (result.success) {
         Logger.info('MAP_SCREEN', 'Journey saved successfully', { 
-          journeyId: result.journeyId 
+          journeyId: result.journey.id 
         });
 
         // Trigger discovery process
         try {
-          await DiscoveryService.processJourneyForDiscoveries(
+          await JourneyService.consolidateJourneyDiscoveries(
             user.uid, 
-            result.journeyId, 
+            result.journey.id, 
             journeyData.route
           );
           Logger.info('MAP_SCREEN', 'Discovery process completed');
@@ -462,7 +468,6 @@ export default function MapScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <SectionHeader title="Map" />
       {backgroundPermissionWarning && (
         <TouchableOpacity 
           style={[styles.permissionWarning, { backgroundColor: colors.warning }]} 
@@ -739,7 +744,9 @@ const styles = StyleSheet.create({
   savedPlaceMarker: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 8, // beveled/rounded corners
+    borderWidth: 2,
+    borderColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.small,

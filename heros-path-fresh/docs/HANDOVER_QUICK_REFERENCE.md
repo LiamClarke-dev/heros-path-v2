@@ -19,10 +19,6 @@
 5. ✅ **Documentation**: Updated to reflect current implementation status
 6. ✅ **Critical Colors Error**: Fixed app startup crash due to top-level colors usage
 
-### **What's Broken**
-- 🚨 **Apple Maps Fallback**: Google Maps API key injection issue on iOS
-- 🚨 **Link Sprite Rendering**: Animated GIF appears white on iOS
-
 ---
 
 ### **🔧 Immediate Next Steps**

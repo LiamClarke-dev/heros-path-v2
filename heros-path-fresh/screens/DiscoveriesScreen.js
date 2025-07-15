@@ -119,7 +119,6 @@ import { Swipeable } from 'react-native-gesture-handler';
 import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
-import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -146,6 +145,7 @@ import SectionHeader from '../components/ui/SectionHeader';
 
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
+const ONBOARDING_KEY = 'discoveries_onboarding_shown';
 
 // Remove dummy data
 // const DUMMY_DISMISSED_PLACES = [...];
@@ -186,27 +186,27 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
   // Define all useCallback hooks at the top
   const loadDismissedAndSavedCallback = React.useCallback(async () => {
-    Logger.debug('DISCOVERIES_SCREEN', 'loadDismissedAndSavedCallback called');
+    Logger.error('DISCOVERIES_SCREEN', 'loadDismissedAndSavedCallback called');
     if (!user) {
-      Logger.debug('DISCOVERIES_SCREEN', 'No user, clearing dismissed and saved places');
+      Logger.error('DISCOVERIES_SCREEN', 'No user, clearing dismissed and saved places');
       setDismissedPlaces([]);
       setSavedPlaces([]);
       return;
     }
 
     try {
-      Logger.debug('DISCOVERIES_SCREEN', 'Loading dismissed and saved places from Firestore');
+      Logger.error('DISCOVERIES_SCREEN', 'Loading dismissed and saved places from Firestore');
       const [dismissedResult, savedResult] = await Promise.all([
         DiscoveryService.getDismissedPlaces(user.uid),
         DiscoveryService.getSavedPlaces(user.uid)
       ]);
 
       if (dismissedResult.success) {
-        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${dismissedResult.dismissedPlaces.length} dismissed places`);
+        Logger.error('DISCOVERIES_SCREEN', `Loaded ${dismissedResult.dismissedPlaces.length} dismissed places`);
         setDismissedPlaces(dismissedResult.dismissedPlaces);
       }
       if (savedResult.success) {
-        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${savedResult.discoveries.length} saved places`);
+        Logger.error('DISCOVERIES_SCREEN', `Loaded ${savedResult.discoveries.length} saved places`);
         setSavedPlaces(savedResult.discoveries);
       }
     } catch (error) {
@@ -214,7 +214,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
       
       // Fallback to AsyncStorage if Firestore fails
       try {
-        Logger.debug('DISCOVERIES_SCREEN', 'Falling back to AsyncStorage');
+        Logger.error('DISCOVERIES_SCREEN', 'Falling back to AsyncStorage');
         const dismissed = JSON.parse(await AsyncStorage.getItem('dismissedPlaces')) || [];
         const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
         setDismissedPlaces(dismissed);
@@ -229,20 +229,20 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
   // Manual refresh function (pull-to-refresh) - ONLY reloads from Firestore, NO API calls
   const onRefresh = React.useCallback(async () => {
-    Logger.debug('DISCOVERIES_SCREEN', 'onRefresh called - RELOADING FROM FIRESTORE ONLY');
+    Logger.error('DISCOVERIES_SCREEN', 'onRefresh called - RELOADING FROM FIRESTORE ONLY');
     if (!selectedRoute || !user) {
-      Logger.debug('DISCOVERIES_SCREEN', 'No selected route or user, skipping refresh');
+      Logger.error('DISCOVERIES_SCREEN', 'No selected route or user, skipping refresh');
       return;
     }
     
     setRefreshing(true);
     try {
       // Reload dismissed and saved places
-      Logger.debug('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
+      Logger.error('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
       await loadDismissedAndSavedCallback();
       
       // Reload suggestions for current journey from Firestore only
-      Logger.debug('DISCOVERIES_SCREEN', 'Reloading journey discoveries from Firestore');
+      Logger.error('DISCOVERIES_SCREEN', 'Reloading journey discoveries from Firestore');
       const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
       
       let allSuggestions = [];
@@ -288,27 +288,27 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
   // Load dismissed and saved places from Firestore
   const loadDismissedAndSaved = async () => {
-    Logger.debug('DISCOVERIES_SCREEN', 'loadDismissedAndSaved called');
+    Logger.error('DISCOVERIES_SCREEN', 'loadDismissedAndSaved called');
     if (!user) {
-      Logger.debug('DISCOVERIES_SCREEN', 'No user, clearing dismissed and saved places');
+      Logger.error('DISCOVERIES_SCREEN', 'No user, clearing dismissed and saved places');
       setDismissedPlaces([]);
       setSavedPlaces([]);
       return;
     }
 
     try {
-      Logger.debug('DISCOVERIES_SCREEN', 'Loading dismissed and saved places from Firestore');
+      Logger.error('DISCOVERIES_SCREEN', 'Loading dismissed and saved places from Firestore');
       const [dismissedResult, savedResult] = await Promise.all([
         DiscoveryService.getDismissedPlaces(user.uid),
         DiscoveryService.getSavedPlaces(user.uid)
       ]);
 
       if (dismissedResult.success) {
-        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${dismissedResult.dismissedPlaces.length} dismissed places`);
+        Logger.error('DISCOVERIES_SCREEN', `Loaded ${dismissedResult.dismissedPlaces.length} dismissed places`);
         setDismissedPlaces(dismissedResult.dismissedPlaces);
       }
       if (savedResult.success) {
-        Logger.debug('DISCOVERIES_SCREEN', `Loaded ${savedResult.discoveries.length} saved places`);
+        Logger.error('DISCOVERIES_SCREEN', `Loaded ${savedResult.discoveries.length} saved places`);
         setSavedPlaces(savedResult.discoveries);
       }
     } catch (error) {
@@ -316,7 +316,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
       
       // Fallback to AsyncStorage if Firestore fails
       try {
-        Logger.debug('DISCOVERIES_SCREEN', 'Falling back to AsyncStorage');
+        Logger.error('DISCOVERIES_SCREEN', 'Falling back to AsyncStorage');
         const dismissed = JSON.parse(await AsyncStorage.getItem('dismissedPlaces')) || [];
         const saved = JSON.parse(await AsyncStorage.getItem('savedPlaces')) || [];
         setDismissedPlaces(dismissed);
@@ -597,12 +597,14 @@ export default function DiscoveriesScreen({ navigation, route }) {
       .then(pref => pref && setDismissalPreference(pref));
 
     // Check if we should show onboarding
-    AsyncStorage.getItem('@discovery_onboarding_shown')
-      .then(shown => {
-        if (!shown && user) {
+    (async () => {
+      if (user) {
+        const shown = await AsyncStorage.getItem(`${ONBOARDING_KEY}_${user.uid}`);
+        if (!shown) {
           setShowOnboarding(true);
         }
-      });
+      }
+    })();
   }, [user]);
 
   useEffect(() => {
@@ -610,8 +612,8 @@ export default function DiscoveriesScreen({ navigation, route }) {
     setLoading(true);
     
     const loadJourneyDiscoveries = async () => {
-      Logger.debug('DISCOVERIES_SCREEN', 'loadJourneyDiscoveries called');
-      Logger.debug('DISCOVERIES_SCREEN', 'Selected route info:', {
+      Logger.error('DISCOVERIES_SCREEN', 'loadJourneyDiscoveries called');
+      Logger.error('DISCOVERIES_SCREEN', 'Selected route info:', {
         id: selectedRoute?.id,
         name: selectedRoute?.name,
         coordsLength: selectedRoute?.coords?.length,
@@ -620,11 +622,11 @@ export default function DiscoveriesScreen({ navigation, route }) {
       
       try {
         // First, load existing discoveries from Firestore for this journey
-        Logger.debug('DISCOVERIES_SCREEN', 'Loading existing discoveries from Firestore for journey:', selectedRoute.id);
+        Logger.error('DISCOVERIES_SCREEN', 'Loading existing discoveries from Firestore for journey:', selectedRoute.id);
         const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
         
         // Get user preferences for place types
-        Logger.debug('DISCOVERIES_SCREEN', 'Getting user discovery preferences');
+        Logger.error('DISCOVERIES_SCREEN', 'Getting user discovery preferences');
         const preferences = await getUserDiscoveryPreferences();
         
         // Filter preferences if a specific type is selected
@@ -641,7 +643,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
             discovery => !discovery.saved && !discovery.dismissed
           );
           
-          Logger.debug('DISCOVERIES_SCREEN', `Journey discoveries breakdown:`, {
+          Logger.error('DISCOVERIES_SCREEN', `Journey discoveries breakdown:`, {
             total: journeyDiscoveries.discoveries.length,
             saved: journeyDiscoveries.discoveries.filter(d => d.saved).length,
             dismissed: journeyDiscoveries.discoveries.filter(d => d.dismissed).length,
@@ -676,9 +678,9 @@ export default function DiscoveriesScreen({ navigation, route }) {
           const isNewJourney = !hasExistingDiscoveries;
           
           if (isNewJourney) {
-            Logger.debug('DISCOVERIES_SCREEN', 'New journey detected - making API calls for initial discoveries');
-            Logger.debug('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
-            Logger.debug('DISCOVERIES_SCREEN', 'Parameters for getSuggestionsForRoute:', {
+            Logger.error('DISCOVERIES_SCREEN', 'New journey detected - making API calls for initial discoveries');
+            Logger.error('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
+            Logger.error('DISCOVERIES_SCREEN', 'Parameters for getSuggestionsForRoute:', {
               coordsLength: selectedRoute.coords?.length,
               coordsType: typeof selectedRoute.coords,
               preferences: filteredPreferences,
@@ -693,13 +695,13 @@ export default function DiscoveriesScreen({ navigation, route }) {
                 language, 
                 user.uid
               );
-              Logger.debug('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully', {
+              Logger.error('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully', {
                 newSuggestionsCount: newSuggestions?.length || 0
               });
               
               // Save new discoveries to Firestore so they persist
               if (newSuggestions && newSuggestions.length > 0) {
-                Logger.debug('DISCOVERIES_SCREEN', 'Saving new discoveries to Firestore', {
+                Logger.error('DISCOVERIES_SCREEN', 'Saving new discoveries to Firestore', {
                   count: newSuggestions.length
                 });
                 
@@ -733,7 +735,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
                     await DiscoveryService.createDiscovery(user.uid, discoveryData);
                   }
                   
-                  Logger.debug('DISCOVERIES_SCREEN', 'Successfully saved new discoveries to Firestore');
+                  Logger.error('DISCOVERIES_SCREEN', 'Successfully saved new discoveries to Firestore');
                   
                   // Reload discoveries from Firestore to get the saved data
                   const updatedJourneyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
@@ -772,8 +774,8 @@ export default function DiscoveriesScreen({ navigation, route }) {
               allSuggestions = firestoreSuggestions;
             }
           } else {
-            Logger.debug('DISCOVERIES_SCREEN', 'Existing journey with discoveries - skipping API calls to save performance');
-            Logger.debug('DISCOVERIES_SCREEN', 'Found', journeyDiscoveries.discoveries.length, 'existing discoveries');
+            Logger.error('DISCOVERIES_SCREEN', 'Existing journey with discoveries - skipping API calls to save performance');
+            Logger.error('DISCOVERIES_SCREEN', 'Found', journeyDiscoveries.discoveries.length, 'existing discoveries');
         
         // Log the final suggestions that will be set
         Logger.filter('DISCOVERIES_SCREEN', 'SUGGESTIONS_LOADED', 'existing', {
@@ -787,9 +789,9 @@ export default function DiscoveriesScreen({ navigation, route }) {
           }
         } else {
           // No existing discoveries, make API calls
-          Logger.debug('DISCOVERIES_SCREEN', 'No existing discoveries found - making API calls');
-          Logger.debug('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
-          Logger.debug('DISCOVERIES_SCREEN', 'Parameters for getSuggestionsForRoute (no existing discoveries):', {
+          Logger.error('DISCOVERIES_SCREEN', 'No existing discoveries found - making API calls');
+          Logger.error('DISCOVERIES_SCREEN', 'Calling getSuggestionsForRoute - THIS WILL MAKE API CALLS');
+          Logger.error('DISCOVERIES_SCREEN', 'Parameters for getSuggestionsForRoute (no existing discoveries):', {
             coordsLength: selectedRoute.coords?.length,
             coordsType: typeof selectedRoute.coords,
             preferences: filteredPreferences,
@@ -804,13 +806,13 @@ export default function DiscoveriesScreen({ navigation, route }) {
               language, 
               user.uid
             );
-            Logger.debug('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully (no existing discoveries)', {
+            Logger.error('DISCOVERIES_SCREEN', 'getSuggestionsForRoute completed successfully (no existing discoveries)', {
               newSuggestionsCount: newSuggestions?.length || 0
             });
             
                           // Save new discoveries to Firestore so they persist
               if (newSuggestions && newSuggestions.length > 0) {
-                Logger.debug('DISCOVERIES_SCREEN', 'Saving new discoveries to Firestore (no existing discoveries)', {
+                Logger.error('DISCOVERIES_SCREEN', 'Saving new discoveries to Firestore (no existing discoveries)', {
                   count: newSuggestions.length
                 });
                 
@@ -844,7 +846,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
                     await DiscoveryService.createDiscovery(user.uid, discoveryData);
                   }
                   
-                  Logger.debug('DISCOVERIES_SCREEN', 'Successfully saved new discoveries to Firestore (no existing discoveries)');
+                  Logger.error('DISCOVERIES_SCREEN', 'Successfully saved new discoveries to Firestore (no existing discoveries)');
                   
                   // Reload discoveries from Firestore to get the saved data
                   const updatedJourneyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
@@ -884,7 +886,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
           }
         }
         
-        Logger.debug('DISCOVERIES_SCREEN', 'Total suggestions:', allSuggestions.length, '(Firestore:', allSuggestions.filter(s => s.fromFirestore).length, 'API:', allSuggestions.filter(s => !s.fromFirestore).length, ')');
+        Logger.error('DISCOVERIES_SCREEN', 'Total suggestions:', allSuggestions.length, '(Firestore:', allSuggestions.filter(s => s.fromFirestore).length, 'API:', allSuggestions.filter(s => !s.fromFirestore).length, ')');
         
         // Log the suggestions being set
         Logger.filter('DISCOVERIES_SCREEN', 'SETTING_SUGGESTIONS', 'all', {
@@ -944,14 +946,14 @@ export default function DiscoveriesScreen({ navigation, route }) {
     setRememberChoice(false);
   };
 
-  const completeOnboarding = () => {
+  const completeOnboarding = async () => {
+    if (user) {
+      await AsyncStorage.setItem(`${ONBOARDING_KEY}_${user.uid}`, 'true');
+    }
     setShowOnboarding(false);
-    AsyncStorage.setItem('@discovery_onboarding_shown', 'true');
   };
 
-  const showOnboardingAgain = () => {
-    setShowOnboarding(true);
-  };
+  const showOnboardingAgain = () => setShowOnboarding(true);
 
   // Helper function to format time ago
   const formatTimeAgo = (timestamp) => {
@@ -999,19 +1001,19 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
   // Handle undo dismiss
   const handleUndoDismiss = async (place) => {
-    Logger.debug('DISCOVERIES_SCREEN', 'handleUndoDismiss called for place:', place.placeId);
+    Logger.error('DISCOVERIES_SCREEN', 'handleUndoDismiss called for place:', place.placeId);
     try {
       // Remove from dismissed places
-      Logger.debug('DISCOVERIES_SCREEN', 'Calling DiscoveryService.undismissPlace');
+      Logger.error('DISCOVERIES_SCREEN', 'Calling DiscoveryService.undismissPlace');
       await DiscoveryService.undismissPlace(user.uid, place.placeId);
       
       // Reload dismissed and saved places
-      Logger.debug('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
+      Logger.error('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
       await loadDismissedAndSavedCallback();
       
       // Refresh suggestions to show the restored place (without API calls)
       if (selectedRoute) {
-        Logger.debug('DISCOVERIES_SCREEN', 'Refreshing suggestions after undo dismiss - NO API CALLS');
+        Logger.error('DISCOVERIES_SCREEN', 'Refreshing suggestions after undo dismiss - NO API CALLS');
         const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
         
         let allSuggestions = [];
@@ -1043,7 +1045,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         // Manually update journey completion status to ensure it's correct
         try {
           await DiscoveryService.updateJourneyCompletionStatus(user.uid, selectedRoute.id);
-          Logger.debug('DISCOVERIES_SCREEN', 'Manually updated journey completion status after undo dismiss');
+          Logger.error('DISCOVERIES_SCREEN', 'Manually updated journey completion status after undo dismiss');
         } catch (statusError) {
           Logger.warn('DISCOVERIES_SCREEN', 'Failed to update journey status after undo dismiss', { error: statusError.message });
         }
@@ -1064,19 +1066,19 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
   // Handle undo save
   const handleUndoSave = async (place) => {
-    Logger.debug('DISCOVERIES_SCREEN', 'handleUndoSave called for place:', place.placeId);
+    Logger.error('DISCOVERIES_SCREEN', 'handleUndoSave called for place:', place.placeId);
     try {
       // Remove from saved places
-      Logger.debug('DISCOVERIES_SCREEN', 'Calling DiscoveryService.unsavePlace');
+      Logger.error('DISCOVERIES_SCREEN', 'Calling DiscoveryService.unsavePlace');
       await DiscoveryService.unsavePlace(user.uid, place.placeId);
       
       // Reload dismissed and saved places
-      Logger.debug('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
+      Logger.error('DISCOVERIES_SCREEN', 'Reloading dismissed and saved places');
       await loadDismissedAndSavedCallback();
       
       // Refresh suggestions to show the restored place (without API calls)
       if (selectedRoute) {
-        Logger.debug('DISCOVERIES_SCREEN', 'Refreshing suggestions after undo save - NO API CALLS');
+        Logger.error('DISCOVERIES_SCREEN', 'Refreshing suggestions after undo save - NO API CALLS');
         const journeyDiscoveries = await DiscoveryService.getJourneyDiscoveries(user.uid, selectedRoute.id);
         
         let allSuggestions = [];
@@ -1108,7 +1110,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         // Manually update journey completion status to ensure it's correct
         try {
           await DiscoveryService.updateJourneyCompletionStatus(user.uid, selectedRoute.id);
-          Logger.debug('DISCOVERIES_SCREEN', 'Manually updated journey completion status after undo save');
+          Logger.error('DISCOVERIES_SCREEN', 'Manually updated journey completion status after undo save');
         } catch (statusError) {
           Logger.warn('DISCOVERIES_SCREEN', 'Failed to update journey status after undo save', { error: statusError.message });
         }
@@ -1146,16 +1148,6 @@ export default function DiscoveriesScreen({ navigation, route }) {
       setAiSummaries(prev => ({ ...prev, [placeId]: { error: true } }));
     } finally {
       setLoadingSummaries(prev => ({ ...prev, [placeId]: false }));
-    }
-  };
-
-  const testAISummariesFeature = async () => {
-    try {
-      const result = await testAISummaries();
-      Alert.alert('Place Summaries Test Complete!', `Chicago: ${result.chicago ? 'Available' : 'Not available'}\nUser Place: ${result.userPlace ? 'Available' : 'Not available'}`);
-    } catch (error) {
-      Logger.error('DISCOVERIES_SCREEN', 'Place Summaries test failed', error);
-      Alert.alert('Place Summaries test failed', error.message);
     }
   };
 
@@ -1517,17 +1509,12 @@ export default function DiscoveriesScreen({ navigation, route }) {
           </View>
         </View>
         <View style={styles.headerRight}>
-          {__DEV__ && (
-            <TouchableOpacity
-              style={[styles.testButton, { backgroundColor: colors.primary + '10' }]}
-              onPress={testAISummariesFeature}
-            >
-              <MaterialIcons name="science" size={16} color={colors.primary} />
-              <Text style={[styles.testButtonText, { color: colors.primary }]}>
-                Test AI
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[styles.helpButton, { backgroundColor: colors.primary + '10' }]}
+            onPress={showOnboardingAgain}
+          >
+            <MaterialIcons name="help-outline" size={20} color={colors.primary} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.gearButton, { backgroundColor: colors.primary + '10' }]}
             onPress={() => setShowSettingsModal(true)}
