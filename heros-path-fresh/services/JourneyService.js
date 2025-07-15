@@ -1,5 +1,4 @@
 /**
- * JourneyService
  * JOURNEY SERVICE (ROUTE DATA MANAGEMENT)
  * ========================================
  * 

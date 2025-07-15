@@ -1,5 +1,4 @@
 /**
- * NewPlacesService
  * NEW PLACES SERVICE (GOOGLE PLACES API INTERFACE)
  * =================================================
  * 
