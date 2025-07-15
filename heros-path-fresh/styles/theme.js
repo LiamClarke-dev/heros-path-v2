@@ -696,3 +696,16 @@ export const Shadows = {
     elevation: 8,
   },
 };
+
+// ---------------------------------------------------------------------------
+// GLOBAL FALLBACK
+// Ensure `global.colors` always exists (Hermes will crash if any file references
+// `colors` at module scope before ThemeContext is ready). We attach a fallback
+// *once* when this theme file is first imported.
+// ---------------------------------------------------------------------------
+if (typeof globalThis !== 'undefined' && !globalThis.colors) {
+  // Provide the light theme as a safe default — components will still override
+  // it with ThemeContext once they mount.
+  // eslint-disable-next-line no-undef
+  globalThis.colors = getFallbackTheme();
+}
