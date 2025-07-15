@@ -119,7 +119,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
-import { testAISummaries } from '../services/NewPlacesService';
+// AI summaries functionality integrated into discovery process
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -1149,14 +1149,12 @@ export default function DiscoveriesScreen({ navigation, route }) {
     }
   };
 
-  const testAISummariesFeature = async () => {
-    try {
-      const result = await testAISummaries();
-      Alert.alert('Place Summaries Test Complete!', `Chicago: ${result.chicago ? 'Available' : 'Not available'}\nUser Place: ${result.userPlace ? 'Available' : 'Not available'}`);
-    } catch (error) {
-      Logger.error('DISCOVERIES_SCREEN', 'Place Summaries test failed', error);
-      Alert.alert('Place Summaries test failed', error.message);
-    }
+  const showAIHelp = () => {
+    Alert.alert(
+      'AI Summaries',
+      'AI-powered summaries provide enhanced information about places you discover, including interesting facts, historical context, and local insights to help you decide which places to save.',
+      [{ text: 'Got it', style: 'default' }]
+    );
   };
 
   if (!user) {
@@ -1517,17 +1515,12 @@ export default function DiscoveriesScreen({ navigation, route }) {
           </View>
         </View>
         <View style={styles.headerRight}>
-          {__DEV__ && (
-            <TouchableOpacity
-              style={[styles.testButton, { backgroundColor: colors.primary + '10' }]}
-              onPress={testAISummariesFeature}
-            >
-              <MaterialIcons name="science" size={16} color={colors.primary} />
-              <Text style={[styles.testButtonText, { color: colors.primary }]}>
-                Test AI
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[styles.helpButton, { backgroundColor: colors.primary + '10' }]}
+            onPress={showAIHelp}
+          >
+            <MaterialIcons name="help-outline" size={20} color={colors.primary} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.gearButton, { backgroundColor: colors.primary + '10' }]}
             onPress={() => setShowSettingsModal(true)}
@@ -1999,6 +1992,11 @@ const styles = StyleSheet.create({
   gearButton: {
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
+  },
+  helpButton: {
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    marginRight: Spacing.xs,
   },
   manageButton: {
     padding: Spacing.sm,

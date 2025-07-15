@@ -37,7 +37,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import { AppleMaps, GoogleMaps } from 'expo-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -330,18 +330,18 @@ export default function MapScreen({ navigation, route }) {
       };
 
       // Save journey
-      const result = await JourneyService.saveJourney(journeyData);
+      const result = await JourneyService.createJourney(user.uid, journeyData);
       
       if (result.success) {
         Logger.info('MAP_SCREEN', 'Journey saved successfully', { 
-          journeyId: result.journeyId 
+          journeyId: result.journey.id 
         });
 
         // Trigger discovery process
         try {
           await DiscoveryService.processJourneyForDiscoveries(
             user.uid, 
-            result.journeyId, 
+            result.journey.id, 
             journeyData.route
           );
           Logger.info('MAP_SCREEN', 'Discovery process completed');
@@ -531,31 +531,39 @@ export default function MapScreen({ navigation, route }) {
       )}
 
       {currentPosition ? (
-        Platform.OS === 'ios' ? (
-          <AppleMaps.View
-            ref={mapRef}
-            style={styles.map}
-            cameraPosition={{
-              coordinates: currentPosition,
-              zoom: 15,
-            }}
-            markers={markers}
-            polylines={polylines}
-            onError={handleMapError}
-          />
-        ) : (
-          <GoogleMaps.View
-            ref={mapRef}
-            style={styles.map}
-            cameraPosition={{
-              coordinates: currentPosition,
-              zoom: 15,
-            }}
-            markers={markers}
-            polylines={polylines}
-            onError={handleMapError}
-          />
-        )
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={{
+            latitude: currentPosition.latitude,
+            longitude: currentPosition.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          onError={handleMapError}
+          showsUserLocation={true}
+          followsUserLocation={true}
+        >
+          {markers.map((marker, index) => (
+            <Marker
+              key={index}
+              coordinate={{
+                latitude: marker.coordinate.latitude,
+                longitude: marker.coordinate.longitude,
+              }}
+              title={marker.title}
+              description={marker.description}
+            />
+          ))}
+          {polylines.map((polyline, index) => (
+            <Polyline
+              key={index}
+              coordinates={polyline.coordinates}
+              strokeColor={polyline.strokeColor}
+              strokeWidth={polyline.strokeWidth}
+            />
+          ))}
+        </MapView>
       ) : (
         <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
           <Text style={[styles.loadingText, { color: colors.text }]}>Loading your location…</Text>

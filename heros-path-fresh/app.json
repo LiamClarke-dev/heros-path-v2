@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "com.liamclarke.herospath",
     "owner": "liamclarke-dev",
     "splash": {
@@ -54,8 +54,6 @@
         "projectId": "4177e7e0-0896-45ea-9095-1c3da2e8a1a3"
       }
     },
-    "plugins": [
-      "expo-maps"
-    ]
+    "plugins": []
   }
 }
