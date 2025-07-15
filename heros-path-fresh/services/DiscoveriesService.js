@@ -1,5 +1,94 @@
-/**
- * DiscoveriesService
+/* DISCOVERIES SERVICE (CORE DISCOVERY ENGINE)
+ * ============================================
+ * 
+ * PURPOSE:
+ * This is the heart of Hero's Path's discovery system. It orchestrates the Search Along Route (SAR)
+ * feature using Google Places API to find interesting places along user walking routes. This service
+ * transforms GPS coordinates into polylines, builds intelligent search queries from user preferences,
+ * and provides the core functionality that makes Hero's Path unique - discovering places along your
+ * entire walking route, not just at a single point.
+ * 
+ * FUNCTIONALITY:
+ * - Implements Google Places API Search Along Route (SAR) for comprehensive route discovery
+ * - Encodes GPS coordinates into Google's polyline format for efficient API communication
+ * - Builds intelligent search queries based on user preferences and place types
+ * - Provides fallback to center-point search when SAR is unavailable or fails
+ * - Manages user discovery preferences with automatic syncing and validation
+ * - Deduplicates discovered places using proximity and similarity algorithms
+ * - Integrates with EnhancedPlacesService for AI summaries and enhanced place data
+ * - Handles preference migration and default value management
+ * - Supports multiple languages for international users
+ * - Provides comprehensive error handling and logging for debugging
+ * 
+ * WHY IT EXISTS:
+ * Traditional location apps only show places near your current location or destination.
+ * Hero's Path is revolutionary because it discovers places along your ENTIRE walking route.
+ * This service makes that possible by implementing Google's advanced Search Along Route
+ * technology, transforming a simple walk into a journey of discovery. It's the technical
+ * foundation that delivers the app's core value proposition.
+ * 
+ * KEY FEATURES:
+ * - Search Along Route (SAR): Finds places along the entire walking path
+ * - Intelligent fallback: Center-point search when SAR fails
+ * - User preference integration: Respects user's place type preferences
+ * - Advanced deduplication: Prevents showing duplicate or very similar places
+ * - AI-enhanced results: Integrates with AI summary generation
+ * - Performance optimization: Efficient API usage and caching strategies
+ * - Multi-language support: Works in different languages and regions
+ * - Privacy-focused: Only searches when user completes a journey
+ * 
+ * RELATIONSHIPS:
+ * - Works with NewPlacesService.js for actual Google Places API calls
+ * - Uses EnhancedPlacesService.js for AI summaries and enhanced place data
+ * - Integrates with DiscoveryService.js for CRUD operations on discovered places
+ * - May work with DiscoveryConsolidationService.js to merge SAR and cached discoveries
+ * - Provides data to DiscoveriesScreen.js for user interface display
+ * - Uses PlaceTypes constants for preference validation and query building
+ * - Stores and retrieves user preferences from AsyncStorage and Firestore
+ * 
+ * REFERENCED BY:
+ * - DiscoveriesScreen.js (primary UI for displaying discovered places)
+ * - useSuggestedPlaces.js hook (for automatic place suggestions)
+ * - MapScreen.js (potentially for real-time discovery features)
+ * - Journey completion workflows (for automatic discovery after walks)
+ * - User preference management systems
+ * 
+ * REFERENCES:
+ * - NewPlacesService.js (for Google Places API calls)
+ * - EnhancedPlacesService.js (for AI summaries and enhanced data)
+ * - DiscoveryService.js (for CRUD operations)
+ * - PlaceTypes constants (for preference validation)
+ * - Firebase Firestore (for user preferences and data storage)
+ * - AsyncStorage (for local preference caching)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This is arguably the most important service in the entire application.
+ * It implements the core feature that differentiates Hero's Path from every other
+ * walking app. Without this service working properly, the app would just be another
+ * basic route tracker. This service delivers the "magic" that makes walks feel like
+ * adventures full of discovery.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add route optimization - suggest better walking paths for more discoveries
+ * 2. Add predictive discovery - predict likely discoveries before walking
+ * 3. Add seasonal awareness - adjust discovery types based on season/weather
+ * 4. Add time-based filtering - show places open at the time of walking
+ * 5. Add social discovery - places popular with friends or similar users
+ * 6. Add discovery scoring - rank places by likelihood of user interest
+ * 7. Add discovery history - learn from user's past discovery interactions
+ * 8. Add real-time discovery - discover places during walks, not just after
+ * 9. Add discovery radius customization - let users control how far to search
+ * 10. Add discovery categories - group discoveries by themes or activities
+ * 11. Add discovery notifications - alert users to interesting nearby discoveries
+ * 12. Add discovery challenges - gamify discovery with specific goals
+ * 13. Add discovery export - let users export discovery data
+ * 14. Add discovery analytics - track discovery success rates and patterns
+ * 15. Add offline discovery - cache potential discoveries for offline use
+ * 16. Add discovery clustering - group nearby discoveries for better organization
+ * 17. Add discovery recommendations - suggest new place types based on history
+ * 18. Add discovery sharing - let users share interesting discoveries
+ * 19. Add discovery verification - let users confirm/rate discovered places
+ * 20. Add discovery personalization - AI-powered personalized discovery suggestions
  *
  * Orchestrates the Search Along Route (SAR) feature using Google Places API.
  * - Encodes polylines and builds search queries from user preferences.

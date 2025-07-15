@@ -1,26 +1,95 @@
 /*
-  PastJourneysScreen.js
-  ----------------------
-  What this page does:
-  - Displays a list of the user's past journeys, including details like distance, duration, and completion status.
-  - Allows users to delete journeys and navigate to the Discoveries screen for a specific journey.
-
-  Why this page exists & its importance:
-  - Provides users with a history of their recorded journeys, encouraging reflection and continued engagement.
-  - Acts as a bridge between journey tracking and discovery management.
-
-  References & dependencies:
-  - Uses JourneyService and DiscoveryService for data.
-  - Relies on the theme system (useTheme) and user context.
-  - Uses UI components like Card, ListItem, AppButton, SectionHeader.
-  - Integrates with navigation to link to DiscoveriesScreen.
-
-  Suggestions for improvement:
-  - Add more comments explaining the journey transformation and deletion logic.
-  - Ensure all color and style values use the theme system (avoid hardcoded values).
-  - Consider paginating or virtualizing the list for better performance with many journeys.
-  - Improve accessibility for list items and action buttons.
-*/
+ * PAST JOURNEYS SCREEN (JOURNEY HISTORY INTERFACE)
+ * =================================================
+ * 
+ * PURPOSE:
+ * This screen displays a comprehensive history of all user's completed walking journeys,
+ * providing an overview of their exploration progress and achievements. It serves as
+ * both a personal walking diary and a gateway to reviewing discoveries from past walks.
+ * Think of it as the "adventure logbook" where users can see their walking history,
+ * track completion status, and manage their journey data.
+ * 
+ * FUNCTIONALITY:
+ * - Displays chronological list of all completed walking journeys
+ * - Shows journey metadata including date, distance, duration, and route information
+ * - Indicates completion status for each journey (whether discoveries have been reviewed)
+ * - Provides navigation to DiscoveriesScreen for reviewing journey-specific discoveries
+ * - Handles journey deletion with comprehensive data cleanup
+ * - Includes development utilities for data management and testing
+ * - Automatically refreshes when returning from other screens
+ * - Manages loading states and error handling gracefully
+ * - Uses modern UI components for consistent visual experience
+ * - Integrates with user authentication and migration systems
+ * 
+ * WHY IT EXISTS:
+ * Users need to track their walking progress and revisit past discoveries. This screen
+ * provides that historical view while also serving as the entry point for completing
+ * the discovery review process. It helps users understand their walking patterns,
+ * celebrate their achievements, and ensures they don't miss reviewing discoveries
+ * from any of their walks.
+ * 
+ * KEY FEATURES:
+ * - Journey History: Complete chronological list of all walking sessions
+ * - Completion Tracking: Visual indicators showing which journeys need discovery review
+ * - Quick Navigation: Easy access to discovery review for each journey
+ * - Journey Management: Delete unwanted or test journeys
+ * - Progress Visualization: See walking achievements and progress over time
+ * - Data Integration: Seamless integration with discovery and user management systems
+ * - Development Tools: Utilities for testing and data management (dev builds only)
+ * - Real-time Updates: Automatically updates when journey status changes
+ * 
+ * RELATIONSHIPS:
+ * - Uses JourneyService.js for loading and managing journey data
+ * - Integrates with DiscoveryService.js for journey completion status tracking
+ * - Connects to UserContext for authentication and user data
+ * - Uses ThemeContext for consistent styling and theming
+ * - Navigates to DiscoveriesScreen for discovery review workflows
+ * - Works with migration systems for data consistency
+ * - Uses shared UI components for modern, consistent interface
+ * 
+ * REFERENCED BY:
+ * - AppNavigator.js (as part of the Map stack navigation)
+ * - MapScreen.js (users access this to review past walks)
+ * - Discovery completion workflows that update journey status
+ * - User authentication flows that need journey history
+ * 
+ * REFERENCES:
+ * - JourneyService.js (for journey data management)
+ * - DiscoveryService.js (for completion status tracking)
+ * - UserContext.js (for authentication and user data)
+ * - ThemeContext.js (for styling and theming)
+ * - Navigation system (for screen transitions)
+ * - UI components (Card, ListItem, AppButton, SectionHeader)
+ * 
+ * IMPORTANCE TO APP:
+ * HIGH - This screen is important for user engagement and discovery completion.
+ * It provides the historical context that makes walking feel like a journey of
+ * exploration rather than just exercise. It also ensures users complete the
+ * discovery review process, which is crucial for the app's value proposition.
+ * Good journey history builds user attachment and long-term engagement.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add journey statistics - total distance, average speed, calories burned
+ * 2. Add journey visualization - maps showing route paths and discoveries
+ * 3. Add journey sharing - share interesting walks with friends or community
+ * 4. Add journey categories - organize journeys by type, location, or purpose
+ * 5. Add journey search - search through journey history by various criteria
+ * 6. Add journey analytics - insights about walking patterns and trends
+ * 7. Add journey goals - set and track walking goals and achievements
+ * 8. Add journey export - export journey data to GPX, KML, or other formats
+ * 9. Add journey photos - attach photos and memories to specific journeys
+ * 10. Add journey notes - add personal notes and observations to journeys
+ * 11. Add journey weather - show weather conditions during each walk
+ * 12. Add journey comparison - compare different journeys and performance
+ * 13. Add journey recommendations - suggest new routes based on history
+ * 14. Add journey challenges - participate in walking challenges and competitions
+ * 15. Add journey social features - like, comment, and discuss journeys with others
+ * 16. Add journey backup - backup and restore journey history
+ * 17. Add journey insights - AI-powered insights about walking behavior
+ * 18. Add journey optimization - suggest improvements for future walks
+ * 19. Add journey accessibility - better support for users with different abilities
+ * 20. Add journey gamification - achievements, badges, and rewards for walking milestones
+ */
 import React, { useState, useEffect } from 'react';
 import {
   View,

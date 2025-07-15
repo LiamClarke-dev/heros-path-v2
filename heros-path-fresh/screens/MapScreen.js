@@ -23,7 +23,9 @@
   - Improve error handling for location and map errors.
   - Consider accessibility improvements for map controls and markers.
 */
-// screens/MapScreen.js
+// NOTE: This screen now uses react-native-maps. Make sure to install it with:
+//   npx expo install react-native-maps
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -37,7 +39,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import { AppleMaps, GoogleMaps } from 'expo-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -86,70 +88,6 @@ function getDirection([prev, curr]) {
   } else {
     return dy > 0 ? SPRITE_STATES.WALK_DOWN : SPRITE_STATES.WALK_UP;
   }
-}
-
-// Helper to build polylines for the new API
-function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors }) {
-  const polylines = [];
-  // Saved routes
-  if (savedRoutes && savedRoutes.length > 0) {
-    for (const journey of savedRoutes) {
-      polylines.push({
-        id: journey.id,
-        coordinates: journey.route,
-        color: colors.routeLine,
-        width: 3,
-        opacity: 0.6,
-      });
-    }
-  }
-  // Preview route
-  if ((previewRoadCoords && previewRoadCoords.length > 0) || (previewRoute && previewRoute.length > 0)) {
-    polylines.push({
-      id: 'preview',
-      coordinates: previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute,
-      color: colors.routePreview,
-      width: 4,
-    });
-  }
-  // Current path
-  if (pathToRender && pathToRender.length > 0) {
-    polylines.push({
-      id: 'current',
-      coordinates: pathToRender,
-      color: colors.routeLine,
-      width: 6,
-    });
-  }
-  return polylines;
-}
-
-// Helper to build markers for the new API
-function buildMarkers({ currentPosition, spriteSource, showSavedPlaces, savedPlaces, colors }) {
-  const markers = [];
-  // Current position marker (Link sprite)
-  if (currentPosition) {
-    markers.push({
-      id: 'current',
-      coordinates: currentPosition,
-      anchor: { x: 0.5, y: 0.9 },
-      icon: Image.resolveAssetSource(spriteSource).uri,
-    });
-  }
-  // Saved places markers
-  if (showSavedPlaces && savedPlaces && savedPlaces.length > 0) {
-    for (const place of savedPlaces) {
-      markers.push({
-        id: place.id,
-        coordinates: { latitude: place.latitude, longitude: place.longitude },
-        title: place.name,
-        description: place.vicinity,
-        // Optionally, you can set a custom icon here if you have one, otherwise omit for default marker
-        // icon: require('../assets/icon.png'),
-      });
-    }
-  }
-  return markers;
 }
 
 export default function MapScreen({ navigation, route }) {
@@ -512,9 +450,15 @@ export default function MapScreen({ navigation, route }) {
     );
   }
 
-  // Build polylines and markers for the new API
-  const polylines = buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors });
-  const markers = buildMarkers({ currentPosition, spriteSource, showSavedPlaces, savedPlaces, colors });
+  // Helper: region for MapView
+  const region = currentPosition
+    ? {
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      }
+    : null;
 
   return (
     <View style={styles.container}>
@@ -530,38 +474,72 @@ export default function MapScreen({ navigation, route }) {
         </TouchableOpacity>
       )}
 
-      {currentPosition ? (
-        Platform.OS === 'ios' ? (
-          <AppleMaps.View
-            ref={mapRef}
-            style={styles.map}
-            cameraPosition={{
-              coordinates: currentPosition,
-              zoom: 15,
-            }}
-            markers={markers}
-            polylines={polylines}
-            onError={handleMapError}
-          />
-        ) : (
-          <GoogleMaps.View
-            ref={mapRef}
-            style={styles.map}
-            cameraPosition={{
-              coordinates: currentPosition,
-              zoom: 15,
-            }}
-            markers={markers}
-            polylines={polylines}
-            onError={handleMapError}
-          />
-        )
+      {region ? (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={region}
+          customMapStyle={mapStyleArray}
+          onError={handleMapError}
+          showsUserLocation={false}
+          showsMyLocationButton={false}
+          toolbarEnabled={false}
+        >
+          {/* Saved routes as polylines */}
+          {savedRoutes.map(journey => (
+            <Polyline
+              key={journey.id}
+              coordinates={journey.route}
+              strokeColor={colors.routeLine}
+              strokeWidth={3}
+            />
+          ))}
+          {/* Preview route polyline */}
+          {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
+            <Polyline
+              coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
+              strokeColor={colors.routePreview}
+              strokeWidth={4}
+            />
+          )}
+          {/* Current path polyline */}
+          {pathToRender.length > 0 && (
+            <Polyline
+              coordinates={pathToRender}
+              strokeColor={colors.routeLine}
+              strokeWidth={6}
+            />
+          )}
+          {/* Current position marker (sprite) */}
+          {currentPosition && (
+            <Marker
+              coordinate={currentPosition}
+              anchor={{ x: 0.5, y: 0.9 }}
+              tracksViewChanges={false}
+            >
+              <Image source={spriteSource} style={{ width: 16, height: 32 }} resizeMode="contain" />
+            </Marker>
+          )}
+          {/* Saved places markers */}
+          {showSavedPlaces && savedPlaces.map(place => (
+            <Marker
+              key={place.id}
+              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
+              title={place.name}
+              description={place.vicinity}
+            >
+              <View style={[styles.savedPlaceMarker, { backgroundColor: colors.primary }]}> 
+                <MaterialIcons name="favorite" size={16} color={colors.buttonText} />
+              </View>
+            </Marker>
+          ))}
+        </MapView>
       ) : (
         <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
           <Text style={[styles.loadingText, { color: colors.text }]}>Loading your location…</Text>
         </View>
       )}
-
+      
       {/* Ping Animation Overlay */}
       {showPingAnimation && currentPosition && (
         <PingAnimation
@@ -571,7 +549,7 @@ export default function MapScreen({ navigation, route }) {
           animationType="particle"
         />
       )}
-
+      
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
         {/* Discovery preferences button */}
@@ -581,6 +559,7 @@ export default function MapScreen({ navigation, route }) {
         >
           <MaterialIcons name="tune" size={24} color={colors.primary} />
         </TouchableOpacity>
+        
         {/* Locate button */}
         <TouchableOpacity 
           style={[
@@ -597,6 +576,7 @@ export default function MapScreen({ navigation, route }) {
             color={isLocating ? colors.textSecondary : colors.primary} 
           />
         </TouchableOpacity>
+        
         {/* Toggle saved places button */}
         <TouchableOpacity 
           style={[
@@ -638,7 +618,7 @@ export default function MapScreen({ navigation, route }) {
           />
         </View>
       )}
-
+      
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
           style={[

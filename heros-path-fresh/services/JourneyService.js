@@ -1,5 +1,94 @@
 /**
  * JourneyService
+ * JOURNEY SERVICE (ROUTE DATA MANAGEMENT)
+ * ========================================
+ * 
+ * PURPOSE:
+ * This service manages all aspects of user journeys (walking routes) including creation,
+ * storage, retrieval, and deletion. It handles the complete lifecycle of journey data
+ * from the moment a user completes a walk until they decide to delete it. Think of it
+ * as the database manager for all walking route information, ensuring data consistency
+ * and providing comprehensive journey management capabilities.
+ * 
+ * FUNCTIONALITY:
+ * - Creates and stores new journeys with metadata (distance, duration, coordinates)
+ * - Retrieves user's journey history with proper ordering and filtering
+ * - Updates journey information and completion status tracking
+ * - Provides comprehensive journey deletion with full data cleanup
+ * - Manages journey statistics and analytics for user insights
+ * - Handles soft deletion and restoration for data recovery
+ * - Supports bulk operations for managing multiple journeys
+ * - Integrates with discovery consolidation for journey-based place suggestions
+ * - Provides data cleanup utilities for development and user account management
+ * - Ensures data consistency across journeys, discoveries, and user preferences
+ * 
+ * WHY IT EXISTS:
+ * Hero's Path users generate significant amounts of route data over time. This service
+ * centralizes all journey management logic, ensuring data integrity and providing
+ * efficient access to route information. It also handles the complex relationships
+ * between journeys and their associated discoveries, making sure that data cleanup
+ * is comprehensive and consistent.
+ * 
+ * KEY FEATURES:
+ * - Complete CRUD operations for journey data
+ * - Comprehensive data cleanup including associated discoveries
+ * - Journey statistics and analytics calculation
+ * - Soft deletion with restoration capabilities
+ * - Bulk operations for efficient data management
+ * - Integration with discovery systems for enhanced functionality
+ * - Data consistency guarantees across related collections
+ * - Development utilities for testing and debugging
+ * 
+ * RELATIONSHIPS:
+ * - Used by MapScreen.js for saving completed walks
+ * - Integrates with DiscoveryService.js for managing journey-associated discoveries
+ * - Works with DiscoveryConsolidationService.js for journey-based place suggestions
+ * - Provides data to PastJourneysScreen.js for displaying journey history
+ * - Uses Firebase Firestore for persistent journey storage
+ * - Connects with user statistics and analytics systems
+ * - Supports development workflows and data management tools
+ * 
+ * REFERENCED BY:
+ * - MapScreen.js (for saving new journeys after walks)
+ * - PastJourneysScreen.js (for displaying and managing journey history)
+ * - DiscoveriesScreen.js (for journey-related discovery workflows)
+ * - User profile and statistics components
+ * - Development and admin tools for data management
+ * 
+ * REFERENCES:
+ * - Firebase Firestore (for persistent data storage)
+ * - DiscoveryConsolidationService.js (for discovery integration)
+ * - DiscoveriesService.js (for user preferences)
+ * - AsyncStorage (for temporary data and caching)
+ * - Logger utility (for debugging and error tracking)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This service is fundamental to Hero's Path's data management. Without
+ * reliable journey storage and management, users would lose their walking history
+ * and the app couldn't provide discovery suggestions. The data integrity guarantees
+ * are essential for maintaining user trust and ensuring consistent app behavior.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add journey analytics - detailed insights about walking patterns
+ * 2. Add journey export - export route data to GPX, KML, or other formats
+ * 3. Add journey sharing - share routes with friends or the community
+ * 4. Add journey templates - save favorite routes as reusable templates
+ * 5. Add journey goals - set and track walking goals and achievements
+ * 6. Add journey categorization - organize routes by type, difficulty, or purpose
+ * 7. Add journey optimization - suggest improvements to existing routes
+ * 8. Add journey recommendations - suggest new routes based on history
+ * 9. Add journey collaboration - plan and share routes with others
+ * 10. Add journey backup - cloud backup and sync across devices
+ * 11. Add journey privacy - granular privacy controls for route data
+ * 12. Add journey verification - validate route data integrity
+ * 13. Add journey compression - optimize storage for large route datasets
+ * 14. Add journey search - search through journey history by various criteria
+ * 15. Add journey comparison - compare different routes and performances
+ * 16. Add journey notifications - reminders and suggestions based on journey patterns
+ * 17. Add journey weather integration - associate weather data with journeys
+ * 18. Add journey social features - like, comment, and rate community routes
+ * 19. Add journey fitness integration - connect with fitness apps and devices
+ * 20. Add journey AI insights - AI-powered analysis of walking patterns and suggestions
  *
  * Manages user journeys (routes, metadata, deletion, etc.).
  * - Provides CRUD for journeys, deletion of associated data, and status tracking.

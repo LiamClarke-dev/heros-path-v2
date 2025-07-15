@@ -5,7 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View, Text, StyleSheet, Alert } from 'react-native';
 import { RootSiblingParent } from 'react-native-root-siblings';
 import * as SplashScreen from 'expo-splash-screen';
-import MapScreen from './screens/MapScreen';
+import MapScreen from './screens/MapScreen_expo-maps';
 import PastJourneysScreen from './screens/PastJourneysScreen';
 import DiscoveriesScreen from './screens/DiscoveriesScreen';
 import SavedPlacesScreen from './screens/SavedPlacesScreen';

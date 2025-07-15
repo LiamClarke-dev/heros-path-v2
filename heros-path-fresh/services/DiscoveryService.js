@@ -1,5 +1,94 @@
 /**
  * DiscoveryService
+ * DISCOVERY SERVICE (DISCOVERY DATA MANAGEMENT)
+ * ==============================================
+ * 
+ * PURPOSE:
+ * This service manages all CRUD operations for discovered places, handling user interactions
+ * like saving, dismissing, and undoing actions. It maintains data consistency across multiple
+ * Firestore collections and provides the foundation for the discovery workflow. Think of it
+ * as the database manager for all discovery-related data, ensuring that user actions are
+ * properly recorded and synchronized across the app.
+ * 
+ * FUNCTIONALITY:
+ * - Manages discovery records with complete CRUD operations
+ * - Handles place dismissal with undo functionality and state tracking
+ * - Maintains saved places collection with proper metadata
+ * - Provides journey completion status tracking based on discovery interactions
+ * - Ensures data consistency across discoveries, dismissed places, and saved places
+ * - Supports batch operations for efficient bulk updates
+ * - Provides comprehensive discovery statistics and analytics
+ * - Implements proper error handling and logging for all operations
+ * - Manages discovery metadata including timestamps and user context
+ * - Handles data synchronization between different discovery states
+ * 
+ * WHY IT EXISTS:
+ * Hero's Path users interact with discovered places in complex ways - saving interesting
+ * places, dismissing unwanted ones, and changing their minds later. This service centralizes
+ * all discovery data management, ensuring that user actions are properly recorded and that
+ * the app can provide consistent experiences like undo functionality and accurate completion
+ * tracking. It's the foundation that makes the discovery system reliable and user-friendly.
+ * 
+ * KEY FEATURES:
+ * - Complete discovery lifecycle management: create, read, update, delete
+ * - Undo/redo functionality: reverse dismissal and save actions
+ * - State synchronization: consistent data across all discovery collections
+ * - Journey completion tracking: automatic status updates based on user interactions
+ * - Batch operations: efficient handling of multiple discovery updates
+ * - Discovery analytics: comprehensive statistics about user discovery patterns
+ * - Data consistency: proper handling of concurrent operations and edge cases
+ * - Error recovery: graceful handling of database errors and conflicts
+ * 
+ * RELATIONSHIPS:
+ * - Used by DiscoveriesService.js for data persistence and retrieval
+ * - Provides data to DiscoveriesScreen.js for displaying discoveries
+ * - Works with JourneyService.js for journey completion status updates
+ * - Integrates with PingService.js for ping result storage
+ * - May work with DiscoveryConsolidationService.js for data merging
+ * - Connects to Firebase Firestore for all data persistence
+ * - Used by discovery workflows throughout the app
+ * 
+ * REFERENCED BY:
+ * - DiscoveriesService.js (primary consumer for discovery operations)
+ * - DiscoveriesScreen.js (for user interface interactions)
+ * - PingService.js (for storing ping-based discoveries)
+ * - Journey completion workflows (for status tracking)
+ * - Discovery analytics and statistics systems
+ * 
+ * REFERENCES:
+ * - Firebase Firestore (for all data persistence)
+ * - Logger utility (for debugging and operation tracking)
+ * - Firestore batch operations (for efficient bulk updates)
+ * - Server timestamps (for consistent time tracking)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This service is fundamental to Hero's Path's discovery experience. Without
+ * reliable discovery data management, users would lose their saved places, be unable
+ * to undo actions, and experience inconsistent behavior. The data consistency guarantees
+ * are essential for user trust and app reliability. This service enables the entire
+ * discovery workflow that makes Hero's Path valuable to users.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add discovery categorization - organize discoveries by themes or categories
+ * 2. Add discovery tagging - user-defined tags for personal organization
+ * 3. Add discovery notes - let users add personal notes to discoveries
+ * 4. Add discovery sharing - share discoveries with friends or community
+ * 5. Add discovery collections - create custom collections of related discoveries
+ * 6. Add discovery search - search through personal discovery history
+ * 7. Add discovery filtering - advanced filtering by date, type, rating, etc.
+ * 8. Add discovery analytics - insights about discovery patterns and preferences
+ * 9. Add discovery backup - export and backup discovery data
+ * 10. Add discovery sync - synchronize discoveries across multiple devices
+ * 11. Add discovery collaboration - collaborative discovery collections
+ * 12. Add discovery recommendations - suggest discoveries based on history
+ * 13. Add discovery verification - verify and update outdated discovery information
+ * 14. Add discovery ratings - personal rating system for discoveries
+ * 15. Add discovery photos - attach personal photos to discoveries
+ * 16. Add discovery reviews - personal reviews and experiences
+ * 17. Add discovery reminders - location-based reminders for saved places
+ * 18. Add discovery goals - set and track discovery goals and achievements
+ * 19. Add discovery insights - AI-powered insights about discovery behavior
+ * 20. Add discovery social features - like, comment, and discuss discoveries
  *
  * Handles CRUD operations for discoveries, dismissed places, and saved places.
  * - Manages Firestore records and state synchronization.

@@ -1,27 +1,108 @@
 /*
-  SettingsScreen.js
-  ------------------
-  What this page does:
-  - Provides a settings interface for the app, allowing users to update their profile, change language, adjust discovery preferences, and manage app themes and map styles.
-  - Includes developer and migration tools, profile editing, and advanced options for data migration and account management.
-
-  Why this page exists & its importance:
-  - Centralizes all user and app configuration in one place, improving user experience and app maintainability.
-  - Essential for user personalization, troubleshooting, and accessing advanced features.
-
-  References & dependencies:
-  - Uses the theme system (useTheme) for dynamic styling.
-  - Relies on UserContext for profile and authentication.
-  - Integrates with services like DataMigrationService, JourneyService, DiscoveryService, and FirestoreDataViewer.
-  - Uses many UI components and custom section cards/buttons.
-
-  Suggestions for improvement:
-  - The file is very large and handles many responsibilities. Strongly consider splitting into smaller components (e.g., profile section, preferences, developer tools).
-  - Add more inline comments to explain complex logic, especially around migration and developer tools.
-  - Ensure all color and style values use the theme system (avoid hardcoded values).
-  - Improve accessibility for all settings controls and forms.
-  - Consider lazy-loading or hiding advanced/developer sections for regular users.
-*/
+ * SETTINGS SCREEN (COMPREHENSIVE APP CONFIGURATION)
+ * ==================================================
+ * 
+ * PURPOSE:
+ * This is the comprehensive control center for Hero's Path, providing users with extensive
+ * customization options for themes, discovery preferences, account management, and app
+ * behavior. It also includes developer tools and utilities for testing and debugging.
+ * Think of it as the "mission control" where users can customize every aspect of their
+ * Hero's Path experience and where developers can access powerful testing tools.
+ * 
+ * FUNCTIONALITY:
+ * - Theme Management: Switch between Light, Dark, and Adventure UI themes
+ * - Map Style Control: Choose from 5 different map styles (Standard, Satellite, etc.)
+ * - User Profile Management: Edit profile information and account settings
+ * - Discovery Preferences: Access detailed place type preferences
+ * - Language Selection: Choose interface language (internationalization support)
+ * - Account Operations: Sign out, delete account, data management
+ * - Data Migration: Handle app version updates and data structure changes
+ * - Testing Utilities: API connectivity testing, migration testing, data viewing
+ * - Developer Tools: Journey deletion, data purging, debug utilities (dev builds only)
+ * - Performance Monitoring: API testing and connectivity validation
+ * 
+ * WHY IT EXISTS:
+ * Modern mobile apps require extensive customization options to meet diverse user needs.
+ * This screen centralizes all app configuration in one place while also serving as a
+ * development and testing interface. It ensures users can personalize their experience
+ * while providing developers with tools to maintain and debug the complex Hero's Path
+ * systems.
+ * 
+ * KEY FEATURES:
+ * - Complete Theme System: Full control over app appearance and map styling
+ * - User Management: Profile editing, account settings, and authentication controls
+ * - Preference Management: Detailed discovery and interface preferences
+ * - Developer Tools: Comprehensive testing and debugging utilities
+ * - Data Management: Migration, backup, and cleanup utilities
+ * - Performance Testing: API connectivity and migration testing tools
+ * - Modern UI: Card-based layout with consistent styling and theming
+ * - Safety Features: Confirmation dialogs for destructive operations
+ * 
+ * MAJOR SECTIONS:
+ * 1. **Profile Management**: Edit user profile, display name, bio
+ * 2. **Theme Customization**: UI themes and map style selection
+ * 3. **Discovery Settings**: Place type preferences and discovery behavior
+ * 4. **Language Settings**: Interface language selection
+ * 5. **Developer Section**: Testing tools, data management, debug utilities
+ * 6. **Account Actions**: Sign out, reset preferences, account management
+ * 7. **Data Migration**: Handle app updates and data structure changes
+ * 8. **Performance Tools**: API testing and connectivity validation
+ * 
+ * RELATIONSHIPS:
+ * - Uses ThemeContext extensively for theme management and styling
+ * - Integrates with UserContext for profile management and authentication
+ * - Connects to DiscoveriesService for preference management and API testing
+ * - Uses DataMigrationService for handling app version updates
+ * - Works with JourneyService for data management and cleanup
+ * - Navigates to DiscoveryPreferencesScreen for detailed preference management
+ * - Uses multiple utility services for testing and validation
+ * - Integrates with Firebase for data operations and user management
+ * 
+ * REFERENCED BY:
+ * - AppNavigator.js (as part of the Settings stack navigation)
+ * - Users access this for all app customization and configuration
+ * - Developers use this for testing, debugging, and data management
+ * - Support workflows for troubleshooting user issues
+ * 
+ * REFERENCES:
+ * - ThemeContext.js (for theme management and styling)
+ * - UserContext.js (for profile and authentication)
+ * - DiscoveriesService.js (for preferences and API testing)
+ * - DataMigrationService.js (for data migration workflows)
+ * - JourneyService.js (for data management and cleanup)
+ * - FirestoreDataViewer.js (for debugging database content)
+ * - Multiple UI components for consistent interface design
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This screen is essential for user satisfaction and app maintenance.
+ * It provides the customization options that make Hero's Path feel personal and
+ * functional for each user. It also contains critical developer tools that enable
+ * app maintenance, testing, and troubleshooting. Without good settings management,
+ * the app would feel rigid and difficult to maintain.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add settings search - search through settings options
+ * 2. Add settings backup - backup and restore all user settings
+ * 3. Add settings sharing - share configurations between devices
+ * 4. Add settings recommendations - suggest optimal settings for user patterns
+ * 5. Add settings analytics - track which settings are most commonly changed
+ * 6. Add settings validation - ensure settings combinations work well together
+ * 7. Add settings tutorials - guided tours for complex settings
+ * 8. Add settings shortcuts - quick access to frequently changed settings
+ * 9. Add settings automation - automatic settings based on context or time
+ * 10. Add settings presets - pre-configured setting bundles for different use cases
+ * 11. Add settings automation - automatic settings based on context or time
+ * 12. Add accessibility settings - enhanced accessibility and usability options
+ * 13. Add privacy controls - granular privacy settings and data control
+ * 14. Add notification settings - detailed notification preferences
+ * 15. Add performance settings - battery optimization and performance tuning
+ * 16. Add sync settings - control what data syncs between devices
+ * 17. Add export settings - export settings for support or analysis
+ * 18. Add settings versioning - track and revert settings changes
+ * 19. Add smart defaults - AI-powered default settings based on usage patterns
+ * 20. Add settings compliance - ensure settings meet legal and privacy requirements
+ * 21. Add settings integration - integrate with device settings and other apps
+ */
 // screens/SettingsScreen.js
 import React, { useState, useEffect } from 'react';
 import {
