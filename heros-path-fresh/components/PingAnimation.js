@@ -4,6 +4,9 @@ import { View, Animated, StyleSheet, Dimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 
+// Define safe fallback colors for modules constants
+const colors = getFallbackTheme();
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // ANIMATION DISABLED - Scaffolding kept for future implementation
@@ -20,7 +23,8 @@ const PingAnimation = ({
   animationType = 'ripple' // 'ripple', 'pulse', 'radar', 'particles'
 }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
+  // Access current theme if needed (but styles already use fallback colors)
+  const _themeColors = getCurrentThemeColors();
   
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;

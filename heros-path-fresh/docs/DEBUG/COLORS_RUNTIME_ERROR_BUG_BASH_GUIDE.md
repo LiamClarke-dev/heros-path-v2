@@ -260,6 +260,7 @@ if (!themeColors) {
 2. **SavedPlacesScreen.js**: Converted static Colors usage to dynamic theme context
 3. **DiscoveriesScreen.js**: Added fallback and converted 600+ lines of styles to dynamic colors  
 4. **DiscoveryPreferencesScreen.js**: Added theme context and converted styles to dynamic colors
+5. **Hermes Global Fallback**: Added a global fallback for `colors` on `globalThis` in `styles/theme.js` to prevent Hermes runtime errors when `colors` is referenced at module scope before ThemeContext is ready.
 
 ### **How It Was Fixed**
 - Updated imports to use `getFallbackTheme` instead of `Colors`
@@ -267,6 +268,17 @@ if (!themeColors) {
 - Added fallback pattern: `const colors = getCurrentThemeColors() || getFallbackTheme()`
 - Converted static styles to dynamic: `const styles = getStyles(colors)`
 - Used efficient sed commands to convert 600+ color references
+- **Hermes fix:** Inserted the following at the end of `styles/theme.js`:
+
+```js
+if (typeof globalThis !== 'undefined' && !globalThis.colors) {
+  globalThis.colors = getFallbackTheme();
+}
+```
+This ensures that any module-scope reference to `colors` will not crash Hermes, even before React context is ready.
+
+### **Troubleshooting Note**
+If you see `ReferenceError: Property 'colors' doesn't exist, js engine: hermes`, ensure that the global fallback for `colors` is present in `styles/theme.js` as shown above. This is required for compatibility with Hermes and Expo SDK 53+.
 
 ### **Validation**
 - ✅ Syntax check passed on all files
