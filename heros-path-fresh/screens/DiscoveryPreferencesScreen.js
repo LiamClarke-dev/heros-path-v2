@@ -1,93 +1,26 @@
 /*
- * DISCOVERY PREFERENCES SCREEN (USER CUSTOMIZATION INTERFACE)
- * ============================================================
- * 
- * PURPOSE:
- * This screen allows users to customize what types of places they want to discover
- * during their walks. It provides an intuitive interface for selecting place categories,
- * setting minimum rating thresholds, and controlling the discovery algorithm's behavior.
- * Think of it as the "discovery control center" where users personalize their walking
- * experience to match their interests and preferences.
- * 
- * FUNCTIONALITY:
- * - Displays organized categories of place types (Food, Shopping, Entertainment, etc.)
- * - Allows users to enable/disable specific place types for discovery
- * - Provides minimum rating selector to filter out low-quality places
- * - Supports category-level toggles for quick selection of entire groups
- * - Handles preference persistence to AsyncStorage and Firestore
- * - Provides reset functionality to restore default settings
- * - Integrates with the discovery algorithm to personalize results
- * - Uses modern UI components for consistent styling and user experience
- * - Handles loading states and error recovery gracefully
- * 
- * WHY IT EXISTS:
- * Different users have different interests when exploring. Some users love food
- * discoveries, others prefer cultural sites, and many want to avoid certain types
- * altogether. This screen ensures that Hero's Path discovers places that actually
- * interest each individual user, making the discovery system more valuable and
- * personally relevant. Without customization, users would see irrelevant discoveries.
- * 
- * KEY FEATURES:
- * - Organized Categories: Place types grouped logically (Food, Entertainment, etc.)
- * - Individual Control: Toggle specific place types on/off
- * - Quality Filtering: Minimum rating slider to ensure place quality
- * - Category Shortcuts: Quick enable/disable for entire categories
- * - Visual Feedback: Clear indication of enabled/disabled preferences
- * - Reset Options: Easy way to restore default settings
- * - Persistence: Preferences saved across app sessions
- * - Real-time Updates: Changes affect future discoveries immediately
- * 
- * RELATIONSHIPS:
- * - Uses DiscoveriesService.js for preference management and algorithm integration
- * - Connects to PLACE_TYPES constants for available place type definitions
- * - Integrates with the discovery algorithm to filter results
- * - Accessed from SettingsScreen.js as a dedicated preferences modal
- * - Uses shared UI components for consistent styling
- * - Stores preferences in both AsyncStorage and Firestore for persistence
- * 
- * REFERENCED BY:
- * - SettingsScreen.js (primary access point for preference management)
- * - AppNavigator.js (as part of the Settings stack)
- * - Discovery workflows that respect user preferences
- * - Onboarding flows that help users set initial preferences
- * 
- * REFERENCES:
- * - DiscoveriesService.js (for preference persistence and management)
- * - PLACE_TYPES constants (for available place type definitions)
- * - AsyncStorage (for local preference caching)
- * - Firebase Firestore (for cloud preference storage)
- * - UI components (SectionHeader, AppButton, etc.)
- * 
- * IMPORTANCE TO APP:
- * HIGH - This screen is crucial for user satisfaction and discovery relevance.
- * Without the ability to customize preferences, users would receive irrelevant
- * discoveries that don't match their interests, leading to poor user experience
- * and app abandonment. Good preference management significantly improves discovery
- * quality and user engagement with the core app features.
- * 
- * IMPROVEMENT SUGGESTIONS:
- * 1. Add location-based preferences - different preferences for different areas
- * 2. Add time-based preferences - different preferences for different times of day
- * 3. Add mood-based profiles - quickly switch between preference sets
- * 4. Add preference learning - automatically adjust based on user behavior
- * 5. Add preference sharing - share preference sets with friends
- * 6. Add preference recommendations - suggest preferences based on user patterns
- * 7. Add advanced filtering - price range, distance, and accessibility filters
- * 8. Add preference analytics - insights about how preferences affect discoveries
- * 9. Add seasonal preferences - automatically adjust for seasons or holidays
- * 10. Add social preferences - see what friends are interested in discovering
- * 11. Add preference backup - backup and restore preference configurations
- * 12. Add preference import - import preferences from other apps or services
- * 13. Add contextual preferences - adjust based on activity type or companions
- * 14. Add preference validation - ensure preferences lead to meaningful discoveries
- * 15. Add preference insights - show how changes affect discovery potential
- * 16. Add preference templates - pre-configured sets for different user types
- * 17. Add preference conflicts - detect and resolve conflicting settings
- * 18. Add preference optimization - optimize preferences for best discovery results
- * 19. Add preference accessibility - better support for users with disabilities
- * 20. Add preference gamification - achievements and rewards for trying new place types
- */
+  DiscoveryPreferencesScreen.js
+  -----------------------------
+  What this page does:
+  - Lets users customize their discovery preferences (e.g., which types of places to suggest, minimum rating).
+  - Organizes preferences by category and allows resetting to defaults.
 
+  Why this page exists & its importance:
+  - Empowers users to personalize their discovery experience, making suggestions more relevant.
+  - Improves user satisfaction and engagement by respecting preferences.
+
+  References & dependencies:
+  - Uses AsyncStorage for local persistence of preferences.
+  - Relies on the theme system (Colors, Spacing, Typography) for styling.
+  - Uses DiscoveryService for loading and resetting preferences.
+  - Integrates with custom UI components (SectionHeader, AppButton).
+
+  Suggestions for improvement:
+  - Add more comments explaining the preference loading and saving logic.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Consider extracting category and rating selectors into reusable components.
+  - Improve accessibility for switches and touchable elements.
+*/
 // screens/DiscoveryPreferencesScreen.js
 import React, { useState, useEffect } from 'react';
 import { 

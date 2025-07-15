@@ -471,7 +471,6 @@ Users were not seeing location permission prompts when needed, and those with "W
 ## 📋 **Next Development Priorities**
 
 ### **High Priority**
-1. **Route Discovery Algorithm**: Implement SAR (Search Along Route) instead of center point
 2. **Production Cleanup**: Remove debug logs and development utilities
 3. **Error Handling**: Add comprehensive error handling for API failures
 

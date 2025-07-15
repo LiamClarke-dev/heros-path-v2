@@ -103,7 +103,6 @@
  * 20. Add settings compliance - ensure settings meet legal and privacy requirements
  * 21. Add settings integration - integrate with device settings and other apps
  */
-
 // screens/SettingsScreen.js
 import React, { useState, useEffect } from 'react';
 import {
@@ -138,7 +137,7 @@ import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
 // --- New UI Components ---
 const SectionCard = ({ children, style }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <View style={[{
       backgroundColor: colors.surface,
@@ -157,7 +156,7 @@ const SectionCard = ({ children, style }) => {
 
 const SettingsButton = ({ onPress, icon, label, style, color, textColor, disabled }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <TouchableOpacity
       style={[{
@@ -181,7 +180,7 @@ const SettingsButton = ({ onPress, icon, label, style, color, textColor, disable
 
 const SectionHeader = ({ icon, title }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
       {icon && <MaterialIcons name={icon} size={22} color={colors.primary} style={{ marginRight: 8 }} />}
@@ -213,7 +212,7 @@ export default function SettingsScreen() {
   } = useTheme();
   const navigation = useNavigation();
   
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);

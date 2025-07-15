@@ -79,6 +79,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import PingService from '../services/PingService';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 import Logger from '../utils/Logger';
 
 const PingButton = ({ 
@@ -92,7 +94,7 @@ const PingButton = ({
 }) => {
   const { user } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [creditsRemaining, setCreditsRemaining] = useState(50);

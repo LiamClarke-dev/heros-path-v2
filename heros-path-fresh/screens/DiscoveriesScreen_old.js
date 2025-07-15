@@ -45,8 +45,8 @@
  * - Works with DiscoveryService.js for data persistence and management
  * - Integrates with JourneyService.js for journey completion tracking
  * - Uses NewPlacesService.js for AI summaries and enhanced place data
- * - Connects with UserContext.js for authentication and user preferences
- * - Uses ThemeContext.js for styling and theming
+ * - Connects with UserContext for authentication and user preferences
+ * - Uses ThemeContext for styling and theming
  * - Works with useSuggestedPlaces hook for automatic place suggestions
  * - Integrates with various UI components for consistent user experience
  * 
@@ -111,15 +111,13 @@ import {
   Linking,
   Platform,
   Alert,
-  Animated,
-  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
 import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
-// AI summaries functionality integrated into discovery process
+import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
@@ -595,15 +593,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
     // Load dismissal preference
     AsyncStorage.getItem('@dismissal_preference')
       .then(pref => pref && setDismissalPreference(pref));
-
-    // Check if we should show onboarding
-    AsyncStorage.getItem('@discovery_onboarding_shown')
-      .then(shown => {
-        if (!shown && user) {
-          setShowOnboarding(true);
-        }
-      });
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (!selectedRoute?.coords || !user) return;
@@ -1149,12 +1139,14 @@ export default function DiscoveriesScreen({ navigation, route }) {
     }
   };
 
-  const showAIHelp = () => {
-    Alert.alert(
-      'AI Summaries',
-      'AI-powered summaries provide enhanced information about places you discover, including interesting facts, historical context, and local insights to help you decide which places to save.',
-      [{ text: 'Got it', style: 'default' }]
-    );
+  const testAISummariesFeature = async () => {
+    try {
+      const result = await testAISummaries();
+      Alert.alert('Place Summaries Test Complete!', `Chicago: ${result.chicago ? 'Available' : 'Not available'}\nUser Place: ${result.userPlace ? 'Available' : 'Not available'}`);
+    } catch (error) {
+      Logger.error('DISCOVERIES_SCREEN', 'Place Summaries test failed', error);
+      Alert.alert('Place Summaries test failed', error.message);
+    }
   };
 
   if (!user) {
@@ -1354,47 +1346,40 @@ export default function DiscoveriesScreen({ navigation, route }) {
     filterType: filterType || 'all'
   });
 
-  // Render swipe actions for left (save) and right (dismiss)
-  const renderLeftActions = (place, progress, dragX) => {
-    const trans = dragX.interpolate({
-      inputRange: [0, 50, 100, 101],
-      outputRange: [-20, 0, 0, 1],
-    });
-    return (
-      <View style={styles.action}>
-        <Animated.View style={[styles.save, { transform: [{ translateX: trans }] }]}>
-          <MaterialIcons name="favorite" size={24} color={colors.background} />
-          <Text style={[styles.actionText, { color: colors.background }]}>Save</Text>
-        </Animated.View>
-      </View>
-    );
-  };
-
-  const renderRightActions = (place, progress, dragX) => {
-    const trans = dragX.interpolate({
-      inputRange: [-101, -100, -50, 0],
-      outputRange: [1, 0, 0, 20],
-    });
-    return (
-      <View style={styles.action}>
-        <Animated.View style={[styles.dismiss, { transform: [{ translateX: trans }] }]}>
-          <MaterialIcons name="close" size={24} color={colors.background} />
-          <Text style={[styles.actionText, { color: colors.background }]}>Dismiss</Text>
-        </Animated.View>
-      </View>
-    );
-  };
-
-  // Enhanced suggestion card with swipe actions and AI summaries
+  // Render a single suggestion card
   const renderSuggestion = ({ item }) => (
-    <Swipeable
-      renderLeftActions={(progress, dragX) => renderLeftActions(item, progress, dragX)}
-      renderRightActions={(progress, dragX) => renderRightActions(item, progress, dragX)}
-      onSwipeableLeftOpen={() => handleSave(item)}
-      onSwipeableRightOpen={() => handleDismiss(item)}
-    >
-      <TouchableOpacity
-        style={[styles.card, { backgroundColor: colors.surface }]}
+    <Card style={{ marginBottom: 8 }}>
+      <ListItem
+        title={item.name}
+        subtitle={item.formatted_address}
+        left={item.photos && item.photos[0] ? (
+          <Image 
+            source={{ 
+              uri: item.photos[0].photo_reference 
+                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=YOUR_API_KEY` 
+                : undefined 
+            }} 
+            style={{ width: 48, height: 48, borderRadius: 8 }} 
+          />
+        ) : null}
+        right={
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <AppButton
+              title="Save"
+              variant="primary"
+              onPress={() => handleSave(item)}
+              style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 0 }}
+              textStyle={{ fontSize: 14 }}
+            />
+            <AppButton
+              title="Dismiss"
+              variant="danger"
+              onPress={() => dismissPlace(item, 'temporary')}
+              style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 8 }}
+              textStyle={{ fontSize: 14 }}
+            />
+          </View>
+        }
         onPress={() => {
           const url =
             `https://www.google.com/maps/search/?api=1` +
@@ -1402,141 +1387,13 @@ export default function DiscoveriesScreen({ navigation, route }) {
             `&query_place_id=${item.placeId}`;
           Linking.openURL(url);
         }}
-      >
-        {item.photos && item.photos[0] ? (
-          <Image 
-            source={{ 
-              uri: item.photos[0].photo_reference 
-                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=YOUR_API_KEY` 
-                : undefined 
-            }} 
-            style={[styles.thumb, { backgroundColor: colors.surface }]} 
-          />
-        ) : (
-          <View style={[styles.thumb, { backgroundColor: colors.surface }]}>
-            <MaterialIcons name="place" size={40} color={colors.textSecondary} />
-          </View>
-        )}
-        
-        <View style={styles.info}>
-          <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
-          
-          {item.types && item.types.length > 0 && (
-            <Text style={[styles.combinedTypes, { color: colors.primary }]}>
-              {item.types.slice(0, 3).join(' • ')}
-            </Text>
-          )}
-          
-          {item.formatted_address && (
-            <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
-              {item.formatted_address}
-            </Text>
-          )}
-          
-          {item.rating && (
-            <Text style={[styles.meta, { color: colors.textSecondary }]}>
-              ⭐ {item.rating.toFixed(1)}
-            </Text>
-          )}
-
-          {/* AI Summary Section */}
-          {aiSummaries[item.placeId] && !aiSummaries[item.placeId].noSummary && !aiSummaries[item.placeId].error ? (
-            <View style={[styles.summaryContainer, { backgroundColor: colors.primary + '10' }]}>
-              <Text style={[styles.summaryTitle, { color: colors.primary }]}>AI Summary</Text>
-              <Text style={[styles.summaryText, { color: colors.text }]}>
-                {aiSummaries[item.placeId].historical || 
-                 aiSummaries[item.placeId].cultural || 
-                 aiSummaries[item.placeId].general || 
-                 'Enhanced information available'}
-              </Text>
-              {aiSummaries[item.placeId].source && (
-                <Text style={[styles.summaryTypeIndicator, { color: colors.textSecondary }]}>
-                  Source: {aiSummaries[item.placeId].source}
-                </Text>
-              )}
-            </View>
-          ) : loadingSummaries[item.placeId] ? (
-            <View style={styles.summaryLoading}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.summaryLoadingText, { color: colors.textSecondary }]}>
-                Loading AI summary...
-              </Text>
-            </View>
-          ) : !aiSummaries[item.placeId] ? (
-            <TouchableOpacity
-              style={[styles.summaryButton, { backgroundColor: colors.primary + '10' }]}
-              onPress={() => fetchAiSummary(item.placeId)}
-            >
-              <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
-              <Text style={[styles.summaryButtonText, { color: colors.primary }]}>
-                Get AI Summary
-              </Text>
-            </TouchableOpacity>
-          ) : aiSummaries[item.placeId].error ? (
-            <TouchableOpacity
-              style={[styles.retryButton, { backgroundColor: colors.primary + '10' }]}
-              onPress={() => {
-                setAiSummaries(prev => ({ ...prev, [item.placeId]: undefined }));
-                fetchAiSummary(item.placeId);
-              }}
-            >
-              <Text style={[styles.retryButtonText, { color: colors.primary }]}>
-                Retry AI Summary
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-          
-          <View style={styles.disclosureContainer}>
-            <Text style={[styles.disclosureText, { color: colors.textSecondary }]}>
-              Swipe left to save, right to dismiss
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Swipeable>
+      />
+    </Card>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Enhanced Header with Stats and Management */}
-      <View style={[styles.headerRow, { backgroundColor: colors.background, borderBottomColor: colors.tabInactive + '20' }]}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Discoveries</Text>
-          <View style={styles.headerStats}>
-            <Text style={[styles.headerStatText, { color: colors.textSecondary }]}>
-              {filteredSuggestions.length} to review
-            </Text>
-            <Text style={[styles.headerStatText, { color: colors.textSecondary }]}>
-              {savedPlaces.length} saved
-            </Text>
-            <Text style={[styles.headerStatText, { color: colors.textSecondary }]}>
-              {dismissedPlaces.length} dismissed
-            </Text>
-          </View>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={[styles.helpButton, { backgroundColor: colors.primary + '10' }]}
-            onPress={showAIHelp}
-          >
-            <MaterialIcons name="help-outline" size={20} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.gearButton, { backgroundColor: colors.primary + '10' }]}
-            onPress={() => setShowSettingsModal(true)}
-          >
-            <MaterialIcons name="settings" size={20} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.manageButton, { backgroundColor: colors.primary }]}
-            onPress={() => setShowManageHistory(true)}
-          >
-            <Text style={[styles.manageButtonText, { color: colors.background }]}>
-              Manage
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <SectionHeader title="Discoveries" />
       
       {/* Filter Controls */}
       <View style={[styles.filterContainer, { borderBottomColor: colors.tabInactive + '20' }]}>
@@ -1666,293 +1523,6 @@ export default function DiscoveriesScreen({ navigation, route }) {
           renderItem={renderSuggestion}
         />
       )}
-
-      {/* Onboarding Modal */}
-      <Modal
-        visible={showOnboarding}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowOnboarding(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.onboardingModal, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.onboardingTitle, { color: colors.text }]}>
-              Welcome to Discoveries! 🗺️
-            </Text>
-            <View style={styles.onboardingContent}>
-              <View style={styles.onboardingItem}>
-                <MaterialIcons name="swipe" size={24} color={colors.primary} />
-                <Text style={[styles.onboardingText, { color: colors.text }]}>
-                  Swipe left to save places you're interested in
-                </Text>
-              </View>
-              <View style={styles.onboardingItem}>
-                <MaterialIcons name="close" size={24} color={colors.primary} />
-                <Text style={[styles.onboardingText, { color: colors.text }]}>
-                  Swipe right to dismiss places you're not interested in
-                </Text>
-              </View>
-              <View style={styles.onboardingItem}>
-                <MaterialIcons name="auto-awesome" size={24} color={colors.primary} />
-                <Text style={[styles.onboardingText, { color: colors.text }]}>
-                  Tap "Get AI Summary" for enhanced place information
-                </Text>
-              </View>
-              <View style={styles.onboardingItem}>
-                <MaterialIcons name="history" size={24} color={colors.primary} />
-                <Text style={[styles.onboardingText, { color: colors.text }]}>
-                  Use "Manage" to review and restore saved or dismissed places
-                </Text>
-              </View>
-            </View>
-            <View style={styles.onboardingButtons}>
-              <TouchableOpacity
-                style={[styles.onboardingButton, { backgroundColor: colors.primary }]}
-                onPress={completeOnboarding}
-              >
-                <Text style={[styles.onboardingButtonText, { color: colors.background }]}>
-                  Got it!
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Dismiss Options Modal */}
-      <Modal
-        visible={showDismissModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowDismissModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.dismissModal, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.dismissModalTitle, { color: colors.text }]}>
-              How long should we hide this place?
-            </Text>
-            <View style={styles.dismissOptions}>
-              <TouchableOpacity
-                style={styles.dismissOption}
-                onPress={() => handleDismissModalAction('30days')}
-              >
-                <MaterialIcons name="schedule" size={24} color={colors.primary} />
-                <Text style={[styles.dismissOptionText, { color: colors.text }]}>
-                  Hide for 30 days
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.dismissOption}
-                onPress={() => handleDismissModalAction('forever')}
-              >
-                <MaterialIcons name="visibility-off" size={24} color={colors.primary} />
-                <Text style={[styles.dismissOptionText, { color: colors.text }]}>
-                  Hide forever
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.rememberChoiceContainer}>
-              <TouchableOpacity
-                style={[styles.checkbox, { borderColor: colors.primary }]}
-                onPress={() => setRememberChoice(!rememberChoice)}
-              >
-                {rememberChoice && (
-                  <MaterialIcons name="check" size={16} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-              <Text style={[styles.rememberChoiceText, { color: colors.text }]}>
-                Remember my choice for future dismissals
-              </Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Settings Modal */}
-      <Modal
-        visible={showSettingsModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowSettingsModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.settingsModal, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.settingsModalTitle, { color: colors.text }]}>
-              Discovery Settings
-            </Text>
-            <View style={styles.settingsContent}>
-              <Text style={[styles.settingsSectionTitle, { color: colors.text }]}>
-                Default Dismissal Behavior
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.settingsOption,
-                  dismissalPreference === 'ask' && styles.settingsOptionActive,
-                  { backgroundColor: dismissalPreference === 'ask' ? colors.primary + '20' : colors.surface }
-                ]}
-                onPress={() => setDismissalPreference('ask')}
-              >
-                <MaterialIcons 
-                  name={dismissalPreference === 'ask' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                  size={20} 
-                  color={colors.primary} 
-                />
-                <Text style={[styles.settingsOptionText, { color: colors.text }]}>
-                  Always ask (recommended)
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.settingsOption,
-                  dismissalPreference === '30days' && styles.settingsOptionActive,
-                  { backgroundColor: dismissalPreference === '30days' ? colors.primary + '20' : colors.surface }
-                ]}
-                onPress={() => setDismissalPreference('30days')}
-              >
-                <MaterialIcons 
-                  name={dismissalPreference === '30days' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                  size={20} 
-                  color={colors.primary} 
-                />
-                <Text style={[styles.settingsOptionText, { color: colors.text }]}>
-                  Hide for 30 days
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.settingsOption,
-                  dismissalPreference === 'forever' && styles.settingsOptionActive,
-                  { backgroundColor: dismissalPreference === 'forever' ? colors.primary + '20' : colors.surface }
-                ]}
-                onPress={() => setDismissalPreference('forever')}
-              >
-                <MaterialIcons 
-                  name={dismissalPreference === 'forever' ? 'radio-button-checked' : 'radio-button-unchecked'} 
-                  size={20} 
-                  color={colors.primary} 
-                />
-                <Text style={[styles.settingsOptionText, { color: colors.text }]}>
-                  Hide forever
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={[styles.settingsButton, { backgroundColor: colors.primary }]}
-              onPress={() => {
-                AsyncStorage.setItem('@dismissal_preference', dismissalPreference);
-                setShowSettingsModal(false);
-              }}
-            >
-              <Text style={[styles.settingsButtonText, { color: colors.background }]}>
-                Save Settings
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Manage History Modal */}
-      <Modal
-        visible={showManageHistory}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowManageHistory(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.manageHistoryModal, { backgroundColor: colors.surface }]}>
-            <View style={[styles.manageHistoryHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.manageHistoryTitle, { color: colors.text }]}>
-                Manage Discovery History
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowManageHistory(false)}
-              >
-                <MaterialIcons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.manageHistoryContent}>
-              {/* Saved Places Section */}
-              <View style={[styles.manageHistorySectionHeader, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.manageHistorySectionTitle, { color: colors.text }]}>
-                  Saved Places ({savedPlaces.length})
-                </Text>
-                <TouchableOpacity onPress={() => setDiscoveredSectionCollapsed(!discoveredSectionCollapsed)}>
-                  <MaterialIcons 
-                    name={discoveredSectionCollapsed ? 'expand-more' : 'expand-less'} 
-                    size={24} 
-                    color={colors.text} 
-                  />
-                </TouchableOpacity>
-              </View>
-              {!discoveredSectionCollapsed && savedPlaces.map((place, index) => (
-                <View key={place.id || place.placeId || index} style={[styles.manageHistoryItem, { backgroundColor: colors.surface }]}>
-                  <View style={styles.manageHistoryItemInfo}>
-                    <Text style={[styles.manageHistoryItemName, { color: colors.text }]}>
-                      {place.placeData?.name || place.placeName || 'Unknown Place'}
-                    </Text>
-                    <Text style={[styles.manageHistoryItemCategory, { color: colors.textSecondary }]}>
-                      {place.placeData?.types?.[0] || place.placeType || 'Unknown type'}
-                    </Text>
-                    <Text style={[styles.manageHistoryItemTime, { color: colors.textSecondary }]}>
-                      Saved {formatTimeAgo(place.savedAt || place.discoveredAt)}
-                    </Text>
-                  </View>
-                  <View style={styles.manageHistoryItemActions}>
-                    <TouchableOpacity
-                      style={[styles.dismissButton, { backgroundColor: colors.danger }]}
-                      onPress={() => handleUndoSave(place)}
-                    >
-                      <Text style={[styles.dismissButtonText, { color: colors.background }]}>
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-
-              {/* Dismissed Places Section */}
-              <View style={[styles.manageHistorySectionHeader, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.manageHistorySectionTitle, { color: colors.text }]}>
-                  Dismissed Places ({dismissedPlaces.length})
-                </Text>
-                <TouchableOpacity onPress={() => setDismissedSectionCollapsed(!dismissedSectionCollapsed)}>
-                  <MaterialIcons 
-                    name={dismissedSectionCollapsed ? 'expand-more' : 'expand-less'} 
-                    size={24} 
-                    color={colors.text} 
-                  />
-                </TouchableOpacity>
-              </View>
-              {!dismissedSectionCollapsed && dismissedPlaces.map((place, index) => (
-                <View key={place.id || place.placeId || index} style={[styles.manageHistoryItem, { backgroundColor: colors.surface }]}>
-                  <View style={styles.manageHistoryItemInfo}>
-                    <Text style={[styles.manageHistoryItemName, { color: colors.text }]}>
-                      {place.placeData?.name || place.placeName || 'Unknown Place'}
-                    </Text>
-                    <Text style={[styles.manageHistoryItemCategory, { color: colors.textSecondary }]}>
-                      {place.placeData?.types?.[0] || place.placeType || 'Unknown type'}
-                    </Text>
-                    <Text style={[styles.manageHistoryItemTime, { color: colors.textSecondary }]}>
-                      Dismissed {formatTimeAgo(place.dismissedAt)} • {place.dismissedForever ? 'Forever' : '30 days'}
-                    </Text>
-                  </View>
-                  <View style={styles.manageHistoryItemActions}>
-                    <TouchableOpacity
-                      style={[styles.restoreButton, { backgroundColor: colors.primary }]}
-                      onPress={() => handleUndoDismiss(place)}
-                    >
-                      <Text style={[styles.restoreButtonText, { color: colors.background }]}>
-                        Restore
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1960,6 +1530,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
   // Enhanced Header Styles
   headerRow: {
@@ -1967,13 +1538,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.md,
+    backgroundColor: Colors.background,
     borderBottomWidth: 1,
+    borderBottomColor: Colors.tabInactive + '20',
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
     ...Typography.h2,
+    color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
   headerStats: {
@@ -1982,6 +1556,7 @@ const styles = StyleSheet.create({
   },
   headerStatText: {
     ...Typography.caption,
+    color: Colors.tabInactive,
     fontSize: 12,
   },
   headerRight: {
@@ -1992,18 +1567,16 @@ const styles = StyleSheet.create({
   gearButton: {
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
-  },
-  helpButton: {
-    padding: Spacing.sm,
-    borderRadius: Layout.borderRadius,
-    marginRight: Spacing.xs,
+    backgroundColor: Colors.primary + '10',
   },
   manageButton: {
     padding: Spacing.sm,
+    backgroundColor: Colors.primary,
     borderRadius: Layout.borderRadius,
   },
   manageButtonText: {
     ...Typography.body,
+    color: Colors.background,
     fontWeight: '600',
   },
   dropdownWrapper: {
@@ -2012,11 +1585,14 @@ const styles = StyleSheet.create({
   },
   pickerToggle: {
     padding: Spacing.sm,
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     borderWidth: 1,
+    borderColor: Colors.tabInactive,
   },
   pickerToggleText: {
     ...Typography.body,
+    color: Colors.text,
   },
   modalBackdrop: {
     flex: 1,
@@ -2025,6 +1601,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   modalContent: {
+    backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     padding: Spacing.md,
     maxHeight: 300, // Limit height to prevent overflow
@@ -2037,6 +1614,7 @@ const styles = StyleSheet.create({
   },
   modalItemText: {
     ...Typography.body,
+    color: Colors.text,
   },
   tabBarContainer: { backgroundColor: Colors.background },
   tabBar: {
@@ -2062,6 +1640,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   card: {
     flexDirection: 'row',
+    backgroundColor: Colors.background,
     padding: Spacing.md,
     margin: Spacing.sm,
     borderRadius: Layout.borderRadius,
@@ -2101,27 +1680,11 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.sm,
     borderRadius: Layout.borderRadius,
   },
-  save: { 
-    backgroundColor: '#4CAF50', // Green for save
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    height: '100%',
-    borderRadius: Layout.borderRadius,
-  },
-  dismiss: { 
-    backgroundColor: '#F44336', // Red for dismiss
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    height: '100%',
-    borderRadius: Layout.borderRadius,
-  },
+  save: { backgroundColor: Colors.swipeSave },
+  dismiss: { backgroundColor: Colors.swipeDismiss },
   actionText: {
     ...Typography.body,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    marginTop: Spacing.xs,
+    color: Colors.background,
   },
   summaryContainer: {
     backgroundColor: Colors.primary + '10',

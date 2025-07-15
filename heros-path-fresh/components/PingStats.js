@@ -80,12 +80,13 @@ import { Ionicons } from '@expo/vector-icons';
 import PingService from '../services/PingService';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { getFallbackTheme } from '../styles/theme';
 import Logger from '../utils/Logger';
 
 const PingStats = ({ style, onPingUsed }) => {
   const { user } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(false);

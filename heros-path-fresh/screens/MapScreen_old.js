@@ -37,7 +37,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { MapView, Camera, Marker, Polyline } from 'expo-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -86,70 +86,6 @@ function getDirection([prev, curr]) {
   } else {
     return dy > 0 ? SPRITE_STATES.WALK_DOWN : SPRITE_STATES.WALK_UP;
   }
-}
-
-// Helper to build polylines for the new API
-function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors }) {
-  const polylines = [];
-  // Saved routes
-  if (savedRoutes && savedRoutes.length > 0) {
-    for (const journey of savedRoutes) {
-      polylines.push({
-        id: journey.id,
-        coordinates: journey.route,
-        color: colors.routeLine,
-        width: 3,
-        opacity: 0.6,
-      });
-    }
-  }
-  // Preview route
-  if ((previewRoadCoords && previewRoadCoords.length > 0) || (previewRoute && previewRoute.length > 0)) {
-    polylines.push({
-      id: 'preview',
-      coordinates: previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute,
-      color: colors.routePreview,
-      width: 4,
-    });
-  }
-  // Current path
-  if (pathToRender && pathToRender.length > 0) {
-    polylines.push({
-      id: 'current',
-      coordinates: pathToRender,
-      color: colors.routeLine,
-      width: 6,
-    });
-  }
-  return polylines;
-}
-
-// Helper to build markers for the new API
-function buildMarkers({ currentPosition, spriteSource, showSavedPlaces, savedPlaces, colors }) {
-  const markers = [];
-  // Current position marker (Link sprite)
-  if (currentPosition) {
-    markers.push({
-      id: 'current',
-      coordinates: currentPosition,
-      anchor: { x: 0.5, y: 0.9 },
-      icon: Image.resolveAssetSource(spriteSource).uri,
-    });
-  }
-  // Saved places markers
-  if (showSavedPlaces && savedPlaces && savedPlaces.length > 0) {
-    for (const place of savedPlaces) {
-      markers.push({
-        id: place.id,
-        coordinates: { latitude: place.latitude, longitude: place.longitude },
-        title: place.name,
-        description: place.vicinity,
-        // Optionally, you can set a custom icon here if you have one, otherwise omit for default marker
-        // icon: require('../assets/icon.png'),
-      });
-    }
-  }
-  return markers;
 }
 
 export default function MapScreen({ navigation, route }) {
@@ -330,18 +266,18 @@ export default function MapScreen({ navigation, route }) {
       };
 
       // Save journey
-      const result = await JourneyService.createJourney(user.uid, journeyData);
+      const result = await JourneyService.saveJourney(journeyData);
       
       if (result.success) {
         Logger.info('MAP_SCREEN', 'Journey saved successfully', { 
-          journeyId: result.journey.id 
+          journeyId: result.journeyId 
         });
 
         // Trigger discovery process
         try {
           await DiscoveryService.processJourneyForDiscoveries(
             user.uid, 
-            result.journey.id, 
+            result.journeyId, 
             journeyData.route
           );
           Logger.info('MAP_SCREEN', 'Discovery process completed');
@@ -512,10 +448,6 @@ export default function MapScreen({ navigation, route }) {
     );
   }
 
-  // Build polylines and markers for the new API
-  const polylines = buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors });
-  const markers = buildMarkers({ currentPosition, spriteSource, showSavedPlaces, savedPlaces, colors });
-
   return (
     <View style={styles.container}>
       <SectionHeader title="Map" />
@@ -525,7 +457,9 @@ export default function MapScreen({ navigation, route }) {
           onPress={showBackgroundPermissionWarning}
         >
           <MaterialIcons name="warning" size={20} color={colors.buttonText} />
-          <Text style={[styles.permissionWarningText, { color: colors.buttonText }]}>Hero's Path Does Not Have 'Always' Allow Location Access (Tap to resolve)</Text>
+          <Text style={[styles.permissionWarningText, { color: colors.buttonText }]}>
+            Hero's Path Does Not Have 'Always' Allow Location Access (Tap to resolve)
+          </Text>
           <MaterialIcons name="chevron-right" size={20} color={colors.buttonText} />
         </TouchableOpacity>
       )}
@@ -534,42 +468,40 @@ export default function MapScreen({ navigation, route }) {
         <MapView
           ref={mapRef}
           style={styles.map}
-          initialRegion={{
-            latitude: currentPosition.latitude,
-            longitude: currentPosition.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
+          initialCamera={{
+            center: {
+              latitude: currentPosition.latitude,
+              longitude: currentPosition.longitude,
+            },
+            zoom: 15,
           }}
-          onError={handleMapError}
-          showsUserLocation={true}
-          followsUserLocation={true}
         >
-          {markers.map((marker, index) => (
-            <Marker
-              key={index}
-              coordinate={{
-                latitude: marker.coordinate.latitude,
-                longitude: marker.coordinate.longitude,
-              }}
-              title={marker.title}
-              description={marker.description}
-            />
-          ))}
-          {polylines.map((polyline, index) => (
+          {renderSavedRoutes()}
+          {(previewRoadCoords.length > 0 || previewRoute) && (
             <Polyline
-              key={index}
-              coordinates={polyline.coordinates}
-              strokeColor={polyline.strokeColor}
-              strokeWidth={polyline.strokeWidth}
+              coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
+              color={colors.routePreview}
+              width={4}
             />
-          ))}
+          )}
+          {pathToRender.length > 0 && (
+            <Polyline 
+              coordinates={pathToRender} 
+              color={colors.routeLine} 
+              width={6} 
+            />
+          )}
+          <Marker coordinate={currentPosition} anchor={{ x: 0.5, y: 0.9 }}>
+            <Image source={spriteSource} style={{ width: 16, height: 32 }} resizeMode="contain" />
+          </Marker>
+          {renderSavedPlaces()}
         </MapView>
       ) : (
-        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
+        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
           <Text style={[styles.loadingText, { color: colors.text }]}>Loading your location…</Text>
         </View>
       )}
-
+      
       {/* Ping Animation Overlay */}
       {showPingAnimation && currentPosition && (
         <PingAnimation
@@ -579,7 +511,7 @@ export default function MapScreen({ navigation, route }) {
           animationType="particle"
         />
       )}
-
+      
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
         {/* Discovery preferences button */}
@@ -589,6 +521,7 @@ export default function MapScreen({ navigation, route }) {
         >
           <MaterialIcons name="tune" size={24} color={colors.primary} />
         </TouchableOpacity>
+        
         {/* Locate button */}
         <TouchableOpacity 
           style={[
@@ -605,6 +538,7 @@ export default function MapScreen({ navigation, route }) {
             color={isLocating ? colors.textSecondary : colors.primary} 
           />
         </TouchableOpacity>
+        
         {/* Toggle saved places button */}
         <TouchableOpacity 
           style={[
@@ -632,10 +566,12 @@ export default function MapScreen({ navigation, route }) {
             currentLocation={currentPosition}
             journeyId={currentJourneyId}
             onPingStart={() => {
-              // Animation scaffolding
+              // Animation disabled - keeping scaffolding for future implementation
+              // setShowPingAnimation(true);
             }}
             onPingSuccess={(result) => {
               Logger.debug('Ping successful:', result);
+              // Trigger stats refresh
               setPingUsed(prev => prev + 1);
             }}
             onPingError={(error) => {
@@ -646,7 +582,7 @@ export default function MapScreen({ navigation, route }) {
           />
         </View>
       )}
-
+      
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
           style={[
@@ -655,7 +591,9 @@ export default function MapScreen({ navigation, route }) {
           ]}
           onPress={toggleTracking}
         >
-          <Text style={[styles.trackButtonText, { color: colors.buttonText }]}> {tracking ? 'Stop & Save Walk' : 'Start Walk'} </Text>
+          <Text style={[styles.trackButtonText, { color: colors.buttonText }]}>
+            {tracking ? 'Stop & Save Walk' : 'Start Walk'}
+          </Text>
         </TouchableOpacity>
       </View>
 

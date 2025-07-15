@@ -67,10 +67,11 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getFallbackTheme } from '../../styles/theme';
 
 export default function Card({ children, style, ...props }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <View
       style={[
