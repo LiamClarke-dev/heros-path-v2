@@ -1,5 +1,21 @@
 # Hero's Path App - Development Status
 
+## 15 January 2025 — Critical Platform API Key Bug Fixed
+
+### 🔧 **CRITICAL FIX APPLIED** 
+**Platform-Specific API Key Selection Bug Fixed** 🚨
+- **Issue**: Flawed API key logic `GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID` always preferred iOS key regardless of platform
+- **Impact**: 
+  - Android devices would use wrong iOS API keys, causing API failures
+  - Undefined keys would result in "key=undefined" in API URLs
+  - All photo URLs and API requests could fail on Android or when keys undefined
+- **Files Fixed (6 total)**:
+  - **Screens (3)**: `DiscoveriesScreen.js`, `SavedPlacesScreen.js`, `DiscoveriesScreen_old.js`
+  - **Services (3)**: `NewPlacesService.js`, `EnhancedPlacesService.js`, `DiscoveriesService.js`
+- **Solution**: Proper platform-specific API key selection using `Platform.OS`
+- **Implementation**: Added `getPlacesAPIKey()` helpers with fallback handling
+- **Result**: ✅ API keys now correctly selected per platform with proper error handling
+
 ## 14 July 2025 — Service Layer Documentation & Audit
 
 - Service documentation complete: All files in `/services/` now have top-of-file JSDoc comments describing their role and interactions.

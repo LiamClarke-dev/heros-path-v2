@@ -5,13 +5,25 @@
 ### 🔧 **CRITICAL FIXES: Production Readiness Issues Resolved**
 
 #### **API Key Configuration Fixed** 🚨 **CRITICAL**
-- **Issue**: Hardcoded "YOUR_API_KEY" placeholders preventing photo URLs from working
-- **Impact**: All place discovery photos would fail in production, breaking key user experience
-- **Files Affected**: `DiscoveriesScreen.js`, `SavedPlacesScreen.js`, `DiscoveriesScreen_old.js`
-- **Solution**: Replaced placeholders with proper environment variable references
-- **Code Change**: `key=YOUR_API_KEY` → `key=${GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID}`
-- **Added**: Proper imports for API keys in all affected screen files
-- **Result**: ✅ Photo URLs now use proper API keys from environment variables
+- **Issue 1**: Hardcoded "YOUR_API_KEY" placeholders preventing photo URLs from working
+- **Issue 2**: Flawed API key selection logic `GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID` causing platform issues
+- **Impact**: 
+  - All place discovery photos would fail in production
+  - Android devices would use iOS API keys when both are defined
+  - API requests would contain "key=undefined" when keys are missing
+- **Files Affected**: 
+  - **Screens**: `DiscoveriesScreen.js`, `SavedPlacesScreen.js`, `DiscoveriesScreen_old.js`
+  - **Services**: `NewPlacesService.js`, `EnhancedPlacesService.js`, `DiscoveriesService.js`
+- **Solution**: 
+  - Replaced placeholders with proper platform-specific API key selection
+  - Implemented `Platform.OS` based key selection logic
+  - Added proper fallback handling for undefined keys
+- **Code Changes**: 
+  - `key=YOUR_API_KEY` → `key=${getPlacesAPIKey()}`
+  - Added `getPlacesAPIKey()` helper using `Platform.OS === 'ios' ? GOOGLE_MAPS_API_KEY_IOS : GOOGLE_MAPS_API_KEY_ANDROID`
+  - Added fallback to empty string to prevent "key=undefined" in URLs
+- **Added**: Platform imports and helper functions in all affected files
+- **Result**: ✅ Platform-specific API keys now work correctly with proper fallback handling
 
 ### ✅ **COMPREHENSIVE CODE REVIEW COMPLETED**
 

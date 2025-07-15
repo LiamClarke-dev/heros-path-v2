@@ -148,6 +148,12 @@ import SectionHeader from '../components/ui/SectionHeader';
 const LANGUAGE_KEY = '@user_language';
 const ROUTES_KEY   = '@saved_routes';
 
+// Helper function to get platform-specific API key
+const getPlacesAPIKey = () => {
+  const key = Platform.OS === 'ios' ? GOOGLE_MAPS_API_KEY_IOS : GOOGLE_MAPS_API_KEY_ANDROID;
+  return key || ''; // Return empty string if undefined to avoid "key=undefined" in URL
+};
+
 // Remove dummy data
 // const DUMMY_DISMISSED_PLACES = [...];
 // const DUMMY_DISCOVERED_PLACES = [...];
@@ -1410,7 +1416,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
           <Image 
             source={{ 
               uri: item.photos[0].photo_reference 
-                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID}` 
+                ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${getPlacesAPIKey()}` 
                 : undefined 
             }} 
             style={[styles.thumb, { backgroundColor: colors.surface }]} 

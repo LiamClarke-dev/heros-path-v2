@@ -98,6 +98,7 @@
  * - May interact with DiscoveryConsolidationService to merge SAR and cached discoveries.
  */
 // services/DiscoveriesService.js
+import { Platform } from 'react-native';
 import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS, GOOGLE_ROADS_API_KEY } from '../config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
@@ -118,7 +119,8 @@ const DISCOVERY_PREFERENCES_KEY = '@discovery_preferences';
 
 // Use the same API key for Places API as Maps API (they can be the same key)
 const getPlacesAPIKey = () => {
-  return GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+  const key = Platform.OS === 'ios' ? GOOGLE_MAPS_API_KEY_IOS : GOOGLE_MAPS_API_KEY_ANDROID;
+  return key || ''; // Return empty string if undefined to avoid API failures
 };
 
 /**
