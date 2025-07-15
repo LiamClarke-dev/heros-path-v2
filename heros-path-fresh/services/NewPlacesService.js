@@ -99,6 +99,7 @@
 // Migration from Legacy API to new standardized API
 // Updated to align with latest Google Places API documentation (2025-07-12)
 
+import { Platform } from 'react-native';
 import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from '../config';
 import Logger from '../utils/Logger';
 
@@ -107,7 +108,8 @@ const LEGACY_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
 // Use platform-specific API key for Places API
 const getPlacesAPIKey = () => {
-  return GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+  const key = Platform.OS === 'ios' ? GOOGLE_MAPS_API_KEY_IOS : GOOGLE_MAPS_API_KEY_ANDROID;
+  return key || ''; // Return empty string if undefined to avoid API failures
 };
 
 // Search for nearby places using either new or legacy API

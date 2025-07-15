@@ -98,6 +98,7 @@
  * 20. Add content innovation - experiment with new types of enhanced content
  */
 // services/EnhancedPlacesService.js
+import { Platform } from 'react-native';
 import { GOOGLE_MAPS_API_KEY_ANDROID, GOOGLE_MAPS_API_KEY_IOS } from '../config';
 import { 
   getPlaceDetails, 
@@ -108,7 +109,8 @@ import Logger from '../utils/Logger';
 
 // Use platform-specific API key for Places API
 const getPlacesAPIKey = () => {
-  return GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID;
+  const key = Platform.OS === 'ios' ? GOOGLE_MAPS_API_KEY_IOS : GOOGLE_MAPS_API_KEY_ANDROID;
+  return key || ''; // Return empty string if undefined to avoid API failures
 };
 
 /**

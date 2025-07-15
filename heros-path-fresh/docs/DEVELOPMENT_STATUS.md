@@ -1,5 +1,21 @@
 # Hero's Path App - Development Status
 
+## 15 January 2025 — Critical Platform API Key Bug Fixed
+
+### 🔧 **CRITICAL FIX APPLIED** 
+**Platform-Specific API Key Selection Bug Fixed** 🚨
+- **Issue**: Flawed API key logic `GOOGLE_MAPS_API_KEY_IOS || GOOGLE_MAPS_API_KEY_ANDROID` always preferred iOS key regardless of platform
+- **Impact**: 
+  - Android devices would use wrong iOS API keys, causing API failures
+  - Undefined keys would result in "key=undefined" in API URLs
+  - All photo URLs and API requests could fail on Android or when keys undefined
+- **Files Fixed (6 total)**:
+  - **Screens (3)**: `DiscoveriesScreen.js`, `SavedPlacesScreen.js`, `DiscoveriesScreen_old.js`
+  - **Services (3)**: `NewPlacesService.js`, `EnhancedPlacesService.js`, `DiscoveriesService.js`
+- **Solution**: Proper platform-specific API key selection using `Platform.OS`
+- **Implementation**: Added `getPlacesAPIKey()` helpers with fallback handling
+- **Result**: ✅ API keys now correctly selected per platform with proper error handling
+
 ## 14 July 2025 — Service Layer Documentation & Audit
 
 - Service documentation complete: All files in `/services/` now have top-of-file JSDoc comments describing their role and interactions.
@@ -9,22 +25,23 @@
 
 # Next Priorities
 
-## 1. Ping Animation Overhaul (Future Enhancement)
-- Redesign the ping animation to feel like a "special power" charge and release.
-- Animation should last 3–5 seconds, with a dramatic, screen-dominating effect.
-- Should include a "charging up" phase (inward pulse/glow), then a powerful outward ripple.
-- Consider future addition of vibration and sound for extra feedback.
-- **Note**: Currently disabled with scaffolding in place for future implementation
-- See user notes for vision:
-  - Gamified, impactful, not subtle
-  - User should feel like they're charging and releasing energy
-  - (Future) Add vibration on release
+## 1. Production Deployment Preparation (High Priority)
+- **Remove Development Utilities**: The "🚨 PURGE EVERYTHING" button is still present in SettingsScreen and should be removed or guarded for production
+- **Final API Key Validation**: Ensure all environment variables are properly configured in production environment
+- **Performance Testing**: Conduct final performance testing with production data volumes
+- **Error Monitoring**: Set up production error monitoring and logging systems
 
-## 2. React Native Warning: useInsertionEffect must not schedule updates
-- Terminal log:
-  - `ERROR  Warning: useInsertionEffect must not schedule updates.`
-  - Call Stack: DrawerNavigator, RNSScreenContainer, RNCSafeAreaProvider, MainStackScreen, Root, App
-- This warning appears in the terminal and should be investigated and resolved.
+## 2. Ping Animation Enhancement (Medium Priority)
+- Current ping animation system is working with 4 different animation styles
+- Consider enhancing with more dramatic "special power" charge and release effects
+- Animation could last 3–5 seconds with charging phase and powerful outward ripple
+- Future addition of vibration and sound for extra feedback
+- See user notes for gamified, impactful experience vision
+
+## 3. React Native Warning Investigation (Low Priority)
+- Terminal log: `ERROR  Warning: useInsertionEffect must not schedule updates.`
+- Call Stack: DrawerNavigator, RNSScreenContainer, RNCSafeAreaProvider, MainStackScreen, Root, App
+- This warning appears but doesn't seem to affect functionality - investigate when convenient
 
 ---
 

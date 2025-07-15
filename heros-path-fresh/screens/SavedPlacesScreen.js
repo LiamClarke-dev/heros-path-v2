@@ -92,12 +92,14 @@
  */
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
+import { GOOGLE_MAPS_API_KEY_IOS, GOOGLE_MAPS_API_KEY_ANDROID } from '../config';
 import {
   View,
   Text,
   Image,
   FlatList,
   StyleSheet,
+  Platform,
   TouchableOpacity,
   Modal,
   Linking,
@@ -114,6 +116,12 @@ import Card from '../components/ui/Card';
 import ListItem from '../components/ui/ListItem';
 import AppButton from '../components/ui/AppButton';
 import SectionHeader from '../components/ui/SectionHeader';
+
+// Helper function to get platform-specific API key
+const getPlacesAPIKey = () => {
+  const key = Platform.OS === 'ios' ? GOOGLE_MAPS_API_KEY_IOS : GOOGLE_MAPS_API_KEY_ANDROID;
+  return key || ''; // Return empty string if undefined to avoid "key=undefined" in URL
+};
 
 export default function SavedPlacesScreen() {
   const { user, migrationStatus } = useUser();
@@ -144,7 +152,7 @@ export default function SavedPlacesScreen() {
           userRatingsTotal: discovery.placeData?.user_ratings_total,
           description: discovery.placeData?.formatted_address,
           thumbnail: discovery.placeData?.photos?.[0]?.photo_reference 
-            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${discovery.placeData.photos[0].photo_reference}&key=YOUR_API_KEY`
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${discovery.placeData.photos[0].photo_reference}&key=${getPlacesAPIKey()}`
             : null,
           // Preserve original place data for compatibility
           ...discovery.placeData
