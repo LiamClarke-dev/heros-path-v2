@@ -39,6 +39,7 @@ import {
   Platform,
   Linking,
   AppState,
+  Modal,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -119,6 +120,9 @@ export default function MapScreen({ navigation, route }) {
   const [mapError, setMapError] = useState(null);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState);
+  const [showMinDistanceModal, setShowMinDistanceModal] = useState(false);
+  const [pendingEndWalk, setPendingEndWalk] = useState(false);
+  const [pendingCoords, setPendingCoords] = useState([]);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -341,6 +345,35 @@ export default function MapScreen({ navigation, route }) {
     return totalDistance;
   };
 
+  const handleEndWalk = (coords) => {
+    if (coords.length < MIN_ROUTE_POINTS) {
+      setPendingCoords(coords);
+      setShowMinDistanceModal(true);
+      Logger.info('MAP_SCREEN', 'handleEndWalk: walk has too few points', { coordsLength: coords.length });
+      return false;
+    }
+    if (calculateTotalDistance(coords) < MIN_ROUTE_DISTANCE) {
+      setPendingCoords(coords);
+      setShowMinDistanceModal(true);
+      Logger.info('MAP_SCREEN', 'handleEndWalk: walk too short', { distance: calculateTotalDistance(coords) });
+      return false;
+    }
+    return true;
+  };
+
+  const refundPings = async () => {
+    if (pingUsed > 0 && user) {
+      try {
+        // Call PingService to refund credits
+        // (Assume PingService.refundCredits exists or implement it)
+        await JourneyService.refundPingCredits(user.uid, pingUsed);
+        setPingUsed(0);
+      } catch (error) {
+        Logger.error('MAP_SCREEN', 'Failed to refund ping credits', error);
+      }
+    }
+  };
+
   const toggleTracking = async () => {
     if (tracking) {
       // Stop tracking
@@ -349,10 +382,18 @@ export default function MapScreen({ navigation, route }) {
         locationSubscription.current = null;
       }
       setTracking(false);
-      
-      // Save the journey
-      if (currentJourneyId && pathToRender.length > 0) {
-        await saveJourney(pathToRender);
+      // Always check for minimum walk requirement, even if 0 or 1 points
+      if (currentJourneyId) {
+        if (!handleEndWalk(pathToRender)) {
+          setPendingEndWalk(true);
+          Logger.info('MAP_SCREEN', 'Showing minimum distance modal', { pathToRenderLength: pathToRender.length });
+          // Do NOT clear state here; wait for user to choose in modal
+          return;
+        }
+        // Only save if valid
+        if (pathToRender.length >= MIN_ROUTE_POINTS && calculateTotalDistance(pathToRender) >= MIN_ROUTE_DISTANCE) {
+          await saveJourney(pathToRender);
+        }
       }
     } else {
       // Start tracking
@@ -408,6 +449,24 @@ export default function MapScreen({ navigation, route }) {
         Alert.alert('Error', 'Failed to start tracking. Please try again.');
       }
     }
+  };
+
+  const handleDiscardWalk = async () => {
+    Logger.info('MAP_SCREEN', 'User chose to discard walk, refunding pings and clearing state');
+    setShowMinDistanceModal(false);
+    setPendingEndWalk(false);
+    setPendingCoords([]);
+    await refundPings();
+    setCurrentJourneyId(null);
+    setPathToRender([]);
+    setPreviewRoute([]);
+    setPreviewRoadCoords([]);
+    Alert.alert('Walk Discarded', 'Your walk was too short to be saved. Any used pings have been refunded.');
+  };
+  const handleContinueWalk = () => {
+    setShowMinDistanceModal(false);
+    setPendingEndWalk(false);
+    setPendingCoords([]);
   };
 
   const renderSavedRoutes = () =>
@@ -636,6 +695,38 @@ export default function MapScreen({ navigation, route }) {
           <Text style={[styles.trackButtonText, { color: colors.buttonText }]}> {tracking ? 'Stop & Save Walk' : 'Start Walk'} </Text>
         </TouchableOpacity>
       </View>
+
+      {showMinDistanceModal && (
+        <Modal
+          visible={showMinDistanceModal}
+          transparent
+          animationType="fade"
+          onRequestClose={handleContinueWalk}
+        >
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <View style={{ backgroundColor: colors.card, padding: 24, borderRadius: 16, alignItems: 'center', maxWidth: 320 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Hey, listen!</Text>
+              <Text style={{ color: colors.text, fontSize: 16, marginBottom: 16, textAlign: 'center' }}>
+                It seems like your walk has fewer than three points or is less than 50 meters. If you end now, your progress won't be saved. (Any used pings on this walk will be refunded.)
+              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+                <TouchableOpacity
+                  style={{ flex: 1, marginRight: 8, backgroundColor: colors.buttonSecondary, padding: 12, borderRadius: 8 }}
+                  onPress={handleContinueWalk}
+                >
+                  <Text style={{ color: colors.primary, textAlign: 'center', fontWeight: 'bold' }}>Go Back</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, marginLeft: 8, backgroundColor: colors.error, padding: 12, borderRadius: 8 }}
+                  onPress={handleDiscardWalk}
+                >
+                  <Text style={{ color: colors.buttonText, textAlign: 'center', fontWeight: 'bold' }}>Discard Walk</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       <StatusBar style="auto" />
     </View>

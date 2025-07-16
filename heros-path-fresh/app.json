@@ -17,14 +17,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.liamclarke.herospath",
+      "buildNumber": "4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app uses your location to show your journey and nearby places.",
         "NSLocationAlwaysUsageDescription": "This app uses your location to track your journey even when the app is in the background.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track your journey and show nearby places.",
         "UIBackgroundModes": [
-          "location",
-          "background-processing"
+          "location"
         ]
       },
       "config": {

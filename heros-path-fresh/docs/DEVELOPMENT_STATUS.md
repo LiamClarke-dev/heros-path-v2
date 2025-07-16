@@ -1,7 +1,5 @@
 # Hero's Path App - Development Status
 
-<<<<<<< ours
-=======
 > For a chronological list of all changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## 15 January 2025 — Critical Platform API Key Bug Fixed
@@ -20,7 +18,6 @@
 - **Implementation**: Added `getPlacesAPIKey()` helpers with fallback handling
 - **Result**: ✅ API keys now correctly selected per platform with proper error handling
 
->>>>>>> theirs
 ## 14 July 2025 — Service Layer Documentation & Audit
 
 - Service documentation complete: All files in `/services/` now have top-of-file JSDoc comments describing their role and interactions.
@@ -542,6 +539,7 @@ Users were not seeing location permission prompts when needed, and those with "W
 1. **Route Discovery**: Still uses center point instead of SAR (being fixed)
 2. **API Dependencies**: Relies on Google Places API availability
 3. **Offline Functionality**: Limited offline capabilities
+4. **[BUG] Minimum Distance Modal Not Triggered on End Walk**: If a user starts a walk, uses a ping, and ends the walk without moving, the minimum distance modal does not appear, the walk is not saved, and pings are not refunded. This is a high-priority UX bug and should be revisited. (See MapScreen.js modal logic)
 
 ### **Edge Cases to Monitor**
 1. **Network Failures**: API call failures during discovery loading
