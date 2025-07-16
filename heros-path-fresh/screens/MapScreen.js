@@ -277,6 +277,8 @@ export default function MapScreen({ navigation, route }) {
     // Cleanup on unmount
     return () => {
       BackgroundLocationService.setLocationUpdateCallback(null);
+      // Note: We don't call cleanup() here as the service should persist across navigation
+      // The service will be cleaned up when the app is terminated
     };
   }, []);
 

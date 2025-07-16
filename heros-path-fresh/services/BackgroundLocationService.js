@@ -125,10 +125,25 @@ class BackgroundLocationService {
     this.recentLocations = []; // For filtering and smoothing
     this.appState = AppState.currentState;
     this.backgroundStartTime = null;
+    this.appStateSubscription = null;
+    this.isInitialized = false;
     
-    // Bind app state change handler
+    // Initialize app state monitoring
+    this.initializeAppStateMonitoring();
+  }
+
+  // Initialize app state monitoring with proper subscription handling
+  initializeAppStateMonitoring() {
+    if (this.appStateSubscription) {
+      // Already initialized, don't create duplicate subscription
+      return;
+    }
+    
+    // Bind app state change handler and set up modern subscription
     this.handleAppStateChange = this.handleAppStateChange.bind(this);
-    AppState.addEventListener('change', this.handleAppStateChange);
+    this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
+    
+    Logger.debug('App state monitoring initialized');
   }
 
   // Handle app state changes for background/foreground transitions
@@ -236,16 +251,11 @@ class BackgroundLocationService {
 
   // Smooth location using recent points to reduce GPS noise
   smoothLocation(newLocation) {
-    // Add to recent locations
-    this.recentLocations.push(newLocation);
+    let locationToReturn = newLocation;
     
-    // Keep only last 5 points for smoothing
-    if (this.recentLocations.length > 5) {
-      this.recentLocations.shift();
-    }
-    
-    // If we have enough points and the new location is very different, smooth it
-    if (this.recentLocations.length >= 3) {
+    // If we have enough points for smoothing, check if new location is an outlier
+    if (this.recentLocations.length >= 2) {
+      // Calculate average of EXISTING locations (excluding the new one)
       const avgLat = this.recentLocations.reduce((sum, loc) => sum + loc.coords.latitude, 0) / this.recentLocations.length;
       const avgLng = this.recentLocations.reduce((sum, loc) => sum + loc.coords.longitude, 0) / this.recentLocations.length;
       
@@ -256,21 +266,35 @@ class BackgroundLocationService {
         avgLng
       );
       
-      // If the new point is very far from the average (> 20m), use smoothed coordinates
+      // If the new point is very far from the average (> 20m) AND has poor accuracy, smooth it
       if (distance > 20 && newLocation.coords.accuracy > ACCURACY_THRESHOLDS.EXCELLENT) {
-        Logger.debug(`Smoothing location - distance from average: ${distance}m`);
-        return {
+        Logger.debug(`Smoothing location - distance from average: ${distance}m, accuracy: ${newLocation.coords.accuracy}m`);
+        
+        // Use weighted smoothing: blend the new location with the average based on accuracy
+        const accuracyWeight = Math.max(0.1, Math.min(0.9, ACCURACY_THRESHOLDS.EXCELLENT / newLocation.coords.accuracy));
+        
+        locationToReturn = {
           ...newLocation,
           coords: {
             ...newLocation.coords,
-            latitude: avgLat,
-            longitude: avgLng
+            latitude: (newLocation.coords.latitude * accuracyWeight) + (avgLat * (1 - accuracyWeight)),
+            longitude: (newLocation.coords.longitude * accuracyWeight) + (avgLng * (1 - accuracyWeight))
           }
         };
+        
+        Logger.debug(`Applied weighted smoothing with accuracy weight: ${accuracyWeight.toFixed(2)}`);
       }
     }
     
-    return newLocation;
+    // Add the final location (original or smoothed) to recent locations
+    this.recentLocations.push(locationToReturn);
+    
+    // Keep only last 5 points for smoothing
+    if (this.recentLocations.length > 5) {
+      this.recentLocations.shift();
+    }
+    
+    return locationToReturn;
   }
 
   // Calculate distance between two points
@@ -326,6 +350,9 @@ class BackgroundLocationService {
   // Initialize the service (simplified for Expo Go compatibility)
   async initialize() {
     try {
+      // Ensure app state monitoring is set up
+      this.initializeAppStateMonitoring();
+      
       // Check permissions
       let permissions = await this.checkPermissions();
       if (!permissions.foreground) {
@@ -338,9 +365,12 @@ class BackgroundLocationService {
         // Re-check permissions after requesting
         permissions = await this.checkPermissions();
       }
+      
+      this.isInitialized = true;
+      Logger.info('BackgroundLocationService initialized successfully');
       return true;
     } catch (error) {
-      console.error('Failed to initialize background location service:', error);
+      Logger.error('Failed to initialize background location service:', error);
       return false;
     }
   }
@@ -633,8 +663,11 @@ class BackgroundLocationService {
 
   // Clean up resources and event listeners
   cleanup() {
-    // Remove app state listener
-    AppState.removeEventListener?.('change', this.handleAppStateChange);
+    // Remove app state listener using modern subscription approach
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+      this.appStateSubscription = null;
+    }
     
     // Stop any active tracking
     if (this.isTracking) {
@@ -651,6 +684,7 @@ class BackgroundLocationService {
     this.backgroundStartTime = null;
     this.onLocationUpdate = null;
     this.onJourneyComplete = null;
+    this.isInitialized = false;
     
     Logger.info('BackgroundLocationService cleaned up');
   }
