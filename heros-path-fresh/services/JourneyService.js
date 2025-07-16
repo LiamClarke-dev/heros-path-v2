@@ -114,6 +114,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Logger from '../utils/Logger';
 import DiscoveryConsolidationService from './DiscoveryConsolidationService';
 import { getUserDiscoveryPreferences } from './DiscoveriesService';
+import PingService from './PingService';
 
 class JourneyService {
   // Get user's journeys collection reference
@@ -571,6 +572,22 @@ class JourneyService {
         error: error.message
       };
     }
+  }
+}
+
+/**
+ * Refund ping credits to a user (used when a walk is discarded)
+ * @param {string} userId
+ * @param {number} creditsToRefund
+ * @returns {Promise<void>}
+ */
+export async function refundPingCredits(userId, creditsToRefund) {
+  if (!userId || !creditsToRefund || creditsToRefund <= 0) return;
+  try {
+    await PingService.refundCredits(userId, creditsToRefund);
+  } catch (error) {
+    // Log but don't throw
+    console.error('JourneyService: Failed to refund ping credits', error);
   }
 }
 

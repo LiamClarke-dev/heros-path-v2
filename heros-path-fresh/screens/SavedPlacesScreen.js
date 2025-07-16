@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     borderWidth: 1,
-    borderColor: Colors.tabInactive,
+    borderColor: colors.border,
   },
   pickerToggleText: {
     ...Typography.body,
@@ -325,11 +325,11 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
+  name: { ...Typography.body, fontWeight: '700' },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
-    color: Colors.tabInactive,
+    color: colors.textSecondary,
     marginVertical: Spacing.xs / 2,
   },
   combinedTypes: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: Colors.tabInactive },
+  meta: { ...Typography.body, color: colors.textSecondary },
   link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   dismiss: {
     justifyContent: 'center',

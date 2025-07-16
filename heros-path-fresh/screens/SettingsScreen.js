@@ -1528,7 +1528,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: (props) => props.theme.text,
     marginLeft: Spacing.sm,
   },
@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
     borderTopColor: (props) => props.theme.tabInactive + '30',
   },
   subsectionTitle: {
-    ...Typography.h3,
+    ...Typography.cardTitle,
     color: (props) => props.theme.text,
     marginBottom: Spacing.sm,
   },

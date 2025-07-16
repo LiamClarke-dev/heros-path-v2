@@ -539,3 +539,49 @@ This section provides a prioritized, actionable plan for integrating the updated
 
 *Last Updated: 15 July 2025*  
 *Next Review: August 2025*
+
+---
+
+## 🔢 Prioritized Component & File Update Order for Brand Guideline Alignment
+
+To achieve full alignment with the updated brand guidelines, update the following components and files in this order. For each, update color usage, typography, spacing, and animation as needed, and add documentation/comments referencing the relevant section of docs/BRAND_GUIDELINES.md.
+
+1. **styles/theme.js**
+   - (Already updated) Ensure all color, typography, and spacing tokens match the brand guidelines.
+   - Reference: Visual Identity System > Color Palette, Typography System, UI Style Patterns
+
+2. **components/ZeldaButton.js**
+   - Update to use new theme color tokens, typography (button text), spacing, and add tap feedback animation per guidelines.
+   - Reference: Components & Patterns > HeroButton, UI Style Patterns > Buttons & CTAs, Motion & Interaction
+
+3. **components/ui/Card.js**
+   - Update to use new surface, border, shadow, and spacing tokens. Apply typography for card titles and body.
+   - Reference: UI Style Patterns > Cards & Surfaces, Typography System
+
+4. **components/PingButton.js, PingAnimation.js, PingStats.js**
+   - Update to use new color and animation tokens for feedback and glow effects.
+   - Reference: Motion & Interaction, Visual Identity System > Color Palette
+
+5. **components/SettingsOptionRow.js, ZeldaToggle.js**
+   - Update to use new color, spacing, and toggle animation tokens.
+   - Reference: Components & Patterns > HeroToggle, UI Style Patterns > Buttons & CTAs
+
+6. **components/ui/AppButton.js, ListItem.js, Divider.js, SectionHeader.js**
+   - Update to use new color, typography, and spacing tokens for consistency.
+   - Reference: UI Style Patterns, Typography System
+
+7. **screens/ (all screens)**
+   - Update screen headers, backgrounds, and layout to use new theme tokens and spacing.
+   - Reference: UI Style Patterns > Header & Navigation Bars, Spacing System
+
+8. **contexts/ThemeContext.js**
+   - Ensure theme switching logic and context values use the updated theme tokens.
+   - Reference: Implementation Guidelines > Theme Context
+
+9. **Any custom icon or illustration components**
+   - Update to use new color tokens and consistent stroke/size per guidelines.
+   - Reference: Visual Identity System > Icons & Illustrations
+
+**Note:**
+- For each file/component, update documentation and code comments to reference the relevant section of docs/BRAND_GUIDELINES.md for rationale and future maintenance.
+- Begin with the most widely used and visually impactful components (buttons, cards, theme system), then move to supporting and secondary components.

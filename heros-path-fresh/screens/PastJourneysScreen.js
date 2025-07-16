@@ -229,7 +229,7 @@ export default function PastJourneysScreen({ navigation }) {
       <Card style={{ marginBottom: 8 }}>
         <ListItem
           title={label}
-          subtitle={`Distance: ${item.distance}m | Duration: ${Math.round(item.duration / 60)} min`}
+          subtitle={`Distance: ${item.distance}m | Duration: ${Math.round(item.duration / 60000)} min`}
           right={
             <AppButton
               title="Delete"

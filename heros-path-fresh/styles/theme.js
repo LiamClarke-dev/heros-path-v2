@@ -1,103 +1,19 @@
 /*
- * THEME SYSTEM (COMPLETE UI & MAP STYLING)
- * =========================================
- * 
- * PURPOSE:
- * This is the comprehensive theming system for Hero's Path that defines all colors,
- * styling, and visual appearance across the entire app. It provides three distinct
- * UI themes (Light, Dark, Adventure) and five map styles, enabling users to fully
- * customize their visual experience. Think of it as the visual DNA of the app that
- * determines how everything looks and feels.
- * 
- * FUNCTIONALITY:
- * - Defines three complete UI themes with 30+ color variables each
- * - Provides five Google Maps custom styling configurations
- * - Includes comprehensive color palettes for all UI elements
- * - Supports theme switching with consistent styling across components
- * - Provides fallback themes for error recovery
- * - Includes legacy export support for backward compatibility
- * - Defines typography, spacing, and layout constants
- * - Provides shadow and elevation styling for depth and hierarchy
- * - Includes specialized colors for features like ping animations and route lines
- * - Supports theme-aware component styling throughout the app
- * 
- * WHY IT EXISTS:
- * Modern mobile apps require consistent theming and personalization options. Users
- * expect dark mode, custom styling, and visual preferences. This system ensures
- * every component uses consistent colors while providing the flexibility for users
- * to choose their preferred visual experience. The Adventure theme gives Hero's Path
- * its unique personality that differentiates it from other walking apps.
- * 
- * KEY FEATURES:
- * - Three UI Themes:
- *   • Light: Clean, modern iOS-style interface with bright colors
- *   • Dark: Battery-efficient dark mode with high contrast
- *   • Adventure: Fantasy-inspired Zelda-like theme with warm, medieval colors
- * 
- * - Five Map Styles:
- *   • Standard: Classic Google Maps view with roads and landmarks
- *   • Satellite: Aerial view with satellite imagery and labels
- *   • Terrain: Topographic view with elevation details and natural features
- *   • Night: Dark theme optimized for low-light conditions
- *   • Adventure: Fantasy-inspired map style for explorers
- * 
- * - Complete Color System: 30+ semantic color definitions for every UI element
- * - Typography System: Font sizes, weights, and spacing for consistent text
- * - Layout System: Spacing, margins, and padding constants
- * - Shadow System: Elevation and depth styling for visual hierarchy
- * 
- * RELATIONSHIPS:
- * - Used by ThemeContext.js for theme management and switching
- * - Provides colors to all UI components (AppButton, Card, ListItem, etc.)
- * - Integrates with Google Maps for custom map styling
- * - Works with React Navigation for consistent navigation theming
- * - Used by specialized components like ZeldaButton and ZeldaToggle
- * - Provides styling constants for layouts and spacing throughout the app
- * 
- * REFERENCED BY:
- * - ThemeContext.js (for theme management and color access)
- * - All UI components that need consistent styling
- * - MapScreen.js (for custom map styles)
- * - Navigation components (for consistent navigation styling)
- * - Specialized theme components (ZeldaButton, ZeldaToggle, etc.)
- * - Any component that uses colors, spacing, or typography
- * 
- * REFERENCES:
- * - Google Maps JavaScript API (for custom map styling)
- * - React Native styling system
- * - iOS and Android design guidelines
- * - Accessibility standards for color contrast
- * 
- * IMPORTANCE TO APP:
- * CRITICAL - This is one of the most important files in the entire app. It defines
- * the visual identity and user experience of Hero's Path. Every single visual element
- * users see is influenced by this theming system. The quality of theming directly
- * impacts user perception of app quality and professionalism. The Adventure theme
- * is a key differentiator that gives Hero's Path its unique personality.
- * 
- * IMPROVEMENT SUGGESTIONS:
- * 1. Add automatic theme switching - switch themes based on time of day or location
- * 2. Add custom theme creation - let users create and save their own color schemes
- * 3. Add seasonal themes - special themes for holidays, seasons, or events
- * 4. Add accessibility themes - high contrast and color-blind friendly options
- * 5. Add theme animation - smooth transitions when switching between themes
- * 6. Add theme sharing - export and import custom themes between users
- * 7. Add adaptive themes - themes that adjust based on content or context
- * 8. Add theme analytics - track which themes are most popular
- * 9. Add theme A/B testing - test different color schemes for optimization
- * 10. Add dynamic themes - themes that change based on user activity or mood
- * 11. Add gradient themes - support for gradient backgrounds and elements
- * 12. Add texture themes - add subtle textures and patterns to themes
- * 13. Add brand themes - themes that match user's favorite brands or teams
- * 14. Add location themes - themes that match the user's current environment
- * 15. Add theme presets - quick theme switching for different activities
- * 16. Add theme inheritance - base themes with customizable overrides
- * 17. Add theme validation - ensure theme colors meet accessibility guidelines
- * 18. Add theme optimization - optimize themes for different device types
- * 19. Add theme backup - cloud backup and sync of custom themes
- * 20. Add theme AI - AI-powered theme suggestions based on user preferences
+ * BRAND GUIDELINES INTEGRATION
+ * ============================
+ *
+ * The color palette, typography, and spacing variables in this file are mapped directly to the updated brand guidelines:
+ *   See docs/BRAND_GUIDELINES.md
+ *
+ * For color palette and semantic color tokens, consult:
+ *   → Visual Identity System > Color Palette (docs/BRAND_GUIDELINES.md)
+ * For typography scale and font usage, consult:
+ *   → Visual Identity System > Typography System (docs/BRAND_GUIDELINES.md)
+ * For spacing and layout, consult:
+ *   → UI Style Patterns > Spacing System (docs/BRAND_GUIDELINES.md)
+ *
+ * When updating or adding theme variables, always reference the appropriate section of the brand guidelines for rationale and consistency.
  */
-
 // styles/theme.js
 // Enhanced theme system with multiple UI themes and map styles
 
@@ -118,6 +34,7 @@ export const MAP_STYLES = {
 };
 
 // Light Theme
+// Color palette and semantic tokens below are mapped to 'Visual Identity System > Color Palette' in docs/BRAND_GUIDELINES.md
 const lightTheme = {
   primary: '#007AFF',
   secondary: '#5856D6',
@@ -164,10 +81,18 @@ const lightTheme = {
   info: '#007AFF',
   onPrimary: '#FFFFFF',
   onSecondary: '#FFFFFF',
-  onError: '#FFFFFF'
+  onError: '#FFFFFF',
+  
+  // Legacy color mappings for backward compatibility
+  routeLine: 'rgba(0, 122, 255, 0.8)',
+  routePreview: '#5856D6',
+  pingGlow: '#007AFF',
+  spriteShadow: 'rgba(0, 0, 0, 0.3)',
+  critical: '#FF3B30' // maps to error
 };
 
 // Dark Theme
+// Color palette and semantic tokens below are mapped to 'Visual Identity System > Color Palette' in docs/BRAND_GUIDELINES.md
 const darkTheme = {
   primary: '#0A84FF',
   secondary: '#5E5CE6',
@@ -214,57 +139,68 @@ const darkTheme = {
   info: '#0A84FF',
   onPrimary: '#FFFFFF',
   onSecondary: '#FFFFFF',
-  onError: '#FFFFFF'
+  onError: '#FFFFFF',
+  
+  // Legacy color mappings for backward compatibility  
+  routeLine: 'rgba(10, 132, 255, 0.8)',
+  routePreview: '#5E5CE6',
+  pingGlow: '#0A84FF',
+  spriteShadow: 'rgba(0, 0, 0, 0.5)',
+  critical: '#FF453A' // maps to error
 };
 
-// Adventure Theme (Zelda-inspired)
+// Adventure Theme
+// Color palette and semantic tokens below are mapped to 'Visual Identity System > Color Palette' in docs/BRAND_GUIDELINES.md
 const adventureTheme = {
-  primary: '#4A90E2',
-  secondary: '#F5A623',
-  background: '#2C3E50',
-  surface: '#34495E',
-  text: '#ECF0F1',
-  textSecondary: '#BDC3C7',
-  secondaryText: '#BDC3C7', // Alias for textSecondary
-  border: '#7F8C8D',
-  success: '#27AE60',
-  warning: '#F39C12',
-  error: '#E74C3C',
-  info: '#3498DB',
-  swipeSave: '#27AE60',
-  swipeDismiss: '#E74C3C',
-  tabActive: '#4A90E2',
-  tabInactive: '#BDC3C7',
-  card: '#34495E',
-  shadow: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.6)',
-  pingGlow: '#F5A623',
-  routeLine: 'rgba(74, 144, 226, 0.8)',
-  routePreview: '#F5A623',
-  spriteShadow: 'rgba(0, 0, 0, 0.4)',
-  buttonPrimary: '#4A90E2',
-  buttonSecondary: '#34495E',
-  buttonText: '#ECF0F1',
-  buttonTextSecondary: '#4A90E2',
-  inputBackground: '#34495E',
-  inputBorder: '#7F8C8D',
-  inputText: '#ECF0F1',
-  placeholder: '#BDC3C7',
-  switchTrack: '#7F8C8D',
-  switchThumb: '#ECF0F1',
-  switchActive: '#27AE60',
-  modalBackground: '#34495E',
-  modalOverlay: 'rgba(0, 0, 0, 0.6)',
-  divider: '#7F8C8D',
-  highlight: '#4A90E220',
-  critical: '#E74C3C',
-  danger: '#E74C3C',
-  warning: '#F39C12',
-  success: '#27AE60',
-  info: '#3498DB',
+  // Brand tokens
+  primary: '#4A90E2', // --color-trail-blue
+  accent: '#F6AF3C', // --color-sunset-gold
+  background: '#FFF7EA', // --color-paper-cream
+  surface: '#F5E9D6', // Slightly darker cream for better container contrast
+  progress: '#739E82', // --color-moss-sage
+  navBar: '#2C5530', // --color-forest-deep
+  border: '#7F8C8D', // --color-stone-gray
+  overlay: 'rgba(0,0,0,0.4)', // --color-shadow-overlay
+  glow: 'rgba(74,144,226,0.25)', // --color-glow-accent
+
+  // Semantic tokens
+  text: '#2C5530', // Use forest-deep for high contrast text
+  textSecondary: '#739E82', // Use moss-sage for secondary text
+  secondaryText: '#739E82', // Alias for textSecondary
+  card: '#F5E9D6', // Slightly darker cream for better contrast
+  shadow: 'rgba(0,0,0,0.15)', // Slightly stronger shadow for better definition
+  buttonPrimary: '#4A90E2', // --color-trail-blue
+  buttonSecondary: 'transparent', // Secondary: transparent BG, trail-blue border & text
+  buttonText: '#FFFFFF', // White text for primary
+  buttonTextSecondary: '#4A90E2', // Trail-blue for secondary
+  disabled: '#7F8C8D', // --color-stone-gray
+  disabledText: 'rgba(255,255,255,0.6)', // As per guidelines
+  inputBackground: '#F5E9D6', // Darker cream for inputs
+  inputBorder: '#7F8C8D', // --color-stone-gray
+  inputText: '#2C5530', // forest-deep
+  placeholder: '#7F8C8D', // stone-gray
+  switchTrack: '#739E82', // moss-sage
+  switchThumb: '#FFFFFF', // white
+  switchActive: '#739E82', // moss-sage
+  modalBackground: '#F5E9D6', // Darker cream for modals
+  modalOverlay: 'rgba(0,0,0,0.4)', // --color-shadow-overlay
+  divider: '#7F8C8D', // --color-stone-gray
+  highlight: 'rgba(74,144,226,0.08)', // subtle blue highlight
   onPrimary: '#FFFFFF',
-  onSecondary: '#FFFFFF',
-  onError: '#FFFFFF'
+  onSecondary: '#4A90E2',
+  onError: '#FFFFFF',
+  // Additional tokens for map, icons, etc. can be added as needed
+  
+  // Backward compatibility mappings for legacy color keys
+  tabActive: '#4A90E2', // maps to primary
+  tabInactive: '#7F8C8D', // maps to border
+  routeLine: '#4A90E2', // maps to primary
+  routePreview: '#F6AF3C', // maps to accent
+  success: '#739E82', // maps to progress
+  info: '#4A90E2', // maps to primary
+  critical: '#FF453A', // maps to error (but we should use error directly)
+  pingGlow: '#4A90E2', // maps to primary
+  spriteShadow: 'rgba(0,0,0,0.3)', // generic shadow
 };
 
 // Map Style Configurations
@@ -725,26 +661,26 @@ export const Colors = {
   onError: '#FFFFFF'
 };
 export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  xs: 4, // --space-xs
+  sm: 8, // --space-sm
+  md: 16, // --space-md
+  lg: 24, // --space-lg
+  xl: 32, // --space-xl
+  cardPadding: 16, // Card padding
+  headerMargin: 24, // Header margin from top
+  buttonHeight: 44, // Button height
 };
 
+// Typography system below is mapped to 'Visual Identity System > Typography System' in docs/BRAND_GUIDELINES.md
 export const Typography = {
-  h1: { fontSize: 28, fontWeight: '700' },
-  h2: { fontSize: 24, fontWeight: '600' },
-  h3: { fontSize: 20, fontWeight: '600' },
-  h4: { fontSize: 18, fontWeight: '600' },
-  body: { fontSize: 16, fontWeight: '400' },
-  bodySmall: { fontSize: 14, fontWeight: '400' },
-  caption: { fontSize: 12, fontWeight: '400' },
-  button: { fontSize: 16, fontWeight: '600' },
-  bold: { fontWeight: 'bold' }, // Added for compatibility
+  heroHeader: { fontSize: 32, fontWeight: '700', fontFamily: 'HyliaSerifBeta-Regular' }, // --text-hero-header
+  sectionTitle: { fontSize: 24, fontWeight: '600', fontFamily: 'Roboto' }, // --text-section-title
+  cardTitle: { fontSize: 18, fontWeight: '600', fontFamily: 'Roboto' }, // --text-card-title
+  body: { fontSize: 16, fontWeight: '400', fontFamily: 'Roboto' }, // --text-body
+  caption: { fontSize: 14, fontWeight: '400', fontFamily: 'Roboto' }, // --text-caption
 };
 
+// Spacing system below is mapped to 'UI Style Patterns > Spacing System' in docs/BRAND_GUIDELINES.md
 export const Layout = {
   borderRadius: 8,
   borderRadiusLarge: 12,

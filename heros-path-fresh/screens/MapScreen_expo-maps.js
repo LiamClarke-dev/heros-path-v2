@@ -97,7 +97,7 @@ function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRe
       polylines.push({
         id: journey.id,
         coordinates: journey.route,
-        color: colors.routeLine,
+        color: colors.primary,
         width: 3,
         opacity: 0.6,
       });
@@ -108,7 +108,7 @@ function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRe
     polylines.push({
       id: 'preview',
       coordinates: previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute,
-      color: colors.routePreview,
+                    color: colors.routePreview,
       width: 4,
     });
   }
@@ -117,7 +117,7 @@ function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRe
     polylines.push({
       id: 'current',
       coordinates: pathToRender,
-      color: colors.routeLine,
+      color: colors.primary,
       width: 6,
     });
   }
@@ -470,7 +470,7 @@ export default function MapScreen({ navigation, route }) {
       <Polyline
         key={journey.id}
         coordinates={journey.route}
-        strokeColor={colors.routeLine}
+                    strokeColor={colors.primary}
         strokeWidth={3}
         opacity={0.6}
       />
@@ -532,7 +532,7 @@ export default function MapScreen({ navigation, route }) {
 
       {currentPosition ? (
         Platform.OS === 'ios' ? (
-          <AppleMaps.View
+          <AppleMaps
             ref={mapRef}
             style={styles.map}
             cameraPosition={{
@@ -544,7 +544,7 @@ export default function MapScreen({ navigation, route }) {
             onError={handleMapError}
           />
         ) : (
-          <GoogleMaps.View
+          <GoogleMaps
             ref={mapRef}
             style={styles.map}
             cameraPosition={{
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     ...Shadows.large,
   },
   trackButtonText: {
-    ...Typography.button,
+    ...Typography.body,
     fontWeight: '600',
   },
   pingContainer: {
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   permissionWarningText: {
-    ...Typography.bodySmall,
+    ...Typography.caption,
     flex: 1,
     marginHorizontal: Spacing.sm,
     fontWeight: '500',
