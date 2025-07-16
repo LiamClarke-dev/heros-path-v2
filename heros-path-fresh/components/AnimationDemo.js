@@ -5,9 +5,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 import PingAnimation from './PingAnimation';
 
-// Ensure colors is defined at module scope so Hermes doesn't throw before components mount
-const colors = getFallbackTheme();
-
 const AnimationDemo = () => {
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();

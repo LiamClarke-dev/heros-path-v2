@@ -4,9 +4,6 @@ import { View, Animated, StyleSheet, Dimensions } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 
-// Define safe fallback colors for modules constants
-const colors = getFallbackTheme();
-
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // ANIMATION DISABLED - Scaffolding kept for future implementation
