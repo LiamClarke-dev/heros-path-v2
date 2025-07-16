@@ -108,7 +108,7 @@ function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRe
     polylines.push({
       id: 'preview',
       coordinates: previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute,
-                    color: colors.accent,
+                    color: colors.routePreview,
       width: 4,
     });
   }

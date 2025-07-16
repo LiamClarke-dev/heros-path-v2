@@ -33,7 +33,7 @@ Updated all components to use the proper theme context colors instead of direct 
 - `tabActive` → `primary`
 - `tabInactive` → `border` or `textSecondary` (context-dependent)
 - `routeLine` → `primary` 
-- `routePreview` → `accent`
+- `routePreview` → `routePreview` (maintained for cross-theme compatibility)
 - `success` → `progress` (Adventure theme) or existing success colors
 - `critical` → `error`
 - `pingGlow`/`spriteShadow` → maintained for animation effects
@@ -104,13 +104,26 @@ No updates were required as the system was already properly structured.
 2. **Animation Enhancements**: Implement tap feedback and micro-animations
 3. **Accessibility**: Add high contrast theme variant and color-blind friendly options
 
+## Critical Bug Fix ⚠️➡️✅
+
+**Issue Identified**: The initial migration incorrectly changed `colors.routePreview` to `colors.accent` in map screens. However, `accent` is only defined in the Adventure theme, causing undefined color issues in Light and Dark themes.
+
+**Resolution Applied**: 
+- ✅ Reverted route preview colors to use `colors.routePreview` 
+- ✅ Verified `routePreview` is defined in all three themes with appropriate values:
+  - Light theme: `#5856D6`
+  - Dark theme: `#5E5CE6` 
+  - Adventure theme: `#F6AF3C` (sunset gold)
+- ✅ Confirmed no remaining `colors.accent` references that could cause crashes
+
 ## Summary
 
 ✅ **Typography Migration**: 100% Complete - All old keys updated to new brand-aligned system
-✅ **Core Color Migration**: 95% Complete - All critical mappings updated, legacy support added  
+✅ **Core Color Migration**: 100% Complete - All critical mappings updated, legacy support added, accent bug fixed  
 ✅ **Spacing System**: 100% Complete - Already aligned with brand guidelines
 ✅ **App Functionality**: Fully maintained - No breaking changes introduced
+✅ **Cross-Theme Compatibility**: Verified - All color references work across Light, Dark, and Adventure themes
 
 The app is now fully compatible with the new brand guidelines theme system and ready for production use. All core functionality remains intact while providing a more consistent and brand-aligned user experience.
 
-*Migration completed: $(date)*
+*Migration completed and bug fixed: $(date)*

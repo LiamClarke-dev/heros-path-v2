@@ -562,7 +562,7 @@ export default function MapScreen({ navigation, route }) {
           {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
             <Polyline
               coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
-              strokeColor={colors.accent}
+              strokeColor={colors.routePreview}
               strokeWidth={4}
             />
           )}
