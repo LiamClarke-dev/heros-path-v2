@@ -3,6 +3,7 @@
 **Branch:** `fix/gps-background-location-tracking`  
 **Date:** January 15, 2025  
 **Status:** ✅ Implemented and Ready for Testing  
+**Latest Update:** Critical bug fixes for smoothing algorithm and deprecated API usage  
 
 ---
 
@@ -47,6 +48,33 @@
 
 ---
 
+## 🚨 **Critical Bug Fixes (Latest Update)**
+
+### 4. **Flawed Location Smoothing Algorithm**
+**Problem:** The smoothing algorithm incorrectly included the new location in the average calculation before evaluating it, biasing the average and reducing outlier detection effectiveness.
+
+**Root Cause:** The `smoothLocation` function added the new location to `recentLocations` array before calculating the average, causing the new location to influence its own evaluation.
+
+**✅ Fixed:**
+- Calculate average of existing locations BEFORE adding new location to array
+- Implement weighted smoothing based on GPS accuracy for more intelligent blending
+- Prevent location drift during genuine direction changes
+- Enhanced logging to show smoothing decisions and accuracy weights
+
+### 5. **Deprecated AppState API Usage**
+**Problem:** Service used deprecated `AppState.addEventListener` and `AppState.removeEventListener`, causing potential memory leaks and warnings.
+
+**Root Cause:** Modern React Native returns a subscription object from `addEventListener` that must be explicitly removed via `subscription.remove()`.
+
+**✅ Fixed:**
+- Store AppState subscription reference in constructor
+- Use modern subscription approach with proper lifecycle management
+- Add initialization guards to prevent duplicate subscriptions
+- Proper cleanup in service cleanup method
+- Enhanced initialization tracking with `isInitialized` flag
+
+---
+
 ## 🔧 **Technical Improvements**
 
 ### **Enhanced BackgroundLocationService**
@@ -73,9 +101,11 @@
 
 | Issue | Before | After |
 |-------|--------|-------|
-| **Route Accuracy** | 10-20m offset, includes poor readings | 1-5m accuracy, filtered and smoothed |
+| **Route Accuracy** | 10-20m offset, includes poor readings | 1-5m accuracy, filtered and intelligently smoothed |
 | **Background Tracking** | ❌ Stops when screen locked | ✅ Continuous tracking with foreground service |
 | **GPS Recovery** | 10-15 seconds slow recovery | ⚡ 2-3 seconds with warm-up system |
+| **Location Smoothing** | ❌ Biased algorithm causing drift | ✅ Weighted smoothing preserving genuine movement |
+| **Memory Management** | ⚠️ Potential leaks from deprecated API | ✅ Proper subscription lifecycle management |
 | **Battery Usage** | High due to inefficient settings | 🔋 Optimized with smart frequency control |
 | **User Experience** | Confusing gaps and inaccuracies | 🎯 Smooth, accurate route tracking |
 
@@ -123,8 +153,11 @@ git checkout fix/gps-background-location-tracking
 ### **Console Logs to Watch**
 - `GPS warm-up completed` - Warm-up system working
 - `Location updated: accuracy 3m` - Accuracy filtering active
-- `Smoothing location - distance from average: 25m` - Noise reduction
+- `Smoothing location - distance from average: 25m, accuracy: 12m` - Enhanced smoothing with accuracy info
+- `Applied weighted smoothing with accuracy weight: 0.42` - Intelligent weighted blending
+- `App state monitoring initialized` - Proper subscription setup
 - `App foregrounded - checking location tracking state` - Lifecycle management
+- `BackgroundLocationService initialized successfully` - Service ready
 
 ### **Visual Indicators**
 - **GPS Accuracy Badge:** Shows real-time signal quality (Excellent/Good/Fair/Poor)
