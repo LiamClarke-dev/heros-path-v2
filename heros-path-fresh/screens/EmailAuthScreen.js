@@ -97,12 +97,12 @@
  * 19. Add compliance features - ensure GDPR, CCPA regulatory compliance
  * 20. Add authentication analytics - track signup and signin patterns
  */
+
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
 import { signUpWithEmail, signInWithEmail } from '../firebase';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
-import { getFallbackTheme } from '../styles/theme';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
 
@@ -113,7 +113,7 @@ export default function EmailAuthScreen() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
+  const colors = getCurrentThemeColors();
 
   const handleSignUp = async () => {
     setLoading(true);

@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "scheme": "com.liamclarke.herospath",
     "owner": "liamclarke-dev",
     "splash": {
@@ -17,14 +17,18 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.liamclarke.herospath",
-      "buildNumber": "4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to show your journey and nearby places.",
-        "NSLocationAlwaysUsageDescription": "This app uses your location to track your journey even when the app is in the background.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to track your journey and show nearby places.",
+        "NSLocationWhenInUseUsageDescription": "Hero's Path uses your location to show your current position on the map and discover nearby places during your adventures.",
+        "NSLocationAlwaysUsageDescription": "Hero's Path needs continuous location access to accurately track your complete walking journey, even when your screen is locked or you switch to other apps. This ensures your adventure route is properly recorded.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Hero's Path uses your location to track your walking adventures and discover nearby places. Continuous access ensures complete route tracking even when the app is in the background.",
         "UIBackgroundModes": [
-          "location"
+          "location",
+          "background-processing",
+          "background-fetch"
+        ],
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "com.liamclarke.herospath.background-location-sync"
         ]
       },
       "config": {
@@ -53,9 +57,6 @@
       "eas": {
         "projectId": "4177e7e0-0896-45ea-9095-1c3da2e8a1a3"
       }
-    },
-    "plugins": [
-      "expo-maps"
-    ]
+    }
   }
 }

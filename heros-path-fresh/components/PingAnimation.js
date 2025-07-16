@@ -1,3 +1,70 @@
+/*
+ * PING ANIMATION COMPONENT
+ * ========================
+ * 
+ * PURPOSE:
+ * This component creates visual animations that play when users tap the "ping" button 
+ * during walks to discover nearby places. It provides immediate visual feedback to show 
+ * that the ping action is working, making the experience feel more interactive and 
+ * responsive. Currently, animations are DISABLED but the scaffolding is ready for 
+ * future implementation.
+ * 
+ * FUNCTIONALITY:
+ * - Supports 4 animation types: Ripple (expanding circles), Pulse (simple expansion), 
+ *   Radar (rotating sweep), and Particles (bursting outward)
+ * - Each animation has 3 phases: Charge up (building energy), Release (main effect), 
+ *   and Screen flash (dramatic finish)
+ * - Uses React Native's Animated API for smooth, native performance
+ * - Covers full screen with pointer events disabled to avoid interference
+ * - Automatically calls completion callback when animation finishes
+ * 
+ * WHY IT EXISTS:
+ * The ping feature is a core part of the app's gamification - users can actively 
+ * discover places during walks rather than waiting until the end. Visual feedback 
+ * makes this feel like a "special power" being activated, enhancing user engagement.
+ * Without animation, the ping would feel unresponsive or broken.
+ * 
+ * CURRENT STATUS:
+ * ANIMATIONS_ENABLED is set to false, so this component currently does nothing.
+ * The code structure is complete and ready to enable when needed.
+ * 
+ * RELATIONSHIPS:
+ * - Used by MapScreen.js when users tap the ping button during active walks
+ * - Uses ThemeContext for color theming that matches the current app theme
+ * - Called by PingButton.js component as visual feedback
+ * - Demonstrated in AnimationDemo.js for testing and selection
+ * 
+ * REFERENCED BY:
+ * - MapScreen.js (main usage during walks)
+ * - AnimationDemo.js (for testing and demonstration)
+ * - PingButton.js (triggers the animation)
+ * 
+ * REFERENCES:
+ * - ThemeContext.js (for theme-aware colors)
+ * - React Native Animated API (for animations)
+ * - Dimensions API (for screen size calculations)
+ * 
+ * IMPORTANCE TO APP:
+ * High importance for user experience - Even though currently disabled, this component
+ * is crucial for making the ping feature feel responsive and engaging. The ping feature
+ * is a key differentiator of the app, and without good visual feedback, users may think
+ * it's broken or unresponsive.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. RE-ENABLE ANIMATIONS - Set ANIMATIONS_ENABLED = true and test performance
+ * 2. Add haptic feedback - vibration on animation start/end for tactile feedback
+ * 3. Add sound effects - audio cues to make animations feel more impactful
+ * 4. Optimize performance - consider using native driver for all animations
+ * 5. Add battery consideration - reduce animation complexity on low battery
+ * 6. Add reduced motion support - simpler animations for accessibility
+ * 7. Add user preferences - let users choose animation intensity or disable
+ * 8. Add animation caching - pre-render common animations for better performance
+ * 9. Consider using Lottie animations for more complex effects
+ * 10. Add animation interrupt handling - what happens if user pings rapidly
+ * 11. Add background/foreground handling - pause animations when app backgrounded
+ * 12. Test on various device sizes and performance levels
+ */
+
 // components/PingAnimation.js
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Dimensions } from 'react-native';
@@ -44,6 +111,77 @@ const PingAnimation = ({
   const glowAnim = useRef(new Animated.Value(0)).current;
   const screenFlashAnim = useRef(new Animated.Value(0)).current;
   const chargeAnim = useRef(new Animated.Value(0)).current;
+
+  // Create styles inside component to access colors
+  const styles = StyleSheet.create({
+    container: {
+      position: 'absolute',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: screenWidth,
+      height: screenHeight,
+      zIndex: 1000,
+    },
+    ripple: {
+      position: 'absolute',
+      width: 80, // Much larger ripple
+      height: 80,
+      borderRadius: 40,
+      borderWidth: 6, // Thicker border
+      borderColor: colors.primary,
+      backgroundColor: `${colors.primary}30`, // More visible with transparency
+    },
+    pulse: {
+      position: 'absolute',
+      width: 120, // Much larger pulse
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: `${colors.primary}50`, // More visible with transparency
+    },
+    radar: {
+      position: 'absolute',
+      width: 160, // Much larger radar
+      height: 160,
+      borderRadius: 80,
+      borderWidth: 8, // Thicker border
+      borderColor: colors.primary,
+      borderTopColor: 'transparent',
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+    },
+    particle: {
+      position: 'absolute',
+      width: 20, // Larger particles
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+    },
+    centerPulse: {
+      position: 'absolute',
+      width: 32, // Larger center pulse
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+    },
+    screenFlash: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: `${colors.background}30`, // Theme-aware flash
+      zIndex: 1,
+    },
+    chargeGlow: {
+      position: 'absolute',
+      width: screenWidth * 2,
+      height: screenHeight * 2,
+      borderRadius: (screenWidth * 2) / 2,
+      backgroundColor: `${colors.primary}20`, // Light theme-aware glow
+      opacity: 0,
+      zIndex: 0,
+    },
+  });
 
   useEffect(() => {
     if (isVisible && ANIMATIONS_ENABLED) {
@@ -189,17 +327,17 @@ const PingAnimation = ({
     // Phase 2: Radar sweep (3 seconds)
     const radarSweep = Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: 10, // Very large scale
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
+        toValue: 10,
         duration: 3000,
         useNativeDriver: true,
       }),
       Animated.timing(rotationAnim, {
         toValue: 3,
+        duration: 3000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
         duration: 3000,
         useNativeDriver: true,
       }),
@@ -221,28 +359,20 @@ const PingAnimation = ({
       useNativeDriver: true,
     });
 
-    // Phase 2: Particle burst (3 seconds)
-    const particleAnimations = particleAnims.map((anim, index) => {
-      const angle = (index * 45) * (Math.PI / 180);
-      const distance = 200; // Much larger distance
-      
-      return Animated.parallel([
+    // Phase 2: Particle burst (2 seconds)
+    const particleBurst = Animated.parallel(
+      particleAnims.map(anim => 
         Animated.timing(anim, {
           toValue: 1,
-          duration: 3000,
+          duration: 2000,
           useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
+        })
+      )
+    );
 
     Animated.sequence([
       chargeUp,
-      Animated.parallel(particleAnimations)
+      particleBurst
     ]).start(() => {
       if (onAnimationComplete) onAnimationComplete();
     });
@@ -258,15 +388,7 @@ const PingAnimation = ({
       style={[
         styles.ripple,
         {
-          transform: [
-            { scale: scaleAnim },
-            {
-              rotate: rotationAnim.interpolate({
-                inputRange: [0, 2],
-                outputRange: ['0deg', '720deg'],
-              }),
-            },
-          ],
+          transform: [{ scale: scaleAnim }],
           opacity: opacityAnim,
         },
       ]}
@@ -404,75 +526,5 @@ const PingAnimation = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: screenWidth,
-    height: screenHeight,
-    zIndex: 1000,
-  },
-  ripple: {
-    position: 'absolute',
-    width: 80, // Much larger ripple
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6, // Thicker border
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}30`, // More visible with transparency
-  },
-  pulse: {
-    position: 'absolute',
-    width: 120, // Much larger pulse
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: `${colors.primary}50`, // More visible with transparency
-  },
-  radar: {
-    position: 'absolute',
-    width: 160, // Much larger radar
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 8, // Thicker border
-    borderColor: colors.primary,
-    borderTopColor: 'transparent',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  particle: {
-    position: 'absolute',
-    width: 20, // Larger particles
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-  },
-  centerPulse: {
-    position: 'absolute',
-    width: 32, // Larger center pulse
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-  },
-  screenFlash: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: `${colors.background}30`, // Theme-aware flash
-    zIndex: 1,
-  },
-  chargeGlow: {
-    position: 'absolute',
-    width: screenWidth * 2,
-    height: screenHeight * 2,
-    borderRadius: (screenWidth * 2) / 2,
-    backgroundColor: `${colors.primary}20`, // Light theme-aware glow
-    opacity: 0,
-    zIndex: 0,
-  },
-});
 
 export default PingAnimation; 

@@ -90,6 +90,7 @@
  * 19. Add place visualization - map view showing all saved places
  * 20. Add place achievements - rewards for reaching saved place milestones
  */
+
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
 import {

@@ -90,6 +90,7 @@
  * 19. Add journey accessibility - better support for users with different abilities
  * 20. Add journey gamification - achievements, badges, and rewards for walking milestones
  */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -103,7 +104,6 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { getFallbackTheme } from '../styles/theme';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import { useFocusEffect } from '@react-navigation/native';
@@ -118,7 +118,7 @@ export default function PastJourneysScreen({ navigation }) {
   const [journeyStatuses, setJourneyStatuses] = useState({});
   const { user, migrationStatus } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
+  const colors = getCurrentThemeColors();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', loadJourneys);

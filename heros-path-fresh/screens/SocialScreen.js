@@ -92,15 +92,15 @@
  * 19. Add local guides - users can become guides for their local areas
  * 20. Add social analytics - insights about community walking patterns and trends
  */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { getFallbackTheme } from '../styles/theme';
 import SectionHeader from '../components/ui/SectionHeader';
 
 export default function SocialScreen() {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
+  const colors = getCurrentThemeColors();
   
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
