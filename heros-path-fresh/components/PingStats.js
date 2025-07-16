@@ -81,7 +81,7 @@ const PingStats = ({ style, onPingUsed }) => {
     const percentage = (stats.creditsRemaining / stats.maxCreditsPerMonth) * 100;
     if (percentage <= 20) return colors.error;
     if (percentage <= 50) return colors.warning;
-    return colors.success;
+    return colors.progress;
   };
 
   const getCreditsIcon = () => {

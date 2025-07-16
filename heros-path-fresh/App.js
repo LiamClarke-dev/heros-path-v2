@@ -54,7 +54,7 @@ function MainDrawer() {
           backgroundColor: colors.background,
         },
         drawerActiveTintColor: colors.primary,
-        drawerInactiveTintColor: colors.tabInactive,
+                  drawerInactiveTintColor: colors.textSecondary,
       }}
     >
       <Drawer.Screen 

@@ -287,8 +287,8 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
                   <Switch
                     value={discoveryPreferences[placeType] || false}
                     onValueChange={() => toggleDiscoveryPreference(placeType)}
-                    trackColor={{ false: Colors.tabInactive + '50', true: Colors.primary + '50' }}
-                    thumbColor={discoveryPreferences[placeType] ? Colors.primary : Colors.tabInactive}
+                        trackColor={{ false: colors.border + '50', true: colors.primary + '50' }}
+    thumbColor={discoveryPreferences[placeType] ? colors.primary : colors.border}
                   />
                 </View>
               </View>
@@ -328,13 +328,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: colors.border + '30',
   },
   backButton: {
     padding: Spacing.sm,
   },
   headerTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     flex: 1,
     textAlign: 'center',
@@ -345,10 +345,10 @@ const styles = StyleSheet.create({
   section: {
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: colors.border + '30',
   },
   sectionHeader: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginBottom: Spacing.md,
   },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.tabInactive + '50',
+    borderColor: colors.border + '50',
     backgroundColor: Colors.background,
   },
   ratingOptionActive: {
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
-    backgroundColor: Colors.tabInactive + '20',
+          backgroundColor: colors.border + '20',
     borderRadius: 8,
   },
   categoryTitleRow: {
