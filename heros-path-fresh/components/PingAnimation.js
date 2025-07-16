@@ -107,6 +107,77 @@ const PingAnimation = ({
   const screenFlashAnim = useRef(new Animated.Value(0)).current;
   const chargeAnim = useRef(new Animated.Value(0)).current;
 
+  // Create styles inside component to access colors
+  const styles = StyleSheet.create({
+    container: {
+      position: 'absolute',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: screenWidth,
+      height: screenHeight,
+      zIndex: 1000,
+    },
+    ripple: {
+      position: 'absolute',
+      width: 80, // Much larger ripple
+      height: 80,
+      borderRadius: 40,
+      borderWidth: 6, // Thicker border
+      borderColor: colors.primary,
+      backgroundColor: `${colors.primary}30`, // More visible with transparency
+    },
+    pulse: {
+      position: 'absolute',
+      width: 120, // Much larger pulse
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: `${colors.primary}50`, // More visible with transparency
+    },
+    radar: {
+      position: 'absolute',
+      width: 160, // Much larger radar
+      height: 160,
+      borderRadius: 80,
+      borderWidth: 8, // Thicker border
+      borderColor: colors.primary,
+      borderTopColor: 'transparent',
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+    },
+    particle: {
+      position: 'absolute',
+      width: 20, // Larger particles
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.primary,
+    },
+    centerPulse: {
+      position: 'absolute',
+      width: 32, // Larger center pulse
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+    },
+    screenFlash: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: `${colors.background}30`, // Theme-aware flash
+      zIndex: 1,
+    },
+    chargeGlow: {
+      position: 'absolute',
+      width: screenWidth * 2,
+      height: screenHeight * 2,
+      borderRadius: (screenWidth * 2) / 2,
+      backgroundColor: `${colors.primary}20`, // Light theme-aware glow
+      opacity: 0,
+      zIndex: 0,
+    },
+  });
+
   useEffect(() => {
     if (isVisible && ANIMATIONS_ENABLED) {
       // Reset animations
@@ -251,17 +322,17 @@ const PingAnimation = ({
     // Phase 2: Radar sweep (3 seconds)
     const radarSweep = Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: 10, // Very large scale
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
+        toValue: 10,
         duration: 3000,
         useNativeDriver: true,
       }),
       Animated.timing(rotationAnim, {
         toValue: 3,
+        duration: 3000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
         duration: 3000,
         useNativeDriver: true,
       }),
@@ -283,28 +354,20 @@ const PingAnimation = ({
       useNativeDriver: true,
     });
 
-    // Phase 2: Particle burst (3 seconds)
-    const particleAnimations = particleAnims.map((anim, index) => {
-      const angle = (index * 45) * (Math.PI / 180);
-      const distance = 200; // Much larger distance
-      
-      return Animated.parallel([
+    // Phase 2: Particle burst (2 seconds)
+    const particleBurst = Animated.parallel(
+      particleAnims.map(anim => 
         Animated.timing(anim, {
           toValue: 1,
-          duration: 3000,
+          duration: 2000,
           useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
+        })
+      )
+    );
 
     Animated.sequence([
       chargeUp,
-      Animated.parallel(particleAnimations)
+      particleBurst
     ]).start(() => {
       if (onAnimationComplete) onAnimationComplete();
     });
@@ -320,15 +383,7 @@ const PingAnimation = ({
       style={[
         styles.ripple,
         {
-          transform: [
-            { scale: scaleAnim },
-            {
-              rotate: rotationAnim.interpolate({
-                inputRange: [0, 2],
-                outputRange: ['0deg', '720deg'],
-              }),
-            },
-          ],
+          transform: [{ scale: scaleAnim }],
           opacity: opacityAnim,
         },
       ]}
@@ -466,75 +521,5 @@ const PingAnimation = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: screenWidth,
-    height: screenHeight,
-    zIndex: 1000,
-  },
-  ripple: {
-    position: 'absolute',
-    width: 80, // Much larger ripple
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6, // Thicker border
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}30`, // More visible with transparency
-  },
-  pulse: {
-    position: 'absolute',
-    width: 120, // Much larger pulse
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: `${colors.primary}50`, // More visible with transparency
-  },
-  radar: {
-    position: 'absolute',
-    width: 160, // Much larger radar
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 8, // Thicker border
-    borderColor: colors.primary,
-    borderTopColor: 'transparent',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  particle: {
-    position: 'absolute',
-    width: 20, // Larger particles
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-  },
-  centerPulse: {
-    position: 'absolute',
-    width: 32, // Larger center pulse
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-  },
-  screenFlash: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: `${colors.background}30`, // Theme-aware flash
-    zIndex: 1,
-  },
-  chargeGlow: {
-    position: 'absolute',
-    width: screenWidth * 2,
-    height: screenHeight * 2,
-    borderRadius: (screenWidth * 2) / 2,
-    backgroundColor: `${colors.primary}20`, // Light theme-aware glow
-    opacity: 0,
-    zIndex: 0,
-  },
-});
 
 export default PingAnimation; 
