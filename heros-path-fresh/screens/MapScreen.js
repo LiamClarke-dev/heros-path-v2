@@ -88,7 +88,6 @@
  * 19. Add customizable UI - let users customize button placement and visibility
  * 20. Add emergency features - SOS functionality and emergency contacts
  */
-*/
 // NOTE: This screen now uses react-native-maps. Make sure to install it with:
 //   npx expo install react-native-maps
 import React, { useState, useEffect, useRef } from 'react';
