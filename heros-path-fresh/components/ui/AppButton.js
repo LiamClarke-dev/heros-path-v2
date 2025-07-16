@@ -66,6 +66,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getFallbackTheme } from '../../styles/theme';
 
 const VARIANTS = {
   primary: (colors) => ({
@@ -92,7 +93,7 @@ export default function AppButton({
   ...props
 }) {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   const variantStyles = VARIANTS[variant] ? VARIANTS[variant](colors) : VARIANTS.primary(colors);
 
   return (

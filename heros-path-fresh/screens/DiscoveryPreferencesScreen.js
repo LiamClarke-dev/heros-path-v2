@@ -87,7 +87,6 @@
  * 19. Add preference accessibility - better support for users with disabilities
  * 20. Add preference gamification - achievements and rewards for trying new place types
  */
-
 // screens/DiscoveryPreferencesScreen.js
 import React, { useState, useEffect } from 'react';
 import { 

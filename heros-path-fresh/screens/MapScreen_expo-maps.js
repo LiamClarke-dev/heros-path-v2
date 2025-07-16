@@ -1,96 +1,29 @@
 /*
- * MAP SCREEN (CORE APP SCREEN)
- * ============================
- * 
- * PURPOSE:
- * This is the heart of Hero's Path - the main screen where users track their walks,
- * see their progress in real-time, and interact with the core features. It displays
- * a Google Maps interface with GPS tracking, route recording, animated Link sprite,
- * saved places, and the ping functionality. Think of it as the "adventure interface"
- * where all the walking and discovery magic happens.
- * 
- * FUNCTIONALITY:
- * - Real-time GPS location tracking with animated Link sprite that moves and faces direction
- * - Route recording with glowing polylines that show the user's walking path
- * - Location permission management with automatic requests and background permission warnings
- * - Journey saving with distance calculation, duration tracking, and Firestore storage
- * - Ping functionality for real-time place discovery during walks
- * - Display of saved places and past journey routes on the map
- * - Theme-aware map styling with 5 different map styles (Standard, Satellite, etc.)
- * - Background location permission warnings to ensure accurate tracking
- * - Error handling for location services and map rendering issues
- * 
- * WHY IT EXISTS:
- * This is the primary interface for Hero's Path's core value proposition: gamified
- * walking with discovery. Users spend most of their time on this screen during active
- * walks. It needs to be engaging, accurate, and responsive to make walking feel like
- * an adventure rather than just exercise. The animated sprite and visual feedback
- * transform mundane walks into engaging experiences.
- * 
- * KEY FEATURES:
- * - Animated Link sprite that shows walking direction and movement
- * - Real-time route tracking with glowing polylines
- * - Ping button for discovering places during walks (with credits and cooldown)
- * - Map style switching (Adventure, Night, Satellite, etc.)
- * - Background permission warnings for accurate GPS tracking
- * - Journey completion workflow with automatic saving
- * - Display of past journeys and saved places for context
- * - Theme integration for consistent visual experience
- * 
- * RELATIONSHIPS:
- * - Uses multiple contexts: UserContext (auth), ThemeContext (styling), ExplorationContext (history)
- * - Integrates with JourneyService for saving completed walks
- * - Uses DiscoveryService for managing place discoveries
- * - Works with PingButton and PingStats components for real-time discovery
- * - Uses PingAnimation for visual feedback (currently disabled)
- * - Connects to various services for data persistence and API calls
- * 
- * REFERENCED BY:
- * - AppNavigator.js (as the main screen in Map stack)
- * - Most users spend majority of their time on this screen during active use
- * - Other screens reference this as the "home" or main app experience
- * 
- * REFERENCES:
- * - ThemeContext (for map styling and UI theming)
- * - UserContext (for user authentication and data)
- * - ExplorationContext (for tracking exploration history)
- * - JourneyService (for saving completed journeys)
- * - DiscoveryService (for managing place discoveries)
- * - PingButton, PingStats, PingAnimation components
- * - Location services (expo-location)
- * - Google Maps (react-native-maps)
- * 
- * IMPORTANCE TO APP:
- * CRITICAL - This is the most important screen in the entire app. It's where users
- * spend most of their time and experience the core value proposition. If this screen
- * doesn't work well, the entire app fails. The GPS tracking, visual feedback, and
- * user experience on this screen determine whether users continue using the app.
- * 
- * IMPROVEMENT SUGGESTIONS:
- * 1. Add offline map support - download map tiles for offline use
- * 2. Add route planning - let users plan routes before walking
- * 3. Add compass mode - show traditional compass for navigation
- * 4. Add AR integration - augmented reality for enhanced discovery
- * 5. Add weather overlay - show weather conditions on the map
- * 6. Add traffic information - real-time traffic data for route planning
- * 7. Add elevation profile - show terrain elevation for hiking
- * 8. Add social features - see friends' locations and journeys
- * 9. Add guided tours - pre-planned discovery routes
- * 10. Add voice navigation - audio cues for route following
- * 11. Add fitness tracking - heart rate, calories, step counting
- * 12. Add photo integration - take and associate photos with locations
- * 13. Add landmark recognition - automatic identification of notable places
- * 14. Add route sharing - share interesting routes with other users
- * 15. Add achievement notifications - celebrate milestones during walks
- * 16. Add better error recovery - handle GPS and network failures gracefully
- * 17. Add performance optimization - reduce battery usage and improve responsiveness
- * 18. Add accessibility improvements - better support for users with disabilities
- * 19. Add customizable UI - let users customize button placement and visibility
- * 20. Add emergency features - SOS functionality and emergency contacts
- */
+  MapScreen.js
+  --------------
+  What this page does:
+  - This is the main map interface of the Hero's Path app. It displays the user's current location, tracks their journey, and shows saved routes and places on a map using Google Maps.
+  - Users can start/stop journey tracking, view their path, see saved places, and interact with map markers. The screen also supports animated Link sprites and a "ping" feature for real-time discovery.
+
+  Why this page exists & its importance:
+  - This is the core experience of the app, where users interact with the map, record their journeys, and discover new places. It ties together location tracking, journey management, and visual feedback.
+  - It is central to the app's value proposition and is referenced by other screens (e.g., journey history, discoveries).
+
+  References & dependencies:
+  - Uses the theme system via useTheme() for dynamic styling.
+  - Relies on JourneyService and DiscoveryService for data.
+  - Uses components like PingButton, PingStats, PingAnimation, SectionHeader, AppButton.
+  - References user and exploration context providers.
+  - Uses Google Maps API and Expo Location for map and geolocation features.
+
+  Suggestions for improvement:
+  - Consider breaking up the file: it's large and handles many responsibilities (map logic, UI, state, permissions). Move map logic, journey management, and UI components into separate hooks or components.
+  - Add more comments explaining complex logic, especially around journey tracking and sprite animation.
+  - Ensure all color and style values use the theme system (avoid hardcoded values).
+  - Improve error handling for location and map errors.
+  - Consider accessibility improvements for map controls and markers.
 */
-// NOTE: This screen now uses react-native-maps. Make sure to install it with:
-//   npx expo install react-native-maps
+// screens/MapScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -103,9 +36,8 @@ import {
   Dimensions,
   Platform,
   Linking,
-  AppState,
 } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { AppleMaps, GoogleMaps } from 'expo-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -118,7 +50,6 @@ import PingStats from '../components/PingStats';
 import PingAnimation from '../components/PingAnimation';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
-import BackgroundLocationService from '../services/BackgroundLocationService';
 import Logger from '../utils/Logger';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
@@ -157,6 +88,70 @@ function getDirection([prev, curr]) {
   }
 }
 
+// Helper to build polylines for the new API
+function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors }) {
+  const polylines = [];
+  // Saved routes
+  if (savedRoutes && savedRoutes.length > 0) {
+    for (const journey of savedRoutes) {
+      polylines.push({
+        id: journey.id,
+        coordinates: journey.route,
+        color: colors.routeLine,
+        width: 3,
+        opacity: 0.6,
+      });
+    }
+  }
+  // Preview route
+  if ((previewRoadCoords && previewRoadCoords.length > 0) || (previewRoute && previewRoute.length > 0)) {
+    polylines.push({
+      id: 'preview',
+      coordinates: previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute,
+      color: colors.routePreview,
+      width: 4,
+    });
+  }
+  // Current path
+  if (pathToRender && pathToRender.length > 0) {
+    polylines.push({
+      id: 'current',
+      coordinates: pathToRender,
+      color: colors.routeLine,
+      width: 6,
+    });
+  }
+  return polylines;
+}
+
+// Helper to build markers for the new API
+function buildMarkers({ currentPosition, spriteSource, showSavedPlaces, savedPlaces, colors }) {
+  const markers = [];
+  // Current position marker (Link sprite)
+  if (currentPosition) {
+    markers.push({
+      id: 'current',
+      coordinates: currentPosition,
+      anchor: { x: 0.5, y: 0.9 },
+      icon: Image.resolveAssetSource(spriteSource).uri,
+    });
+  }
+  // Saved places markers
+  if (showSavedPlaces && savedPlaces && savedPlaces.length > 0) {
+    for (const place of savedPlaces) {
+      markers.push({
+        id: place.id,
+        coordinates: { latitude: place.latitude, longitude: place.longitude },
+        title: place.name,
+        description: place.vicinity,
+        // Optionally, you can set a custom icon here if you have one, otherwise omit for default marker
+        // icon: require('../assets/icon.png'),
+      });
+    }
+  }
+  return markers;
+}
+
 export default function MapScreen({ navigation, route }) {
   const { getCurrentThemeColors, getCurrentMapStyleArray } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();
@@ -166,6 +161,7 @@ export default function MapScreen({ navigation, route }) {
   const { setCurrentJourney } = useExploration();
   
   const mapRef = useRef(null);
+  const locationSubscription = useRef(null);
   
   const [currentPosition, setCurrentPosition] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -182,7 +178,6 @@ export default function MapScreen({ navigation, route }) {
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
   const [mapError, setMapError] = useState(null);
-  const [appState, setAppState] = useState(AppState.currentState);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -218,79 +213,31 @@ export default function MapScreen({ navigation, route }) {
     );
   };
 
-  // Initialize BackgroundLocationService and load data on mount
+  // Load saved routes and places on mount
   useEffect(() => {
-    const initializeLocation = async () => {
+    const fetchLocation = async () => {
       try {
-        // Initialize the background location service
-        const initialized = await BackgroundLocationService.initialize();
-        if (!initialized) {
-          Alert.alert('Location Setup Failed', 'Please enable location permissions in your device settings.');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Location permission is required to use the map.');
           return;
         }
-
-        // Set up location update callback
-        BackgroundLocationService.setLocationUpdateCallback((coords, journey) => {
-          // Update current position
-          setCurrentPosition({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            timestamp: coords.timestamp,
-          });
-          
-          // Update location accuracy indicator
-          setLocationAccuracy(coords.accuracy);
-          
-          // Update path for rendering
-          setPathToRender(journey.coordinates);
-          
-          Logger.debug('Location updated:', {
-            lat: coords.latitude.toFixed(6),
-            lng: coords.longitude.toFixed(6),
-            accuracy: coords.accuracy,
-            points: journey.coordinates.length
-          });
+        const location = await Location.getCurrentPositionAsync({});
+        setCurrentPosition({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          timestamp: location.timestamp,
         });
-
-        // Get initial location
-        try {
-          const coords = await BackgroundLocationService.getCurrentLocation();
-          setCurrentPosition({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            timestamp: Date.now(),
-          });
-          setLocationAccuracy(coords.accuracy);
-        } catch (error) {
-          Logger.warn('Could not get initial location:', error);
-        }
-
       } catch (error) {
-        Logger.error('Error initializing location service:', error);
-        Alert.alert('Location Error', 'Failed to initialize location services. Please check your permissions.');
+        console.error('Error fetching location:', error);
       }
     };
 
-    initializeLocation();
+    fetchLocation();
     loadSavedRoutes();
     loadSavedPlaces();
     checkBackgroundPermissions();
-
-    // Cleanup on unmount
-    return () => {
-      BackgroundLocationService.setLocationUpdateCallback(null);
-    };
   }, []);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        checkBackgroundPermissions();
-      }
-      setAppState(nextAppState);
-    });
-    return () => subscription.remove();
-  }, [appState]);
 
   // Update sprite state based on movement
   useEffect(() => {
@@ -301,6 +248,12 @@ export default function MapScreen({ navigation, route }) {
       setSpriteState(SPRITE_STATES.IDLE);
     }
   }, [pathToRender]);
+
+  // Log API key and region on mount
+  useEffect(() => {
+    Logger.debug('MapScreen: Google Maps API Key (iOS):', GOOGLE_MAPS_API_KEY_IOS);
+    Logger.debug('MapScreen: Current Position:', currentPosition);
+  }, [currentPosition]);
 
   const spriteSource = SPRITE_SOURCES[spriteState];
 
@@ -330,37 +283,18 @@ export default function MapScreen({ navigation, route }) {
   };
 
   const locateMe = async () => {
+    if (!currentPosition) return;
+    
     setIsLocating(true);
     try {
-      // Get fresh location from the service
-      const coords = await BackgroundLocationService.getCurrentLocation();
-      
-      const newPosition = {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        timestamp: Date.now(),
-      };
-      
-      setCurrentPosition(newPosition);
-      setLocationAccuracy(coords.accuracy);
-      
-      // Animate to the location
       mapRef.current?.animateToRegion({
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
       }, 1000);
-      
-      Logger.debug('Located user:', {
-        lat: coords.latitude.toFixed(6),
-        lng: coords.longitude.toFixed(6),
-        accuracy: coords.accuracy
-      });
-      
     } catch (error) {
-      Logger.error('Error locating user:', error);
-      Alert.alert('Location Error', 'Could not get your current location. Please check your location settings.');
+      console.error('Error locating user:', error);
     } finally {
       setIsLocating(false);
     }
@@ -464,85 +398,69 @@ export default function MapScreen({ navigation, route }) {
 
   const toggleTracking = async () => {
     if (tracking) {
-      // Stop tracking using BackgroundLocationService
-      try {
-        const journeyData = await BackgroundLocationService.stopTracking();
-        setTracking(false);
-        
-        // Save the journey if we have data
-        if (journeyData && journeyData.coordinates.length > 0) {
-          await saveJourney(journeyData.coordinates);
-        } else {
-          Logger.warn('No journey data to save');
-          Alert.alert('No Data', 'No route data was recorded. Make sure location permissions are enabled.');
-        }
-        
-        // Reset UI state
-        setCurrentJourneyId(null);
-        setPathToRender([]);
-        setPreviewRoute([]);
-        setPreviewRoadCoords([]);
-        
-      } catch (error) {
-        Logger.error('Error stopping tracking:', error);
-        Alert.alert('Error', 'Failed to stop tracking. Your data may not have been saved.');
-        setTracking(false);
+      // Stop tracking
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
+      }
+      setTracking(false);
+      
+      // Save the journey
+      if (currentJourneyId && pathToRender.length > 0) {
+        await saveJourney(pathToRender);
       }
     } else {
-      // Start tracking using BackgroundLocationService
+      // Start tracking
       try {
-        // Create new journey ID
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Location permission is required to track your walks.');
+          return;
+        }
+
+        // Request background permissions
+        const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+        if (backgroundStatus.status !== 'granted') {
+          Alert.alert(
+            'Background Permission Required',
+            'Please grant "Always" location access to track your walks in the background.'
+          );
+          return;
+        }
+
+        // Create new journey
         const journeyId = Date.now().toString();
-        
-        // Reset UI state
         setCurrentJourneyId(journeyId);
         setPathToRender([]);
         setPreviewRoute([]);
         setPreviewRoadCoords([]);
         setPingUsed(0);
 
-        // Start tracking with the enhanced service
-        const success = await BackgroundLocationService.startTracking(journeyId);
-        
-        if (success) {
-          setTracking(true);
-          Logger.info('Started enhanced GPS tracking with background support', { journeyId });
-          
-          // Show success message
-          Alert.alert(
-            'Journey Started! 🗺️',
-            'Your adventure is now being tracked with enhanced GPS accuracy. The app will continue tracking even when your screen is locked.',
-            [{ text: 'Got it!', style: 'default' }]
-          );
-        } else {
-          throw new Error('Failed to start background location service');
-        }
-        
+        // Start location tracking
+        locationSubscription.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.BestForNavigation,
+            timeInterval: 1000,
+            distanceInterval: 5,
+            showsBackgroundLocationIndicator: true,
+          },
+          (location) => {
+            const newCoord = {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              timestamp: location.timestamp,
+            };
+
+            setCurrentPosition(newCoord);
+            setPathToRender(prev => [...prev, newCoord]);
+          }
+        );
+
+        setTracking(true);
+        Logger.info('MAP_SCREEN', 'Started tracking', { journeyId });
       } catch (error) {
-        Logger.error('Error starting tracking:', error);
-        setTracking(false);
-        
-        if (error.message.includes('permission')) {
-          Alert.alert(
-            'Permission Required',
-            'Location permissions are required to track your walks. Please enable both "While Using App" and "Always" location access in your device settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { 
-                text: 'Open Settings', 
-                onPress: () => {
-                  if (Platform.OS === 'ios') {
-                    Linking.openURL('app-settings:');
-                  } else {
-                    Linking.openSettings();
-                  }
-                }
-              }
-            ]
-          );
-        } else {
-          Alert.alert('Error', 'Failed to start tracking. Please try again or check your location settings.');
-        }
+        Logger.error('MAP_SCREEN', 'Error starting tracking', error);
+        Alert.alert('Error', 'Failed to start tracking. Please try again.');
       }
     }
   };
@@ -594,18 +512,13 @@ export default function MapScreen({ navigation, route }) {
     );
   }
 
-  // Helper: region for MapView
-  const region = currentPosition
-    ? {
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      }
-    : null;
+  // Build polylines and markers for the new API
+  const polylines = buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors });
+  const markers = buildMarkers({ currentPosition, spriteSource, showSavedPlaces, savedPlaces, colors });
 
   return (
     <View style={styles.container}>
+      <SectionHeader title="Map" />
       {backgroundPermissionWarning && (
         <TouchableOpacity 
           style={[styles.permissionWarning, { backgroundColor: colors.warning }]} 
@@ -617,99 +530,38 @@ export default function MapScreen({ navigation, route }) {
         </TouchableOpacity>
       )}
 
-      {/* GPS Accuracy Indicator */}
-      {tracking && locationAccuracy && (
-        <View style={[styles.accuracyIndicator, { backgroundColor: colors.cardBackground }]}>
-          <MaterialIcons 
-            name="gps-fixed" 
-            size={16} 
-            color={
-              locationAccuracy <= 5 ? colors.success :
-              locationAccuracy <= 15 ? colors.warning :
-              colors.error
-            } 
-          />
-          <Text style={[styles.accuracyText, { color: colors.textSecondary }]}>
-            GPS: {Math.round(locationAccuracy)}m
-          </Text>
-          <Text style={[styles.accuracyStatus, { 
-            color: locationAccuracy <= 5 ? colors.success :
-                   locationAccuracy <= 15 ? colors.warning :
-                   colors.error
-          }]}>
-            {locationAccuracy <= 5 ? 'Excellent' :
-             locationAccuracy <= 15 ? 'Good' :
-             locationAccuracy <= 50 ? 'Fair' : 'Poor'}
-          </Text>
-        </View>
-      )}
-
       {currentPosition ? (
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={region}
-          customMapStyle={mapStyleArray}
-          onError={handleMapError}
-          showsUserLocation={false}
-          showsMyLocationButton={false}
-          toolbarEnabled={false}
-        >
-          {/* Saved routes as polylines */}
-          {savedRoutes.map(journey => (
-            <Polyline
-              key={journey.id}
-              coordinates={journey.route}
-              strokeColor={colors.routeLine}
-              strokeWidth={3}
-            />
-          ))}
-          {/* Preview route polyline */}
-          {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
-            <Polyline
-              coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
-              strokeColor={colors.routePreview}
-              strokeWidth={4}
-            />
-          )}
-          {/* Current path polyline */}
-          {pathToRender.length > 0 && (
-            <Polyline
-              coordinates={pathToRender}
-              strokeColor={colors.routeLine}
-              strokeWidth={6}
-            />
-          )}
-          {/* Current position marker (sprite) */}
-          {currentPosition && (
-            <Marker
-              coordinate={currentPosition}
-              anchor={{ x: 0.5, y: 0.9 }}
-              tracksViewChanges={false}
-            >
-              <Image source={spriteSource} style={{ width: 16, height: 32 }} resizeMode="contain" />
-            </Marker>
-          )}
-          {/* Saved places markers */}
-          {showSavedPlaces && savedPlaces.map(place => (
-            <Marker
-              key={place.id}
-              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
-              title={place.name}
-              description={place.vicinity}
-            >
-              <View style={[styles.savedPlaceMarker, { backgroundColor: colors.primary }]}> 
-                <MaterialIcons name="favorite" size={16} color={colors.buttonText} />
-              </View>
-            </Marker>
-          ))}
-        </MapView>
+        Platform.OS === 'ios' ? (
+          <AppleMaps
+            ref={mapRef}
+            style={styles.map}
+            cameraPosition={{
+              coordinates: currentPosition,
+              zoom: 15,
+            }}
+            markers={markers}
+            polylines={polylines}
+            onError={handleMapError}
+          />
+        ) : (
+          <GoogleMaps
+            ref={mapRef}
+            style={styles.map}
+            cameraPosition={{
+              coordinates: currentPosition,
+              zoom: 15,
+            }}
+            markers={markers}
+            polylines={polylines}
+            onError={handleMapError}
+          />
+        )
       ) : (
         <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
           <Text style={[styles.loadingText, { color: colors.text }]}>Loading your location…</Text>
         </View>
       )}
-      
+
       {/* Ping Animation Overlay */}
       {showPingAnimation && currentPosition && (
         <PingAnimation
@@ -719,7 +571,7 @@ export default function MapScreen({ navigation, route }) {
           animationType="particle"
         />
       )}
-      
+
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
         {/* Discovery preferences button */}
@@ -729,7 +581,6 @@ export default function MapScreen({ navigation, route }) {
         >
           <MaterialIcons name="tune" size={24} color={colors.primary} />
         </TouchableOpacity>
-        
         {/* Locate button */}
         <TouchableOpacity 
           style={[
@@ -746,7 +597,6 @@ export default function MapScreen({ navigation, route }) {
             color={isLocating ? colors.textSecondary : colors.primary} 
           />
         </TouchableOpacity>
-        
         {/* Toggle saved places button */}
         <TouchableOpacity 
           style={[
@@ -788,7 +638,7 @@ export default function MapScreen({ navigation, route }) {
           />
         </View>
       )}
-      
+
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
           style={[
@@ -909,30 +759,9 @@ const styles = StyleSheet.create({
   savedPlaceMarker: {
     width: 24,
     height: 24,
-    borderRadius: 8, // beveled/rounded corners
-    borderWidth: 2,
-    borderColor: '#fff',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.small,
-  },
-  accuracyIndicator: {
-    position: 'absolute',
-    top: 60,
-    right: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.sm,
-    borderRadius: Layout.borderRadius,
-    ...Shadows.small,
-  },
-  accuracyText: {
-    ...Typography.bodySmall,
-    marginLeft: Spacing.xs,
-    marginRight: Spacing.xs,
-  },
-  accuracyStatus: {
-    ...Typography.bodySmall,
-    fontWeight: '600',
   },
 });

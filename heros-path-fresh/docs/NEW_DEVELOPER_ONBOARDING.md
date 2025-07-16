@@ -1,8 +1,6 @@
-# New Developer Onboarding Checklist
+# [DEPRECATED] See ONBOARDING_AND_HANDOVER.md
 
-**Welcome to Hero's Path!** 🎮
-
-This checklist will help you get up to speed quickly and ensure you follow our established processes.
+This file is now archived. Please use `ONBOARDING_AND_HANDOVER.md` for all onboarding and handover instructions.
 
 ---
 

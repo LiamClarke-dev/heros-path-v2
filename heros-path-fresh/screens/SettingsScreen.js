@@ -103,7 +103,6 @@
  * 20. Add settings compliance - ensure settings meet legal and privacy requirements
  * 21. Add settings integration - integrate with device settings and other apps
  */
-
 // screens/SettingsScreen.js
 import React, { useState, useEffect } from 'react';
 import {
@@ -138,7 +137,7 @@ import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
 // --- New UI Components ---
 const SectionCard = ({ children, style }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <View style={[{
       backgroundColor: colors.surface,
@@ -155,37 +154,52 @@ const SectionCard = ({ children, style }) => {
   );
 };
 
-const SettingsButton = ({ onPress, icon, label, style, color, textColor, disabled }) => {
+// --- REFACTOR: Enhanced SettingsButton for overflow, accessibility, and polish ---
+const SettingsButton = ({ onPress, icon, label, style, color, textColor, disabled, accessibilityLabel }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
     <TouchableOpacity
       style={[{
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         paddingVertical: 14,
         paddingHorizontal: 16,
         borderRadius: 8,
         backgroundColor: color || colors.buttonSecondary,
         marginVertical: 4,
         opacity: disabled ? 0.5 : 1,
+        minWidth: 100,
+        maxWidth: 160,
+        minHeight: 44,
+        elevation: 1,
       }, style]}
       onPress={onPress}
       disabled={disabled}
+      accessibilityLabel={accessibilityLabel || label}
+      activeOpacity={0.8}
     >
-      {icon && <MaterialIcons name={icon} size={22} color={textColor || colors.primary} style={{ marginRight: 12 }} />}
-      <Text style={{ color: textColor || colors.text, fontSize: 16 }}>{label}</Text>
+      {icon && <MaterialIcons name={icon} size={20} color={textColor || colors.primary} style={{ marginRight: 8 }} />}
+      <Text
+        style={{ color: textColor || colors.text, fontSize: 15, fontWeight: '500', flexShrink: 1 }}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 };
 
+// --- REFACTOR: SectionHeader for bolder headers ---
 const SectionHeader = ({ icon, title }) => {
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-      {icon && <MaterialIcons name={icon} size={22} color={colors.primary} style={{ marginRight: 8 }} />}
-      <Text style={{ fontWeight: 'bold', fontSize: 18, color: colors.text }}>{title}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+      {icon && <MaterialIcons name={icon} size={24} color={colors.primary} style={{ marginRight: 10 }} />}
+      <Text style={{ fontWeight: 'bold', fontSize: 20, color: colors.text }}>{title}</Text>
     </View>
   );
 };
@@ -213,7 +227,7 @@ export default function SettingsScreen() {
   } = useTheme();
   const navigation = useNavigation();
   
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [language, setLanguage] = useState('en');
   const [editingProfile, setEditingProfile] = useState(false);
@@ -925,7 +939,7 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <ScrollView style={{ backgroundColor: colors.background, padding: 16 }}>
+      <ScrollView style={{ backgroundColor: colors.background, padding: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Profile Section */}
         <SectionCard>
           <SectionHeader icon="person" title="Profile" />
@@ -980,12 +994,12 @@ export default function SettingsScreen() {
                 onChangeText={(text) => setEditForm(prev => ({ ...prev, location: text }))}
               />
               <View style={styles.editButtons}>
-                <SettingsButton label="Cancel" onPress={cancelEditing} icon="close" color={colors.buttonSecondary} textColor={colors.buttonTextSecondary} />
-                <SettingsButton label="Save" onPress={saveProfile} icon="check" color={colors.buttonPrimary} textColor={colors.buttonText} />
+                <SettingsButton label="Cancel" onPress={cancelEditing} icon="close" color={colors.buttonSecondary} textColor={colors.buttonTextSecondary} accessibilityLabel="Cancel Profile Edit" />
+                <SettingsButton label="Save" onPress={saveProfile} icon="check" color={colors.buttonPrimary} textColor={colors.buttonText} accessibilityLabel="Save Profile" />
               </View>
             </View>
           ) : (
-            <SettingsButton label="Edit Profile" onPress={startEditing} icon="edit" />
+            <SettingsButton label="Edit Profile" onPress={startEditing} icon="edit" accessibilityLabel="Edit Profile" />
           )}
           {userProfile?.bio && (
             <View style={styles.bioContainer}>
@@ -1030,6 +1044,7 @@ export default function SettingsScreen() {
                   color={language === code ? colors.buttonPrimary : colors.buttonSecondary}
                   textColor={language === code ? colors.buttonText : colors.text}
                   style={{ flex: 1, marginHorizontal: 2 }}
+                  accessibilityLabel={`Language: ${label}`}
                 />
               ))}
             </View>
@@ -1039,9 +1054,9 @@ export default function SettingsScreen() {
         {/* Theme & Map Style Section */}
         <SectionCard>
           <SectionHeader icon="palette" title="Theme & Map Style" />
-          <View style={styles.preferenceItem}>
+          <View style={[styles.preferenceItem, { flexDirection: 'column', gap: 12 }]}> 
             <Text style={[styles.preferenceLabel, { color: colors.text }]}>Theme</Text>
-            <View style={styles.themeOptions}>
+            <View style={[styles.themeOptions, { gap: 8 }]}> 
               {themeOptions.map((theme) => (
                 <SettingsButton
                   key={theme.type}
@@ -1050,14 +1065,15 @@ export default function SettingsScreen() {
                   icon={theme.icon}
                   color={currentTheme === theme.type ? colors.buttonPrimary : colors.buttonSecondary}
                   textColor={currentTheme === theme.type ? colors.buttonText : colors.text}
-                  style={{ flex: 1, marginHorizontal: 2 }}
+                  style={{ marginHorizontal: 2, marginBottom: 8 }}
+                  accessibilityLabel={`Theme: ${theme.name}`}
                 />
               ))}
             </View>
           </View>
-          <View style={styles.preferenceItem}>
+          <View style={[styles.preferenceItem, { flexDirection: 'column', gap: 12 }]}> 
             <Text style={[styles.preferenceLabel, { color: colors.text }]}>Map Style</Text>
-            <View style={styles.mapStyleOptions}>
+            <View style={[styles.mapStyleOptions, { gap: 8 }]}> 
               {mapStyleOptions.map((mapStyle) => (
                 <SettingsButton
                   key={mapStyle.type}
@@ -1066,7 +1082,8 @@ export default function SettingsScreen() {
                   icon={mapStyle.icon}
                   color={currentMapStyle === mapStyle.type ? colors.buttonPrimary : colors.buttonSecondary}
                   textColor={currentMapStyle === mapStyle.type ? colors.buttonText : colors.text}
-                  style={{ flex: 1, marginHorizontal: 2 }}
+                  style={{ marginHorizontal: 2, marginBottom: 8 }}
+                  accessibilityLabel={`Map Style: ${mapStyle.name}`}
                 />
               ))}
             </View>
@@ -1075,6 +1092,8 @@ export default function SettingsScreen() {
             label="Reset UI and Map Styles to Defaults"
             onPress={handleResetPreferences}
             icon="settings-backup-restore"
+            style={{ marginTop: 8, minWidth: 200 }}
+            accessibilityLabel="Reset UI and Map Styles to Defaults"
           />
         </SectionCard>
 
@@ -1087,6 +1106,7 @@ export default function SettingsScreen() {
             icon="logout"
             color={colors.danger}
             textColor={colors.buttonText}
+            accessibilityLabel="Sign Out"
           />
         </SectionCard>
 

@@ -661,10 +661,6 @@ export const MAP_STYLE_CONFIGS = {
 
 // Theme selector function
 export const getTheme = (themeType = THEME_TYPES.LIGHT) => {
-  if (__DEV__) {
-    console.debug('[THEME]', 'getTheme called', { themeType, availableTypes: Object.values(THEME_TYPES) });
-  }
-  
   let result;
   switch (themeType) {
     case THEME_TYPES.DARK:
@@ -679,23 +675,11 @@ export const getTheme = (themeType = THEME_TYPES.LIGHT) => {
       break;
   }
   
-  if (__DEV__) {
-    console.debug('[THEME]', 'getTheme result', { 
-      themeType, 
-      resultExists: !!result, 
-      resultKeys: result ? Object.keys(result) : null 
-    });
-  }
-  
   return result;
 };
 
 // Fallback theme for when theme context is not ready
 export const getFallbackTheme = () => {
-  if (__DEV__) {
-    console.debug('[THEME]', 'getFallbackTheme called');
-  }
-  
   const fallback = {
     ...lightTheme,
     // Ensure all properties are available
@@ -704,13 +688,6 @@ export const getFallbackTheme = () => {
     onSecondary: '#FFFFFF',
     onError: '#FFFFFF'
   };
-  
-  if (__DEV__) {
-    console.debug('[THEME]', 'getFallbackTheme result', { 
-      fallbackExists: !!fallback, 
-      fallbackKeys: fallback ? Object.keys(fallback) : null 
-    });
-  }
   
   return fallback;
 };
@@ -796,3 +773,16 @@ export const Shadows = {
     elevation: 8,
   },
 };
+
+// ---------------------------------------------------------------------------
+// GLOBAL FALLBACK
+// Ensure `global.colors` always exists (Hermes will crash if any file references
+// `colors` at module scope before ThemeContext is ready). We attach a fallback
+// *once* when this theme file is first imported.
+// ---------------------------------------------------------------------------
+if (typeof globalThis !== 'undefined' && !globalThis.colors) {
+  // Provide the light theme as a safe default — components will still override
+  // it with ThemeContext once they mount.
+  // eslint-disable-next-line no-undef
+  globalThis.colors = getFallbackTheme();
+}

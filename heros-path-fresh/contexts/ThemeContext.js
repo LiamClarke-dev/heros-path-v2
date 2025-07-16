@@ -105,34 +105,26 @@ export const ThemeProvider = ({ children }) => {
 
   // Load saved preferences from AsyncStorage
   const loadSavedPreferences = async () => {
-    Logger.debug('THEME_CONTEXT', 'loadSavedPreferences started');
     try {
       const [savedTheme, savedMapStyle] = await Promise.all([
         AsyncStorage.getItem(THEME_STORAGE_KEY),
         AsyncStorage.getItem(MAP_STYLE_STORAGE_KEY)
       ]);
 
-      Logger.debug('THEME_CONTEXT', 'AsyncStorage results', { savedTheme, savedMapStyle });
-
       if (savedTheme && Object.values(THEME_TYPES).includes(savedTheme)) {
-        Logger.debug('THEME_CONTEXT', 'Setting saved theme', { savedTheme });
         setCurrentTheme(savedTheme);
       } else {
-        Logger.debug('THEME_CONTEXT', 'Using default theme', { defaultTheme: DEFAULT_THEME });
         setCurrentTheme(DEFAULT_THEME);
       }
 
       if (savedMapStyle && Object.values(MAP_STYLES).includes(savedMapStyle)) {
-        Logger.debug('THEME_CONTEXT', 'Setting saved map style', { savedMapStyle });
         setCurrentMapStyle(savedMapStyle);
       } else {
-        Logger.debug('THEME_CONTEXT', 'Using default map style', { defaultMapStyle: DEFAULT_MAP_STYLE });
         setCurrentMapStyle(DEFAULT_MAP_STYLE);
       }
     } catch (error) {
       Logger.error('THEME_CONTEXT', 'Error loading theme preferences', error);
     } finally {
-      Logger.debug('THEME_CONTEXT', 'loadSavedPreferences completed, setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -169,10 +161,8 @@ export const ThemeProvider = ({ children }) => {
 
   // Get current theme colors
   const getCurrentThemeColors = () => {
-    Logger.debug('THEME_CONTEXT', 'getCurrentThemeColors called', { currentTheme, isLoading });
     
     const theme = getTheme(currentTheme);
-    Logger.debug('THEME_CONTEXT', 'getTheme result', { currentTheme, themeExists: !!theme, themeKeys: theme ? Object.keys(theme) : null });
     
     if (!theme) {
       Logger.warn('THEME_CONTEXT', 'Theme not found, using fallback', { currentTheme });
@@ -180,7 +170,6 @@ export const ThemeProvider = ({ children }) => {
       return getFallbackTheme();
     }
     
-    Logger.debug('THEME_CONTEXT', 'Returning theme colors', { themeType: currentTheme, hasColors: !!theme });
     return theme;
   };
 
@@ -211,14 +200,8 @@ export const ThemeProvider = ({ children }) => {
 
   // Add this function to the ThemeContext value
   function getNavigationTheme() {
-    Logger.debug('THEME_CONTEXT', 'getNavigationTheme called', { currentTheme, isLoading });
     
     const colors = getCurrentThemeColors();
-    Logger.debug('THEME_CONTEXT', 'getNavigationTheme colors result', { 
-      colorsExists: !!colors, 
-      colorsType: typeof colors, 
-      colorsKeys: colors ? Object.keys(colors) : null 
-    });
     
     if (!colors) {
       Logger.warn('THEME_CONTEXT', 'Colors not found in getNavigationTheme, using fallback');
@@ -297,10 +280,6 @@ export const ThemeProvider = ({ children }) => {
 // Custom hook to use theme context
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  Logger.debug('THEME_CONTEXT', 'useTheme hook called', { 
-    hasContext: !!context, 
-    contextKeys: context ? Object.keys(context) : null 
-  });
   
   if (!context) {
     Logger.error('THEME_CONTEXT', 'useTheme called outside ThemeProvider');

@@ -100,7 +100,6 @@
  * 19. Add authentication automation - streamline repeat authentication
  * 20. Add authentication compliance - ensure GDPR, CCPA, and other regulatory compliance
  */
-
 // screens/SignInScreen.js
 import React, { useEffect, useState } from 'react';
 import { Button, Alert, ActivityIndicator, View, Text, StyleSheet } from 'react-native';
