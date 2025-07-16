@@ -18,6 +18,9 @@
  * - Manages location subscription lifecycle to prevent memory leaks
  * - Provides status information about current tracking state
  * - Includes privacy-focused permission dialogs with clear explanations
+ * - Filters low-accuracy GPS points to improve route quality
+ * - Implements GPS warm-up mechanism for better accuracy recovery
+ * - Handles app lifecycle transitions for background/foreground tracking
  * 
  * WHY IT EXISTS:
  * Location tracking is core to Hero's Path's functionality, but it's complex and
@@ -34,6 +37,9 @@
  * - Automatic cleanup when tracking stops
  * - Integration with device settings for permission management
  * - Performance optimization to minimize battery usage
+ * - Location accuracy filtering to improve route quality
+ * - GPS warm-up mechanism for faster accuracy recovery
+ * - App lifecycle management for seamless background/foreground tracking
  * 
  * RELATIONSHIPS:
  * - Used by MapScreen.js for real-time location tracking during walks
@@ -53,6 +59,7 @@
  * - AsyncStorage (for temporary location data storage)
  * - Logger utility (for debugging and error tracking)
  * - React Native Alert and Linking (for permission dialogs)
+ * - React Native AppState (for app lifecycle management)
  * 
  * IMPORTANCE TO APP:
  * CRITICAL - This service is absolutely essential for Hero's Path's core functionality.
@@ -85,18 +92,201 @@
 
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import Logger from '../utils/Logger';
 
 const LOCATION_DATA_KEY = '@background_location_data';
 
+// GPS accuracy thresholds for filtering
+const ACCURACY_THRESHOLDS = {
+  EXCELLENT: 5,    // < 5m - Use immediately
+  GOOD: 15,        // < 15m - Use for tracking
+  POOR: 50,        // < 50m - Use only if no better option
+  REJECT: 100      // > 100m - Reject completely
+};
+
+// GPS warm-up configuration
+const WARMUP_CONFIG = {
+  DURATION: 10000,     // 10 seconds warm-up period
+  REQUIRED_POINTS: 3,  // Need 3 good points before considering warmed up
+  MAX_ATTEMPTS: 10     // Maximum attempts during warm-up
+};
+
 class BackgroundLocationService {
   constructor() {
     this.isTracking = false;
+    this.isWarmingUp = false;
     this.currentJourney = null;
     this.locationSubscriber = null;
+    this.warmupSubscriber = null;
     this.onLocationUpdate = null;
     this.onJourneyComplete = null;
+    this.lastKnownLocation = null;
+    this.recentLocations = []; // For filtering and smoothing
+    this.appState = AppState.currentState;
+    this.backgroundStartTime = null;
+    
+    // Bind app state change handler
+    this.handleAppStateChange = this.handleAppStateChange.bind(this);
+    AppState.addEventListener('change', this.handleAppStateChange);
+  }
+
+  // Handle app state changes for background/foreground transitions
+  handleAppStateChange(nextAppState) {
+    Logger.debug('App state changed from', this.appState, 'to', nextAppState);
+    
+    if (this.appState.match(/inactive|background/) && nextAppState === 'active') {
+      // App came to foreground
+      this.handleAppForeground();
+    } else if (this.appState === 'active' && nextAppState.match(/inactive|background/)) {
+      // App went to background
+      this.handleAppBackground();
+    }
+    
+    this.appState = nextAppState;
+  }
+
+  // Handle app coming to foreground
+  handleAppForeground() {
+    Logger.info('App foregrounded - checking location tracking state');
+    
+    if (this.isTracking) {
+      // Restart GPS warm-up to get accurate location quickly
+      this.startGPSWarmup();
+    }
+  }
+
+  // Handle app going to background
+  handleAppBackground() {
+    Logger.info('App backgrounded - maintaining location tracking');
+    this.backgroundStartTime = Date.now();
+  }
+
+  // Start GPS warm-up for better accuracy recovery
+  async startGPSWarmup() {
+    if (this.isWarmingUp) {
+      Logger.debug('GPS warm-up already in progress');
+      return;
+    }
+
+    Logger.info('Starting GPS warm-up for accuracy recovery');
+    this.isWarmingUp = true;
+    
+    let attempts = 0;
+    let goodPoints = 0;
+    const warmupStartTime = Date.now();
+
+    try {
+      this.warmupSubscriber = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 500, // Very frequent updates during warm-up
+          distanceInterval: 1,
+        },
+        (location) => {
+          attempts++;
+          const accuracy = location.coords.accuracy;
+          
+          Logger.debug(`GPS warm-up attempt ${attempts}: accuracy ${accuracy}m`);
+          
+          if (accuracy <= ACCURACY_THRESHOLDS.GOOD) {
+            goodPoints++;
+            Logger.debug(`Good GPS point ${goodPoints}/${WARMUP_CONFIG.REQUIRED_POINTS}`);
+          }
+          
+          // Check if warm-up is complete
+          const elapsed = Date.now() - warmupStartTime;
+          if (
+            goodPoints >= WARMUP_CONFIG.REQUIRED_POINTS || 
+            elapsed >= WARMUP_CONFIG.DURATION ||
+            attempts >= WARMUP_CONFIG.MAX_ATTEMPTS
+          ) {
+            this.completeGPSWarmup();
+          }
+        }
+      );
+    } catch (error) {
+      Logger.error('Failed to start GPS warm-up:', error);
+      this.completeGPSWarmup();
+    }
+  }
+
+  // Complete GPS warm-up and return to normal tracking
+  completeGPSWarmup() {
+    Logger.info('GPS warm-up completed');
+    this.isWarmingUp = false;
+    
+    if (this.warmupSubscriber) {
+      this.warmupSubscriber.remove();
+      this.warmupSubscriber = null;
+    }
+  }
+
+  // Filter location based on accuracy
+  isLocationAccurate(location) {
+    const accuracy = location.coords.accuracy;
+    
+    if (accuracy > ACCURACY_THRESHOLDS.REJECT) {
+      Logger.debug(`Rejecting location with poor accuracy: ${accuracy}m`);
+      return false;
+    }
+    
+    return true;
+  }
+
+  // Smooth location using recent points to reduce GPS noise
+  smoothLocation(newLocation) {
+    // Add to recent locations
+    this.recentLocations.push(newLocation);
+    
+    // Keep only last 5 points for smoothing
+    if (this.recentLocations.length > 5) {
+      this.recentLocations.shift();
+    }
+    
+    // If we have enough points and the new location is very different, smooth it
+    if (this.recentLocations.length >= 3) {
+      const avgLat = this.recentLocations.reduce((sum, loc) => sum + loc.coords.latitude, 0) / this.recentLocations.length;
+      const avgLng = this.recentLocations.reduce((sum, loc) => sum + loc.coords.longitude, 0) / this.recentLocations.length;
+      
+      const distance = this.calculateDistance(
+        newLocation.coords.latitude,
+        newLocation.coords.longitude,
+        avgLat,
+        avgLng
+      );
+      
+      // If the new point is very far from the average (> 20m), use smoothed coordinates
+      if (distance > 20 && newLocation.coords.accuracy > ACCURACY_THRESHOLDS.EXCELLENT) {
+        Logger.debug(`Smoothing location - distance from average: ${distance}m`);
+        return {
+          ...newLocation,
+          coords: {
+            ...newLocation.coords,
+            latitude: avgLat,
+            longitude: avgLng
+          }
+        };
+      }
+    }
+    
+    return newLocation;
+  }
+
+  // Calculate distance between two points
+  calculateDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lng2 - lng1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
   }
 
   // Show permission denied alert with privacy information
@@ -210,10 +400,19 @@ class BackgroundLocationService {
       const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
       
       if (foregroundStatus.status !== 'granted') {
+        this.showPermissionDeniedAlert();
         throw new Error('Foreground location permission denied');
       }
       
       if (backgroundStatus.status !== 'granted') {
+        Alert.alert(
+          'Background Permission Required',
+          'Hero\'s Path needs "Always" location access to track your walks even when the screen is locked. Please grant this permission in your device settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => this.openDeviceSettings() }
+          ]
+        );
         throw new Error('Background location permission denied');
       }
 
@@ -225,26 +424,36 @@ class BackgroundLocationService {
         isActive: true
       };
 
+      // Reset recent locations for smoothing
+      this.recentLocations = [];
+
+      // Start GPS warm-up first for better initial accuracy
+      await this.startGPSWarmup();
+
       // Start location tracking with optimized settings
       this.locationSubscriber = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 2000, // Reduced from 1000ms for better battery life
-          distanceInterval: 5, // Increased from 1m for better battery life
-          // Background task configuration
+          timeInterval: 1000, // Faster updates for better accuracy
+          distanceInterval: 2, // Smaller distance for more precise tracking
+          // Background task configuration for foreground service
           foregroundService: {
-            notificationTitle: "Hero's Path",
-            notificationBody: "Tracking your journey...",
-            notificationColor: "#1E1E1E"
+            notificationTitle: "Hero's Path - Adventure in Progress",
+            notificationBody: "Recording your journey. Tap to open app.",
+            notificationColor: "#1E1E1E",
+            killServiceOnDestroy: false, // Keep service alive
           },
           // iOS-specific optimizations
           activityType: Location.ActivityType.Fitness,
           showsBackgroundLocationIndicator: true,
+          pausesLocationUpdatesAutomatically: false, // Keep tracking even when stationary
           // Android-specific optimizations
           android: {
-            notificationTitle: "Hero's Path",
-            notificationBody: "Tracking your journey...",
-            notificationColor: "#1E1E1E"
+            notificationTitle: "Hero's Path - Adventure in Progress",
+            notificationBody: "Recording your journey. Tap to open app.",
+            notificationColor: "#1E1E1E",
+            notificationIcon: null, // Use app icon
+            enableHighAccuracy: true,
           }
         },
         (location) => {
@@ -253,12 +462,27 @@ class BackgroundLocationService {
       );
 
       this.isTracking = true;
-      Logger.debug('Location tracking started');
+      this.lastKnownLocation = null; // Reset for new tracking session
+      
+      Logger.info('Location tracking started with enhanced accuracy and background support', {
+        journeyId,
+        permissions: { foreground: foregroundStatus.status, background: backgroundStatus.status }
+      });
+      
       return true;
 
     } catch (error) {
-      console.error('Failed to start location tracking:', error);
+      Logger.error('Failed to start location tracking:', error);
       this.currentJourney = null;
+      this.isTracking = false;
+      
+      // Clean up any partial initialization
+      if (this.locationSubscriber) {
+        this.locationSubscriber.remove();
+        this.locationSubscriber = null;
+      }
+      this.completeGPSWarmup();
+      
       return false;
     }
   }
@@ -269,22 +493,30 @@ class BackgroundLocationService {
       return;
     }
 
-    const coords = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      timestamp: location.timestamp,
-      accuracy: location.coords.accuracy
-    };
+    // Filter and smooth the location
+    const processedLocation = this.smoothLocation(location);
 
-    // Add to current journey
-    this.currentJourney.coordinates.push(coords);
+    // Only add if it's accurate and not rejected
+    if (this.isLocationAccurate(processedLocation)) {
+      const coords = {
+        latitude: processedLocation.coords.latitude,
+        longitude: processedLocation.coords.longitude,
+        timestamp: processedLocation.timestamp,
+        accuracy: processedLocation.coords.accuracy
+      };
 
-    // Store for background processing
-    this.storeLocationData(coords);
+      // Add to current journey
+      this.currentJourney.coordinates.push(coords);
 
-    // Call callback if available
-    if (this.onLocationUpdate) {
-      this.onLocationUpdate(coords, this.currentJourney);
+      // Store for background processing
+      this.storeLocationData(coords);
+
+      // Call callback if available
+      if (this.onLocationUpdate) {
+        this.onLocationUpdate(coords, this.currentJourney);
+      }
+    } else {
+      Logger.debug('Skipping inaccurate location update:', processedLocation);
     }
   }
 
@@ -301,6 +533,9 @@ class BackgroundLocationService {
         this.locationSubscriber = null;
       }
 
+      // Stop GPS warm-up if still running
+      this.completeGPSWarmup();
+
       // Mark journey as complete
       if (this.currentJourney) {
         this.currentJourney.isActive = false;
@@ -312,16 +547,26 @@ class BackgroundLocationService {
       
       // Get final journey data
       const journeyData = this.currentJourney;
+      
+      // Reset all state
       this.currentJourney = null;
+      this.lastKnownLocation = null;
+      this.recentLocations = [];
+      this.backgroundStartTime = null;
 
       // Clear stored background data
       await this.clearStoredLocationData();
 
-      Logger.debug('Location tracking stopped');
+      Logger.info('Location tracking stopped successfully', {
+        journeyId: journeyData?.id,
+        coordinates: journeyData?.coordinates?.length || 0,
+        duration: journeyData?.duration || 0
+      });
+      
       return journeyData;
 
     } catch (error) {
-      console.error('Failed to stop location tracking:', error);
+      Logger.error('Failed to stop location tracking:', error);
       return null;
     }
   }
@@ -346,15 +591,29 @@ class BackgroundLocationService {
     }
 
     try {
+      // Start GPS warm-up for better accuracy after pause
+      await this.startGPSWarmup();
+
       this.locationSubscriber = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 2000,
-          distanceInterval: 5,
+          timeInterval: 1000,
+          distanceInterval: 2,
           foregroundService: {
-            notificationTitle: "Hero's Path",
-            notificationBody: "Tracking your journey...",
-            notificationColor: "#1E1E1E"
+            notificationTitle: "Hero's Path - Adventure in Progress",
+            notificationBody: "Recording your journey. Tap to open app.",
+            notificationColor: "#1E1E1E",
+            killServiceOnDestroy: false,
+          },
+          activityType: Location.ActivityType.Fitness,
+          showsBackgroundLocationIndicator: true,
+          pausesLocationUpdatesAutomatically: false,
+          android: {
+            notificationTitle: "Hero's Path - Adventure in Progress",
+            notificationBody: "Recording your journey. Tap to open app.",
+            notificationColor: "#1E1E1E",
+            notificationIcon: null,
+            enableHighAccuracy: true,
           }
         },
         (location) => {
@@ -363,12 +622,37 @@ class BackgroundLocationService {
       );
 
       this.currentJourney.isPaused = false;
+      Logger.info('Location tracking resumed with GPS warm-up');
       return true;
 
     } catch (error) {
-      console.error('Failed to resume location tracking:', error);
+      Logger.error('Failed to resume location tracking:', error);
       return false;
     }
+  }
+
+  // Clean up resources and event listeners
+  cleanup() {
+    // Remove app state listener
+    AppState.removeEventListener?.('change', this.handleAppStateChange);
+    
+    // Stop any active tracking
+    if (this.isTracking) {
+      this.stopTracking();
+    }
+    
+    // Clean up warm-up
+    this.completeGPSWarmup();
+    
+    // Reset all state
+    this.currentJourney = null;
+    this.lastKnownLocation = null;
+    this.recentLocations = [];
+    this.backgroundStartTime = null;
+    this.onLocationUpdate = null;
+    this.onJourneyComplete = null;
+    
+    Logger.info('BackgroundLocationService cleaned up');
   }
 
   // Set callbacks

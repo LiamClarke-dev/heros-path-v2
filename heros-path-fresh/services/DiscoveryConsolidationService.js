@@ -1,5 +1,4 @@
 /**
- * DiscoveryConsolidationService
  * DISCOVERY CONSOLIDATION SERVICE (DATA MERGING ENGINE)
  * ======================================================
  * 

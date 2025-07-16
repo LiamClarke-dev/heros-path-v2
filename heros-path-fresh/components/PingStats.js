@@ -1,3 +1,70 @@
+/*
+ * PING STATS COMPONENT
+ * ====================
+ * 
+ * PURPOSE:
+ * This component displays detailed information about the user's ping usage and statistics.
+ * It shows credits remaining, total pings used, monthly limits, and provides educational
+ * information about how the ping feature works. Think of it as the "dashboard" for the
+ * ping feature that helps users understand their usage and learn how to use the system
+ * effectively.
+ * 
+ * FUNCTIONALITY:
+ * - Displays a compact stats button showing credits remaining and status icon
+ * - Opens a detailed modal with full ping statistics and information
+ * - Shows color-coded credit status (green=plenty, yellow=medium, red=low)
+ * - Automatically refreshes stats every 5 seconds to stay current
+ * - Provides educational content about how ping works and usage tips
+ * - Shows cooldown time, monthly limits, and total usage
+ * - Includes refresh functionality to update stats manually
+ * 
+ * WHY IT EXISTS:
+ * The ping feature has complex rules (credits, cooldowns, monthly limits) that users
+ * need to understand to use effectively. This component makes those rules transparent
+ * and helps users track their usage. Without good stats, users would be confused
+ * about why ping sometimes doesn't work or when they'll get more credits.
+ * 
+ * RELATIONSHIPS:
+ * - Used alongside PingButton.js to show detailed usage information
+ * - Fetches data from PingService.js to get current user stats
+ * - Uses UserContext for current user identification
+ * - Uses ThemeContext for consistent styling across app themes
+ * - Complementary to PingButton which shows minimal stats
+ * 
+ * REFERENCED BY:
+ * - MapScreen.js (likely displayed near the PingButton)
+ * - Settings screens (for ping management)
+ * - Any screen that needs to show ping usage information
+ * 
+ * REFERENCES:
+ * - PingService.js (to fetch ping statistics and check limits)
+ * - UserContext.js (for user identification)
+ * - ThemeContext.js (for styling and colors)
+ * - Logger.js (for error logging and debugging)
+ * 
+ * IMPORTANCE TO APP:
+ * High - While not as critical as PingButton itself, this component is essential
+ * for user education and preventing frustration. Users need to understand the ping
+ * system to use it effectively. Good stats display leads to better feature adoption.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add usage charts - show ping usage over time with simple graphs
+ * 2. Add success rate tracking - show percentage of pings that found places
+ * 3. Add location-based insights - show best areas/times for successful pings
+ * 4. Implement usage predictions - predict when user will run out of credits
+ * 5. Add comparative stats - show usage vs other users (anonymized)
+ * 6. Add achievement integration - show ping-related achievements and progress
+ * 7. Include ping history - list recent pings with results and locations
+ * 8. Add smart notifications - remind users when credits reset or cooldown ends
+ * 9. Implement usage optimization tips - suggest better timing or locations
+ * 10. Add export functionality - let users export their ping history
+ * 11. Include cost analysis - show API costs saved through proper usage
+ * 12. Add seasonal insights - show how ping success varies by season/weather
+ * 13. Implement streak tracking - encourage consistent but moderate ping usage
+ * 14. Add social features - compare stats with friends (opt-in)
+ * 15. Include troubleshooting guide - help users solve common ping issues
+ */
+
 // components/PingStats.js
 import React, { useState, useEffect } from 'react';
 import {

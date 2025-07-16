@@ -1,3 +1,82 @@
+/*
+ * USER CONTEXT
+ * ============
+ * 
+ * PURPOSE:
+ * This React Context manages all user authentication and profile data for Hero's Path.
+ * It handles Firebase authentication, user profiles stored in Firestore, social features
+ * like friends lists, and data migration between app versions. Think of it as the central
+ * hub for everything related to user identity, authentication, and social connections
+ * throughout the app.
+ * 
+ * FUNCTIONALITY:
+ * - Manages Firebase authentication state and user sessions
+ * - Handles user profile creation, loading, and updates in Firestore
+ * - Provides social features: friends lists, user search, friend management
+ * - Manages data migration between app versions and data formats
+ * - Creates default profiles for new users with stats and preferences
+ * - Handles sign-in, sign-out, and session management
+ * - Provides loading states for authentication, profile operations, and migrations
+ * - Integrates with UserProfileService for all profile-related operations
+ * 
+ * WHY IT EXISTS:
+ * Hero's Path needs user accounts to save journeys, preferences, and social connections.
+ * This context centralizes all user-related functionality so any component can access
+ * current user data, authentication status, and social features. It also handles the
+ * complex data migration needed when the app's data structure evolves.
+ * 
+ * RELATIONSHIPS:
+ * - Uses Firebase Auth for authentication and session management
+ * - Works with UserProfileService for Firestore profile operations
+ * - Uses DataMigrationService for handling app data structure changes
+ * - Provides user data to all screens and components that need authentication
+ * - Integrates with journey, discovery, and preference storage systems
+ * - Connected to social features and friend management throughout the app
+ * 
+ * REFERENCED BY:
+ * - All screens that require authentication or user data
+ * - App.js (for authentication-based navigation)
+ * - SettingsScreen.js (for profile management)
+ * - SocialScreen.js (for friends and social features)
+ * - Any component that needs current user information
+ * - Services that need to associate data with specific users
+ * 
+ * REFERENCES:
+ * - Firebase Auth (for authentication)
+ * - UserProfileService.js (for profile operations)
+ * - DataMigrationService.js (for data migration)
+ * - Firebase Firestore (for profile storage)
+ * - Logger utility (for debugging and error tracking)
+ * 
+ * IMPORTANCE TO APP:
+ * Critical - This is absolutely essential for the app's core functionality. Without
+ * proper user management, the app can't save journeys, preferences, or provide
+ * personalized experiences. The social features and data migration capabilities
+ * are also crucial for user retention and app evolution over time.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add offline authentication support - cached credentials for offline use
+ * 2. Add social login options - Google, Apple, Facebook authentication
+ * 3. Add profile picture management - upload and crop profile images
+ * 4. Add privacy controls - granular privacy settings for profile and activity
+ * 5. Add account deletion - proper data cleanup when users delete accounts
+ * 6. Add two-factor authentication - enhanced security for user accounts
+ * 7. Add account linking - merge accounts from different authentication methods
+ * 8. Add guest mode - limited functionality without account creation
+ * 9. Add profile verification - verified badge system for authentic users
+ * 10. Add account recovery - better password reset and account recovery flows
+ * 11. Add user blocking - ability to block problematic users in social features
+ * 12. Add activity privacy - control who can see user's journeys and discoveries
+ * 13. Add profile sharing - shareable profile links and QR codes
+ * 14. Add user analytics - track user engagement and app usage patterns
+ * 15. Add onboarding improvements - better new user experience and tutorial
+ * 16. Add account merging - combine data when users have multiple accounts
+ * 17. Add parental controls - family-friendly features and content filtering
+ * 18. Add premium account features - subscription-based enhanced functionality
+ * 19. Add notification preferences - granular control over push notifications
+ * 20. Add data export - let users export their data for portability
+ */
+
 // contexts/UserContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';

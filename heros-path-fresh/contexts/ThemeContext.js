@@ -1,3 +1,80 @@
+/*
+ * THEME CONTEXT
+ * =============
+ * 
+ * PURPOSE:
+ * This React Context manages the entire theming system for Hero's Path, including
+ * both UI themes (Light, Dark, Adventure) and map styles (Standard, Satellite, Terrain,
+ * Night, Adventure). It provides centralized theme management, persistent user preferences,
+ * and seamless theme switching throughout the app. Think of it as the style engine
+ * that makes the app look consistent and allows users to personalize their experience.
+ * 
+ * FUNCTIONALITY:
+ * - Manages three UI themes: Light (iOS-style), Dark (battery-friendly), Adventure (Zelda-inspired)
+ * - Manages five map styles: Standard, Satellite, Terrain, Night, and Adventure
+ * - Persists user preferences to AsyncStorage for consistent experience across sessions
+ * - Provides theme-aware color palettes with 30+ color variables per theme
+ * - Supplies Google Maps styling configurations for custom map appearances
+ * - Offers React Navigation theme integration for consistent navigation styling
+ * - Handles theme loading states and fallback mechanisms for error recovery
+ * - Provides reset functionality to return to default settings
+ * 
+ * WHY IT EXISTS:
+ * Modern mobile apps need consistent theming and personalization options. Users expect
+ * dark mode, map customization, and visual preferences. This context ensures every
+ * component uses the same color scheme and provides a unified way to change themes
+ * throughout the app. It also enables the unique Adventure theme that gives Hero's
+ * Path its distinctive personality.
+ * 
+ * RELATIONSHIPS:
+ * - Used by virtually every UI component in the app for consistent styling
+ * - Provides colors and styling to all shared UI primitives (AppButton, Card, etc.)
+ * - Integrates with Google Maps for custom map styling
+ * - Works with React Navigation for consistent navigation theming
+ * - Connected to SettingsScreen for user preference management
+ * - Used by specialized components like ZeldaButton and ZeldaToggle for Adventure theme
+ * 
+ * REFERENCED BY:
+ * - All UI components (AppButton, Card, ListItem, SectionHeader, Divider, etc.)
+ * - All screen components (MapScreen, SettingsScreen, DiscoveriesScreen, etc.)
+ * - Specialized theme components (ZeldaButton, ZeldaToggle, etc.)
+ * - Navigation system (App.js) for consistent navigation styling
+ * - Any component that needs theme-aware colors or styling
+ * 
+ * REFERENCES:
+ * - styles/theme.js (theme definitions and configurations)
+ * - AsyncStorage (for persistent preference storage)
+ * - Logger utility (for debugging and error tracking)
+ * - React Context API (for state management)
+ * 
+ * IMPORTANCE TO APP:
+ * Critical - This is one of the most important contexts in the app. It affects
+ * the visual appearance of every single component and screen. The theming system
+ * is essential for user experience, accessibility (dark mode), and the app's
+ * unique personality (Adventure theme). Poor theming would make the app look
+ * unprofessional and inconsistent.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add automatic theme switching - switch to dark mode based on time of day
+ * 2. Add system theme detection - follow device dark/light mode preferences
+ * 3. Add custom theme creation - let users create their own color schemes
+ * 4. Add accessibility improvements - high contrast themes for vision impairment
+ * 5. Add seasonal themes - special themes for holidays or seasons
+ * 6. Add location-based themes - themes that match the current environment
+ * 7. Add theme animations - smooth transitions when switching themes
+ * 8. Add theme previews - let users preview themes before applying them
+ * 9. Add color customization - fine-tune individual colors within themes
+ * 10. Add font theming - different typography options for themes
+ * 11. Add theme sharing - export/import custom themes between users
+ * 12. Add dynamic themes - themes that change based on activity or time
+ * 13. Add theme analytics - track which themes are most popular
+ * 14. Add better error handling - more robust fallback mechanisms
+ * 15. Add theme validation - ensure theme data integrity and format
+ * 16. Add performance optimization - lazy loading of theme configurations
+ * 17. Add theme caching - better performance for theme switching
+ * 18. Add accessibility compliance - ensure all themes meet WCAG guidelines
+ */
+
 // contexts/ThemeContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';

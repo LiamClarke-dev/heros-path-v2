@@ -1,3 +1,75 @@
+/*
+ * USE SUGGESTED PLACES HOOK
+ * =========================
+ * 
+ * PURPOSE:
+ * This custom React hook fetches and manages suggested places based on the user's
+ * last completed route. It handles the workflow of loading the most recent route
+ * from storage, calling the discovery service to find relevant places along that
+ * route, and providing the results to components that need suggested places.
+ * Think of it as a bridge between route data and place discovery functionality.
+ * 
+ * FUNCTIONALITY:
+ * - Loads the last completed route from AsyncStorage automatically
+ * - Fetches place suggestions based on selected place type and language preferences
+ * - Supports both specific place type filtering and user preference-based discovery
+ * - Provides loading states for UI feedback during API calls
+ * - Shows toast notifications when new suggestions are found
+ * - Handles component lifecycle properly to prevent memory leaks
+ * - Uses cancellation tokens to prevent state updates on unmounted components
+ * - Gracefully handles errors and missing data scenarios
+ * 
+ * WHY IT EXISTS:
+ * Discovery of places is a core feature of Hero's Path, but the logic for fetching
+ * suggestions based on completed routes was being duplicated across components.
+ * This hook centralizes that logic and provides a clean, reusable interface for
+ * any component that needs to show suggested places based on recent journeys.
+ * 
+ * RELATIONSHIPS:
+ * - Uses DiscoveriesService.js (specifically getPassingPlaces function) for place discovery
+ * - Reads route data from AsyncStorage (stored by journey completion logic)
+ * - Provides data to components that display suggested places
+ * - Works with user preference systems for discovery filtering
+ * - Integrates with toast notifications for user feedback
+ * 
+ * REFERENCED BY:
+ * - DiscoveriesScreen.js (likely for showing suggested places)
+ * - Components that need to display places based on completed routes
+ * - Any screen that shows discovery suggestions after walks
+ * 
+ * REFERENCES:
+ * - DiscoveriesService.js (for getPassingPlaces function)
+ * - AsyncStorage (for loading last route data)
+ * - react-native-root-toast (for user notifications)
+ * - React hooks (useState, useEffect, useRef)
+ * 
+ * IMPORTANCE TO APP:
+ * High - This hook is crucial for the discovery feature, which is one of Hero's Path's
+ * main value propositions. It enables the app to automatically suggest interesting
+ * places based on where users have walked, making the discovery process seamless
+ * and automated. Good discovery suggestions drive user engagement and app usage.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add caching mechanism - avoid redundant API calls for same route/preferences
+ * 2. Add retry logic - automatically retry failed requests with exponential backoff
+ * 3. Add offline support - cache suggestions for offline viewing
+ * 4. Add preference change detection - re-fetch when user preferences change
+ * 5. Add debouncing - prevent excessive API calls when parameters change rapidly
+ * 6. Add error state management - provide error information to components
+ * 7. Add pagination support - handle large sets of suggestions efficiently
+ * 8. Add real-time updates - refresh suggestions when new routes are completed
+ * 9. Add suggestion filtering - post-process results based on user history
+ * 10. Add analytics integration - track suggestion performance and user engagement
+ * 11. Add location-based optimization - prioritize suggestions based on current location
+ * 12. Add time-based filtering - show suggestions relevant to current time of day
+ * 13. Add suggestion scoring - rank suggestions by relevance and user preferences
+ * 14. Add cross-route analysis - suggest places that appear near multiple user routes
+ * 15. Add seasonal adjustments - modify suggestions based on weather and season
+ * 16. Add suggestion personalization - learn from user interactions to improve suggestions
+ * 17. Add collaborative filtering - suggest places popular with similar users
+ * 18. Add suggestion expiry - refresh stale suggestions periodically
+ */
+
 // hooks/useSuggestedPlaces.js
 
 import { useState, useEffect, useRef } from 'react';
