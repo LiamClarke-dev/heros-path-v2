@@ -69,7 +69,7 @@ const AnimationDemo = () => {
   const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [activeAnimation, setActiveAnimation] = useState(null);
-  const [selectedType, setSelectedType] = useState('ripple');
+  const [selectedType, setSelectedType] = useState('lottie');
 
   // Create styles inside component to access colors
   const styles = StyleSheet.create({
@@ -165,6 +165,7 @@ const AnimationDemo = () => {
   });
 
   const animationTypes = [
+    { key: 'lottie', name: 'Lottie Animation', description: 'Smooth professional scanning effect' },
     { key: 'ripple', name: 'Ripple Effect', description: 'Expanding circles with rotation' },
     { key: 'pulse', name: 'Pulse Wave', description: 'Simple expanding pulse' },
     { key: 'radar', name: 'Radar Sweep', description: 'Rotating radar-like sweep' },

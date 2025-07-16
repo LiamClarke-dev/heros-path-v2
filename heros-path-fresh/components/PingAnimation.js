@@ -6,27 +6,23 @@
  * This component creates visual animations that play when users tap the "ping" button 
  * during walks to discover nearby places. It provides immediate visual feedback to show 
  * that the ping action is working, making the experience feel more interactive and 
- * responsive. Currently, animations are DISABLED but the scaffolding is ready for 
- * future implementation.
+ * responsive. Now uses Lottie animations for smooth, professional-looking effects.
  * 
  * FUNCTIONALITY:
- * - Supports 4 animation types: Ripple (expanding circles), Pulse (simple expansion), 
- *   Radar (rotating sweep), and Particles (bursting outward)
- * - Each animation has 3 phases: Charge up (building energy), Release (main effect), 
- *   and Screen flash (dramatic finish)
- * - Uses React Native's Animated API for smooth, native performance
+ * - Uses Lottie animation from "ping-animation.lottie" for smooth, professional effects
+ * - Supports theming through ThemeContext for consistent app appearance
  * - Covers full screen with pointer events disabled to avoid interference
  * - Automatically calls completion callback when animation finishes
+ * - Provides fallback for devices that don't support Lottie
  * 
  * WHY IT EXISTS:
  * The ping feature is a core part of the app's gamification - users can actively 
  * discover places during walks rather than waiting until the end. Visual feedback 
  * makes this feel like a "special power" being activated, enhancing user engagement.
- * Without animation, the ping would feel unresponsive or broken.
+ * Lottie animations provide smooth, professional-looking effects that enhance the user experience.
  * 
  * CURRENT STATUS:
- * ANIMATIONS_ENABLED is set to false, so this component currently does nothing.
- * The code structure is complete and ready to enable when needed.
+ * ANIMATIONS_ENABLED is set to true, using Lottie animation for smooth effects.
  * 
  * RELATIONSHIPS:
  * - Used by MapScreen.js when users tap the ping button during active walks
@@ -41,76 +37,61 @@
  * 
  * REFERENCES:
  * - ThemeContext.js (for theme-aware colors)
- * - React Native Animated API (for animations)
+ * - Lottie React Native (for smooth animations)
  * - Dimensions API (for screen size calculations)
  * 
  * IMPORTANCE TO APP:
- * High importance for user experience - Even though currently disabled, this component
- * is crucial for making the ping feature feel responsive and engaging. The ping feature
- * is a key differentiator of the app, and without good visual feedback, users may think
- * it's broken or unresponsive.
+ * High importance for user experience - The ping feature is a key differentiator of the app,
+ * and smooth Lottie animations make it feel responsive and engaging. Without good visual 
+ * feedback, users may think it's broken or unresponsive.
  * 
  * IMPROVEMENT SUGGESTIONS:
- * 1. RE-ENABLE ANIMATIONS - Set ANIMATIONS_ENABLED = true and test performance
- * 2. Add haptic feedback - vibration on animation start/end for tactile feedback
- * 3. Add sound effects - audio cues to make animations feel more impactful
- * 4. Optimize performance - consider using native driver for all animations
- * 5. Add battery consideration - reduce animation complexity on low battery
- * 6. Add reduced motion support - simpler animations for accessibility
- * 7. Add user preferences - let users choose animation intensity or disable
- * 8. Add animation caching - pre-render common animations for better performance
- * 9. Consider using Lottie animations for more complex effects
- * 10. Add animation interrupt handling - what happens if user pings rapidly
- * 11. Add background/foreground handling - pause animations when app backgrounded
- * 12. Test on various device sizes and performance levels
+ * 1. Add haptic feedback - vibration on animation start/end for tactile feedback
+ * 2. Add sound effects - audio cues to make animations feel more impactful
+ * 3. Add battery consideration - reduce animation complexity on low battery
+ * 4. Add reduced motion support - simpler animations for accessibility
+ * 5. Add user preferences - let users choose animation intensity or disable
+ * 6. Add animation interrupt handling - what happens if user pings rapidly
+ * 7. Add background/foreground handling - pause animations when app backgrounded
+ * 8. Test on various device sizes and performance levels
+ * 9. Consider multiple Lottie animations for different ping types
+ * 10. Add animation caching for better performance
  */
 
 // components/PingAnimation.js
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
+
+// Import Lottie with fallback for unsupported platforms
+let LottieView;
+try {
+  LottieView = require('lottie-react-native').default;
+} catch (error) {
+  console.warn('Lottie not available, using fallback animation');
+  LottieView = null;
+}
 
 // Define safe fallback colors for modules constants
 const colors = getFallbackTheme();
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// ANIMATION DISABLED - Scaffolding kept for future implementation
-// To re-enable animations:
-// 1. Set ANIMATIONS_ENABLED = true
-// 2. Uncomment the setShowPingAnimation(true) line in MapScreen.js
-// 3. Implement your preferred animation style
-const ANIMATIONS_ENABLED = false;
+// ANIMATION ENABLED - Using Lottie for smooth, professional effects
+const ANIMATIONS_ENABLED = true;
 
 const PingAnimation = ({ 
   isVisible, 
   onAnimationComplete,
   style,
-  animationType = 'ripple' // 'ripple', 'pulse', 'radar', 'particles'
+  animationType = 'lottie' // Now defaults to 'lottie'
 }) => {
   const { getCurrentThemeColors } = useTheme();
-  // Access current theme if needed (but styles already use fallback colors)
-  const _themeColors = getCurrentThemeColors();
+  const themeColors = getCurrentThemeColors() || colors;
   
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-  const rotationAnim = useRef(new Animated.Value(0)).current;
-  const particleAnims = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current;
-  
-  // New dramatic effects
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const screenFlashAnim = useRef(new Animated.Value(0)).current;
-  const chargeAnim = useRef(new Animated.Value(0)).current;
+  const [animationFinished, setAnimationFinished] = useState(false);
+  const lottieRef = useRef(null);
 
   // Create styles inside component to access colors
   const styles = StyleSheet.create({
@@ -121,408 +102,91 @@ const PingAnimation = ({
       width: screenWidth,
       height: screenHeight,
       zIndex: 1000,
+      backgroundColor: 'transparent',
     },
-    ripple: {
-      position: 'absolute',
-      width: 80, // Much larger ripple
-      height: 80,
-      borderRadius: 40,
-      borderWidth: 6, // Thicker border
-      borderColor: colors.primary,
-      backgroundColor: `${colors.primary}30`, // More visible with transparency
+    lottieContainer: {
+      width: screenWidth,
+      height: screenHeight,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
-    pulse: {
+    fallbackContainer: {
       position: 'absolute',
-      width: 120, // Much larger pulse
-      height: 120,
-      borderRadius: 60,
-      backgroundColor: `${colors.primary}50`, // More visible with transparency
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: `${themeColors.primary}20`,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
-    radar: {
-      position: 'absolute',
-      width: 160, // Much larger radar
-      height: 160,
-      borderRadius: 80,
-      borderWidth: 8, // Thicker border
-      borderColor: colors.primary,
-      borderTopColor: 'transparent',
-      borderLeftColor: 'transparent',
-      borderRightColor: 'transparent',
-    },
-    particle: {
-      position: 'absolute',
-      width: 20, // Larger particles
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: colors.primary,
-    },
-    centerPulse: {
-      position: 'absolute',
-      width: 32, // Larger center pulse
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: colors.primary,
-    },
-    screenFlash: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: `${colors.background}30`, // Theme-aware flash
-      zIndex: 1,
-    },
-    chargeGlow: {
-      position: 'absolute',
-      width: screenWidth * 2,
-      height: screenHeight * 2,
-      borderRadius: (screenWidth * 2) / 2,
-      backgroundColor: `${colors.primary}20`, // Light theme-aware glow
-      opacity: 0,
-      zIndex: 0,
+    fallbackText: {
+      color: themeColors.primary,
+      fontSize: 16,
+      fontWeight: 'bold',
     },
   });
 
   useEffect(() => {
     if (isVisible && ANIMATIONS_ENABLED) {
-      // Reset animations
-      scaleAnim.setValue(0);
-      opacityAnim.setValue(1);
-      rotationAnim.setValue(0);
-      glowAnim.setValue(0);
-      screenFlashAnim.setValue(0);
-      chargeAnim.setValue(0);
-      particleAnims.forEach(anim => anim.setValue(0));
-
-      switch (animationType) {
-        case 'ripple':
-          playDramaticRippleAnimation();
-          break;
-        case 'pulse':
-          playDramaticPulseAnimation();
-          break;
-        case 'radar':
-          playDramaticRadarAnimation();
-          break;
-        case 'particles':
-          playDramaticParticleAnimation();
-          break;
-        default:
-          playDramaticRippleAnimation();
+      setAnimationFinished(false);
+      
+      if (LottieView && lottieRef.current) {
+        // Play the Lottie animation
+        lottieRef.current.play();
+      } else {
+        // Fallback for devices without Lottie support
+        setTimeout(() => {
+          setAnimationFinished(true);
+          if (onAnimationComplete) {
+            onAnimationComplete();
+          }
+        }, 2000);
       }
     } else if (isVisible && !ANIMATIONS_ENABLED) {
       // Animations disabled - just call completion immediately
       if (onAnimationComplete) {
-        setTimeout(() => onAnimationComplete(), 100); // Small delay for future animation
+        setTimeout(() => onAnimationComplete(), 100);
       }
     }
   }, [isVisible, animationType]);
 
-  // Animation functions kept for future implementation
-  const playDramaticRippleAnimation = () => {
-    // Phase 1: Charge up (1 second)
-    const chargeUp = Animated.parallel([
-      Animated.timing(chargeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(glowAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    // Phase 2: Release (2 seconds)
-    const release = Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 8, // Much larger scale
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotationAnim, {
-        toValue: 2,
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(screenFlashAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    // Phase 3: Screen flash fade (1 second)
-    const flashFade = Animated.timing(screenFlashAnim, {
-      toValue: 0,
-      duration: 1000,
-      useNativeDriver: true,
-    });
-
-    Animated.sequence([
-      chargeUp,
-      release,
-      flashFade
-    ]).start(() => {
-      if (onAnimationComplete) onAnimationComplete();
-    });
+  const handleAnimationFinish = () => {
+    setAnimationFinished(true);
+    if (onAnimationComplete) {
+      onAnimationComplete();
+    }
   };
 
-  const playDramaticPulseAnimation = () => {
-    // Phase 1: Charge up (1.5 seconds)
-    const chargeUp = Animated.parallel([
-      Animated.timing(chargeAnim, {
-        toValue: 1,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(glowAnim, {
-        toValue: 1,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-    ]);
+  const renderLottieAnimation = () => {
+    if (!LottieView) {
+      return (
+        <View style={styles.fallbackContainer}>
+          <Text style={styles.fallbackText}>Ping!</Text>
+        </View>
+      );
+    }
 
-    // Phase 2: Explosive pulse (2.5 seconds)
-    const pulse = Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 6,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0,
-        duration: 1500,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    Animated.parallel([
-      chargeUp,
-      pulse,
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 2500,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      if (onAnimationComplete) onAnimationComplete();
-    });
-  };
-
-  const playDramaticRadarAnimation = () => {
-    // Phase 1: Charge up (1 second)
-    const chargeUp = Animated.timing(chargeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    });
-
-    // Phase 2: Radar sweep (3 seconds)
-    const radarSweep = Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 10,
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotationAnim, {
-        toValue: 3,
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-    ]);
-
-    Animated.sequence([
-      chargeUp,
-      radarSweep
-    ]).start(() => {
-      if (onAnimationComplete) onAnimationComplete();
-    });
-  };
-
-  const playDramaticParticleAnimation = () => {
-    // Phase 1: Charge up (1 second)
-    const chargeUp = Animated.timing(chargeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    });
-
-    // Phase 2: Particle burst (2 seconds)
-    const particleBurst = Animated.parallel(
-      particleAnims.map(anim => 
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      )
+    return (
+      <LottieView
+        ref={lottieRef}
+        source={require('../assets/ping-animation.lottie')}
+        style={styles.lottieContainer}
+        autoPlay={false}
+        loop={false}
+        speed={1}
+        onAnimationFinish={handleAnimationFinish}
+        resizeMode="cover"
+      />
     );
-
-    Animated.sequence([
-      chargeUp,
-      particleBurst
-    ]).start(() => {
-      if (onAnimationComplete) onAnimationComplete();
-    });
   };
 
-  // Don't render anything when animations are disabled
-  if (!isVisible || !ANIMATIONS_ENABLED) {
+  if (!isVisible) {
     return null;
   }
 
-  const renderRipple = () => (
-    <Animated.View
-      style={[
-        styles.ripple,
-        {
-          transform: [{ scale: scaleAnim }],
-          opacity: opacityAnim,
-        },
-      ]}
-    />
-  );
-
-  const renderPulse = () => (
-    <Animated.View
-      style={[
-        styles.pulse,
-        {
-          transform: [{ scale: scaleAnim }],
-          opacity: opacityAnim,
-        },
-      ]}
-    />
-  );
-
-  const renderRadar = () => (
-    <Animated.View
-      style={[
-        styles.radar,
-        {
-          transform: [
-            { scale: scaleAnim },
-            {
-              rotate: rotationAnim.interpolate({
-                inputRange: [0, 3],
-                outputRange: ['0deg', '1080deg'],
-              }),
-            },
-          ],
-          opacity: opacityAnim,
-        },
-      ]}
-    />
-  );
-
-  const renderParticles = () => (
-    <>
-      {particleAnims.map((anim, index) => {
-        const angle = (index * 45) * (Math.PI / 180);
-        const distance = 200;
-        
-        return (
-          <Animated.View
-            key={index}
-            style={[
-              styles.particle,
-              {
-                transform: [
-                  {
-                    translateX: anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, Math.cos(angle) * distance],
-                    }),
-                  },
-                  {
-                    translateY: anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, Math.sin(angle) * distance],
-                    }),
-                  },
-                  { scale: anim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 0],
-                  }) },
-                ],
-                opacity: anim.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [1, 0.5, 0],
-                }),
-              },
-            ]}
-          />
-        );
-      })}
-    </>
-  );
-
   return (
     <View style={[styles.container, style]} pointerEvents="none">
-      {/* Screen flash overlay */}
-      <Animated.View
-        style={[
-          styles.screenFlash,
-          {
-            opacity: screenFlashAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 0.3],
-            }),
-          },
-        ]}
-      />
-      
-      {/* Charge up glow */}
-      <Animated.View
-        style={[
-          styles.chargeGlow,
-          {
-            transform: [{ scale: chargeAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0.5, 2],
-            }) }],
-            opacity: chargeAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 0.8],
-            }),
-          },
-        ]}
-      />
-      
-      {/* Main animation */}
-      {animationType === 'ripple' && renderRipple()}
-      {animationType === 'pulse' && renderPulse()}
-      {animationType === 'radar' && renderRadar()}
-      {animationType === 'particles' && renderParticles()}
-      
-      {/* Center pulse for all animations */}
-      <Animated.View
-        style={[
-          styles.centerPulse,
-          {
-            transform: [{ scale: scaleAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [1, 2],
-            }) }],
-            opacity: opacityAnim.interpolate({
-              inputRange: [0, 0.5, 1],
-              outputRange: [1, 0.5, 0],
-            }),
-          },
-        ]}
-      />
+      {renderLottieAnimation()}
     </View>
   );
 };

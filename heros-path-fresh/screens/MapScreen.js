@@ -715,7 +715,7 @@ export default function MapScreen({ navigation, route }) {
           isVisible={showPingAnimation}
           onAnimationComplete={() => setShowPingAnimation(false)}
           style={styles.pingAnimation}
-          animationType="particle"
+          animationType="lottie"
         />
       )}
       
@@ -773,7 +773,8 @@ export default function MapScreen({ navigation, route }) {
             currentLocation={currentPosition}
             journeyId={currentJourneyId}
             onPingStart={() => {
-              // Animation scaffolding
+              // Trigger the Lottie ping animation
+              setShowPingAnimation(true);
             }}
             onPingSuccess={(result) => {
               Logger.debug('Ping successful:', result);
