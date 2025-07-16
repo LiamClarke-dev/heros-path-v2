@@ -120,7 +120,7 @@ import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Colors, Spacing, Typography, Layout } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout, Shadows } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';

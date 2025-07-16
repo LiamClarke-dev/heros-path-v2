@@ -100,7 +100,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Spacing, Typography, getFallbackTheme } from '../styles/theme';
+import { Spacing, Typography, getFallbackTheme, Colors } from '../styles/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getUserDiscoveryPreferences, resetDiscoveryPreferences } from '../services/DiscoveriesService';
