@@ -663,7 +663,7 @@ class BackgroundLocationService {
 
   // Clean up resources and event listeners
   cleanup() {
-    // Remove app state listener using modern subscription approach
+    // Remove app state listener using subscription object
     if (this.appStateSubscription) {
       this.appStateSubscription.remove();
       this.appStateSubscription = null;
