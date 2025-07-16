@@ -116,6 +116,7 @@ import PingStats from '../components/PingStats';
 import PingAnimation from '../components/PingAnimation';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
+import BackgroundLocationService from '../services/BackgroundLocationService';
 import Logger from '../utils/Logger';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
@@ -163,7 +164,6 @@ export default function MapScreen({ navigation, route }) {
   const { setCurrentJourney } = useExploration();
   
   const mapRef = useRef(null);
-  const locationSubscription = useRef(null);
   
   const [currentPosition, setCurrentPosition] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -180,6 +180,7 @@ export default function MapScreen({ navigation, route }) {
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -215,30 +216,68 @@ export default function MapScreen({ navigation, route }) {
     );
   };
 
-  // Load saved routes and places on mount
+  // Initialize BackgroundLocationService and load data on mount
   useEffect(() => {
-    const fetchLocation = async () => {
+    const initializeLocation = async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to use the map.');
+        // Initialize the background location service
+        const initialized = await BackgroundLocationService.initialize();
+        if (!initialized) {
+          Alert.alert('Location Setup Failed', 'Please enable location permissions in your device settings.');
           return;
         }
-        const location = await Location.getCurrentPositionAsync({});
-        setCurrentPosition({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          timestamp: location.timestamp,
+
+        // Set up location update callback
+        BackgroundLocationService.setLocationUpdateCallback((coords, journey) => {
+          // Update current position
+          setCurrentPosition({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            timestamp: coords.timestamp,
+          });
+          
+          // Update location accuracy indicator
+          setLocationAccuracy(coords.accuracy);
+          
+          // Update path for rendering
+          setPathToRender(journey.coordinates);
+          
+          Logger.debug('Location updated:', {
+            lat: coords.latitude.toFixed(6),
+            lng: coords.longitude.toFixed(6),
+            accuracy: coords.accuracy,
+            points: journey.coordinates.length
+          });
         });
+
+        // Get initial location
+        try {
+          const coords = await BackgroundLocationService.getCurrentLocation();
+          setCurrentPosition({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            timestamp: Date.now(),
+          });
+          setLocationAccuracy(coords.accuracy);
+        } catch (error) {
+          Logger.warn('Could not get initial location:', error);
+        }
+
       } catch (error) {
-        console.error('Error fetching location:', error);
+        Logger.error('Error initializing location service:', error);
+        Alert.alert('Location Error', 'Failed to initialize location services. Please check your permissions.');
       }
     };
 
-    fetchLocation();
+    initializeLocation();
     loadSavedRoutes();
     loadSavedPlaces();
     checkBackgroundPermissions();
+
+    // Cleanup on unmount
+    return () => {
+      BackgroundLocationService.setLocationUpdateCallback(null);
+    };
   }, []);
 
   // Update sprite state based on movement
@@ -285,18 +324,37 @@ export default function MapScreen({ navigation, route }) {
   };
 
   const locateMe = async () => {
-    if (!currentPosition) return;
-    
     setIsLocating(true);
     try {
+      // Get fresh location from the service
+      const coords = await BackgroundLocationService.getCurrentLocation();
+      
+      const newPosition = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        timestamp: Date.now(),
+      };
+      
+      setCurrentPosition(newPosition);
+      setLocationAccuracy(coords.accuracy);
+      
+      // Animate to the location
       mapRef.current?.animateToRegion({
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
       }, 1000);
+      
+      Logger.debug('Located user:', {
+        lat: coords.latitude.toFixed(6),
+        lng: coords.longitude.toFixed(6),
+        accuracy: coords.accuracy
+      });
+      
     } catch (error) {
-      console.error('Error locating user:', error);
+      Logger.error('Error locating user:', error);
+      Alert.alert('Location Error', 'Could not get your current location. Please check your location settings.');
     } finally {
       setIsLocating(false);
     }
@@ -400,69 +458,85 @@ export default function MapScreen({ navigation, route }) {
 
   const toggleTracking = async () => {
     if (tracking) {
-      // Stop tracking
-      if (locationSubscription.current) {
-        locationSubscription.current.remove();
-        locationSubscription.current = null;
-      }
-      setTracking(false);
-      
-      // Save the journey
-      if (currentJourneyId && pathToRender.length > 0) {
-        await saveJourney(pathToRender);
+      // Stop tracking using BackgroundLocationService
+      try {
+        const journeyData = await BackgroundLocationService.stopTracking();
+        setTracking(false);
+        
+        // Save the journey if we have data
+        if (journeyData && journeyData.coordinates.length > 0) {
+          await saveJourney(journeyData.coordinates);
+        } else {
+          Logger.warn('No journey data to save');
+          Alert.alert('No Data', 'No route data was recorded. Make sure location permissions are enabled.');
+        }
+        
+        // Reset UI state
+        setCurrentJourneyId(null);
+        setPathToRender([]);
+        setPreviewRoute([]);
+        setPreviewRoadCoords([]);
+        
+      } catch (error) {
+        Logger.error('Error stopping tracking:', error);
+        Alert.alert('Error', 'Failed to stop tracking. Your data may not have been saved.');
+        setTracking(false);
       }
     } else {
-      // Start tracking
+      // Start tracking using BackgroundLocationService
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to track your walks.');
-          return;
-        }
-
-        // Request background permissions
-        const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-        if (backgroundStatus.status !== 'granted') {
-          Alert.alert(
-            'Background Permission Required',
-            'Please grant "Always" location access to track your walks in the background.'
-          );
-          return;
-        }
-
-        // Create new journey
+        // Create new journey ID
         const journeyId = Date.now().toString();
+        
+        // Reset UI state
         setCurrentJourneyId(journeyId);
         setPathToRender([]);
         setPreviewRoute([]);
         setPreviewRoadCoords([]);
         setPingUsed(0);
 
-        // Start location tracking
-        locationSubscription.current = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.BestForNavigation,
-            timeInterval: 1000,
-            distanceInterval: 5,
-            showsBackgroundLocationIndicator: true,
-          },
-          (location) => {
-            const newCoord = {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              timestamp: location.timestamp,
-            };
-
-            setCurrentPosition(newCoord);
-            setPathToRender(prev => [...prev, newCoord]);
-          }
-        );
-
-        setTracking(true);
-        Logger.info('MAP_SCREEN', 'Started tracking', { journeyId });
+        // Start tracking with the enhanced service
+        const success = await BackgroundLocationService.startTracking(journeyId);
+        
+        if (success) {
+          setTracking(true);
+          Logger.info('Started enhanced GPS tracking with background support', { journeyId });
+          
+          // Show success message
+          Alert.alert(
+            'Journey Started! 🗺️',
+            'Your adventure is now being tracked with enhanced GPS accuracy. The app will continue tracking even when your screen is locked.',
+            [{ text: 'Got it!', style: 'default' }]
+          );
+        } else {
+          throw new Error('Failed to start background location service');
+        }
+        
       } catch (error) {
-        Logger.error('MAP_SCREEN', 'Error starting tracking', error);
-        Alert.alert('Error', 'Failed to start tracking. Please try again.');
+        Logger.error('Error starting tracking:', error);
+        setTracking(false);
+        
+        if (error.message.includes('permission')) {
+          Alert.alert(
+            'Permission Required',
+            'Location permissions are required to track your walks. Please enable both "While Using App" and "Always" location access in your device settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Open Settings', 
+                onPress: () => {
+                  if (Platform.OS === 'ios') {
+                    Linking.openURL('app-settings:');
+                  } else {
+                    Linking.openSettings();
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Error', 'Failed to start tracking. Please try again or check your location settings.');
+        }
       }
     }
   };
@@ -531,6 +605,33 @@ export default function MapScreen({ navigation, route }) {
           </Text>
           <MaterialIcons name="chevron-right" size={20} color={colors.buttonText} />
         </TouchableOpacity>
+      )}
+
+      {/* GPS Accuracy Indicator */}
+      {tracking && locationAccuracy && (
+        <View style={[styles.accuracyIndicator, { backgroundColor: colors.cardBackground }]}>
+          <MaterialIcons 
+            name="gps-fixed" 
+            size={16} 
+            color={
+              locationAccuracy <= 5 ? colors.success :
+              locationAccuracy <= 15 ? colors.warning :
+              colors.error
+            } 
+          />
+          <Text style={[styles.accuracyText, { color: colors.textSecondary }]}>
+            GPS: {Math.round(locationAccuracy)}m
+          </Text>
+          <Text style={[styles.accuracyStatus, { 
+            color: locationAccuracy <= 5 ? colors.success :
+                   locationAccuracy <= 15 ? colors.warning :
+                   colors.error
+          }]}>
+            {locationAccuracy <= 5 ? 'Excellent' :
+             locationAccuracy <= 15 ? 'Good' :
+             locationAccuracy <= 50 ? 'Fair' : 'Poor'}
+          </Text>
+        </View>
       )}
 
       {currentPosition ? (
@@ -783,5 +884,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.small,
+  },
+  accuracyIndicator: {
+    position: 'absolute',
+    top: 60,
+    right: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+    borderRadius: Layout.borderRadius,
+    ...Shadows.small,
+  },
+  accuracyText: {
+    ...Typography.bodySmall,
+    marginLeft: Spacing.xs,
+    marginRight: Spacing.xs,
+  },
+  accuracyStatus: {
+    ...Typography.bodySmall,
+    fontWeight: '600',
   },
 });
