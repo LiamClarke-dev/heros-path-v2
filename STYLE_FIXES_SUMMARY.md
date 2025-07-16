@@ -25,6 +25,7 @@ Several components had styles defined at **module scope** (when the file is firs
 **Solution**: 
 - Moved styles inside the component where theme colors are properly initialized
 - Removed duplicate module-scope colors definition
+- **Fixed stale closure bug**: Added `onAnimationComplete` to useEffect dependency array
 
 ### 3. `components/PingStats.js`
 **Problem**: Module-scope `StyleSheet.create()` that could reference undefined theme colors
@@ -54,6 +55,18 @@ Several components had styles defined at **module scope** (when the file is firs
 **Problem**: Direct reference to `Typography.h1.fontWeight` in styles
 **Solution**: Replaced with `'bold'`
 
+## Additional Fixes
+
+### File Cleanup:
+- **Removed duplicate files**: Accidentally created `components/PingAnimation.js` and `components/AnimationDemo.js` in wrong directory
+- **Correct location**: All components should be in `heros-path-fresh/components/`
+- **No import conflicts**: Ensured no conflicting component versions
+
+### Stale Closure Bug Fix:
+- **PingAnimation.js**: Added `onAnimationComplete` to useEffect dependency array
+- **Why important**: Animation functions call `onAnimationComplete()` - missing from deps could cause stale closure
+- **When critical**: Will become a bug if animations are re-enabled (currently disabled)
+
 ## Pattern Fixes Applied
 
 ### Colors Undefined Prevention:
@@ -64,6 +77,15 @@ Several components had styles defined at **module scope** (when the file is firs
 ### FontWeight Undefined Prevention:
 - ✅ Replaced all `Typography.*.fontWeight` references with hardcoded values
 - ✅ Used safe spread operators `...Typography.body` instead of property access
+
+### File Organization:
+- ✅ Removed duplicate component files from incorrect directories
+- ✅ Ensured all components are in proper `heros-path-fresh/components/` location
+- ✅ No import path conflicts or component version mismatches
+
+### React Hooks Best Practices:
+- ✅ Fixed stale closure issues by including all dependencies in useEffect arrays
+- ✅ Ensures animations will work correctly when re-enabled
 
 ## Best Practices Going Forward
 
@@ -81,6 +103,11 @@ const MyComponent = () => {
       ...Typography.body, // ✅ Safe spread operator
     },
   });
+  
+  // Include all dependencies in useEffect
+  useEffect(() => {
+    // ... animation logic
+  }, [isVisible, animationType, onAnimationComplete]); // ✅ Complete deps
   
   return <View style={styles.container} />;
 };
@@ -106,6 +133,11 @@ const MyComponent = () => {
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors(); // ❌ Missing fallback
   
+  // ❌ Missing dependencies in useEffect
+  useEffect(() => {
+    if (onAnimationComplete) onAnimationComplete(); // Uses onAnimationComplete
+  }, [isVisible]); // ❌ Missing onAnimationComplete in deps
+  
   return <View style={styles.container} />;
 };
 ```
@@ -119,6 +151,8 @@ const MyComponent = () => {
 5. **Use spread operators safely**: `...Typography.body` is OK, `Typography.body.fontWeight` is not
 6. **Test with Hermes engine** to catch undefined property errors early
 7. **Keep theme context access inside components** where React context is available
+8. **Include all dependencies in useEffect arrays** to prevent stale closures
+9. **Maintain proper file organization** - components in correct directories only
 
 ## Additional Notes
 
@@ -131,10 +165,22 @@ const MyComponent = () => {
 - ❌ Unsafe: `Typography.body.fontWeight` (could be undefined)
 - ✅ Safe: `fontWeight: 'bold'` (hardcoded values)
 
+### File Organization:
+- All components must be in `heros-path-fresh/components/`
+- Avoid creating duplicate files in different directories
+- Check import paths when moving/creating files
+
+### React Hooks:
+- Always include all used variables from component scope in useEffect deps
+- Be especially careful with callback functions like `onAnimationComplete`
+- Use ESLint exhaustive-deps rule to catch missing dependencies
+
 ## Verification
 
 After these fixes, the app should no longer throw:
 - ❌ `TypeError: Cannot read property 'fontWeight' of undefined`
-- ❌ `TypeError: Cannot read property 'colors' of undefined`
+- ❌ `TypeError: Cannot read property 'colors' of undefined`  
+- ❌ Stale closure bugs in animation callbacks
+- ❌ Import conflicts from duplicate component files
 
-All styles are now properly contained within component boundaries where theme properties are guaranteed to be available, and all fallback handling is in place.
+All styles are now properly contained within component boundaries where theme properties are guaranteed to be available, all fallback handling is in place, and React hooks follow best practices.

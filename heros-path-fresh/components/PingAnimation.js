@@ -75,7 +75,7 @@ const PingAnimation = ({
         setTimeout(() => onAnimationComplete(), 100); // Small delay for future animation
       }
     }
-  }, [isVisible, animationType]);
+  }, [isVisible, animationType, onAnimationComplete]);
 
   // Animation functions kept for future implementation
   const playDramaticRippleAnimation = () => {
