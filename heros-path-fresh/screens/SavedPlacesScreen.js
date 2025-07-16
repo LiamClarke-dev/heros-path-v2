@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
+  name: { ...Typography.body, fontWeight: 'bold' },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
