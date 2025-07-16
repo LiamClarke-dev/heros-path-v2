@@ -1,3 +1,67 @@
+/*
+ * SETTINGS OPTION ROW COMPONENT
+ * =============================
+ * 
+ * PURPOSE:
+ * This is a reusable UI component that creates standardized rows for settings screens.
+ * It provides a consistent layout and styling for different types of settings options
+ * including toggles, value pickers, and action buttons. Think of it as the building
+ * block that makes all settings look and behave consistently throughout the app.
+ * 
+ * FUNCTIONALITY:
+ * - Renders a label on the left with optional description text
+ * - Supports multiple toggle types: on/off switches, value displays, multi-value pickers
+ * - Handles different visual styles for different toggle types (background colors)
+ * - Supports custom icons on the right side of the row
+ * - Can be pressable (for navigation) or non-pressable (for display only)
+ * - Provides proper accessibility support with roles and states
+ * - Uses theme-aware styling for colors and fonts
+ * 
+ * WHY IT EXISTS:
+ * Settings screens need many similar-looking rows with consistent spacing, fonts,
+ * and behavior. Without this component, each settings option would need custom
+ * styling, leading to inconsistency and more code. This component enforces
+ * design standards and reduces development time for new settings.
+ * 
+ * RELATIONSHIPS:
+ * - Used extensively by SettingsScreen.js for all settings options
+ * - Uses ThemeContext for consistent styling across different app themes
+ * - May be used by other screens that need settings-like option rows
+ * - Likely used by DiscoveryPreferencesScreen.js for preference options
+ * 
+ * REFERENCED BY:
+ * - SettingsScreen.js (primary usage for most app settings)
+ * - DiscoveryPreferencesScreen.js (for discovery preference options)
+ * - Any screen that needs consistent option row styling
+ * 
+ * REFERENCES:
+ * - ThemeContext.js (for theme-aware colors and styling)
+ * - React Native Pressable and View components
+ * 
+ * IMPORTANCE TO APP:
+ * Medium-High - This component is crucial for maintaining consistent UI/UX across
+ * all settings screens. While not core functionality, good settings UI is essential
+ * for user adoption and app configuration. Inconsistent settings would make the
+ * app feel unprofessional.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add animation support - smooth transitions when values change
+ * 2. Add validation indicators - show invalid settings with red styling
+ * 3. Implement loading states - show when settings are being saved remotely
+ * 4. Add help text support - expandable descriptions for complex settings
+ * 5. Implement nested options - support for sub-settings with indentation
+ * 6. Add search/filter support - searchable settings for large lists
+ * 7. Implement setting dependencies - disable/enable options based on others
+ * 8. Add reset functionality - easy way to reset individual settings to defaults
+ * 9. Implement setting groups - collapsible sections for organization
+ * 10. Add keyboard navigation - support for external keyboards
+ * 11. Implement setting change tracking - show which settings have been modified
+ * 12. Add import/export support - backup and restore settings configurations
+ * 13. Implement A/B testing support - different layouts for testing
+ * 14. Add accessibility improvements - better screen reader support
+ * 15. Consider responsive design - better layout on tablets and landscape mode
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';

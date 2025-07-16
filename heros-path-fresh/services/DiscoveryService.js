@@ -1,5 +1,5 @@
 /**
- * DiscoveryService
+
  * DISCOVERY SERVICE (DISCOVERY DATA MANAGEMENT)
  * ==============================================
  * 

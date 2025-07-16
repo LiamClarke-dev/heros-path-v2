@@ -1,4 +1,6 @@
-/* DISCOVERIES SERVICE (CORE DISCOVERY ENGINE)
+
+/**
+ * DISCOVERIES SERVICE (CORE DISCOVERY ENGINE)
  * ============================================
  * 
  * PURPOSE:

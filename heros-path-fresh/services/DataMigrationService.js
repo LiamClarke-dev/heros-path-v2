@@ -96,6 +96,15 @@
  * 19. Add migration insights - analytics about migration patterns and success
  * 20. Add migration automation - AI-powered migration optimization and decision making
  */
+
+/**
+ * DataMigrationService
+ *
+ * Handles data migration and upgrades.
+ * - Migrates old data formats to new ones.
+ * - Ensures backward compatibility and data integrity during upgrades.
+ * - Used during app updates or major feature rollouts.
+ */
 // services/DataMigrationService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import JourneyService from './JourneyService';

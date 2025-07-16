@@ -465,20 +465,123 @@ Hero's Path is a Zelda-inspired walking/exploration app built with React Native/
 
 ---
 
-## 🏁 Conclusion
+## 🛠️ Brand Guidelines Implementation Plan
 
-Hero's Path has a strong foundation with its comprehensive theming system and unique Adventure theme personality. The recommended enhancements will:
+This section provides a prioritized, actionable plan for integrating the updated brand guidelines (see docs/BRAND_GUIDELINES.md) into the app’s theme, components, and documentation. Each action references the relevant section of the brand guidelines and specifies where to update code or documentation.
 
-1. **Strengthen brand identity** through consistent Adventure theme implementation
-2. **Improve user experience** with better typography and component consistency  
-3. **Enhance accessibility** through systematic color and contrast improvements
-4. **Future-proof the design system** with scalable, maintainable patterns
+### 1. Theme System & Color Palette
+- **Where:** styles/theme.js, this document (Color System section)
+- **Actions:**
+  - Map all brand color tokens (e.g., --color-trail-blue, --color-sunset-gold) to theme variables.
+  - Update semantic color variables (primary, surface, background, accent, etc.) to reference these tokens.
+  - Add code comments referencing 'Visual Identity System > Color Palette' in BRAND_GUIDELINES.md.
 
-The phased approach ensures systematic improvement while maintaining app stability and user experience. The Adventure theme represents a key differentiator that should be enhanced to create a truly memorable and engaging exploration experience.
+### 2. Typography
+- **Where:** styles/theme.js (font/text style variables), this document (Typography System section)
+- **Actions:**
+  - Set Inter/SF Pro/Roboto as default font for body/UI text.
+  - Use HyliaSerif for quest/screen/achievement headers only.
+  - Define text styles (hero-header, section-title, card-title, body, caption) with specified sizes/weights.
+  - Reference 'Visual Identity System > Typography System' in code comments.
 
-**Priority Focus:** Phase 1 foundations will provide the biggest impact for user experience and development efficiency, while later phases will distinguish Hero's Path as a premium, polished exploration app.
+### 3. Component Patterns
+- **Where:** components/ (HeroButton.js, HeroCard.js, HeroToggle.js, HeroHeader.js, DiscoveryIcon.js), this document (Component Design System Review)
+- **Actions:**
+  - Implement or update components to match described patterns (themed borders, shadows, glows, etc.).
+  - Use Figma/asset icons for DiscoveryIcon and empty states.
+  - Add code comments referencing 'Components & Patterns' in BRAND_GUIDELINES.md.
+
+### 4. UI Style Patterns
+- **Where:** styles/theme.js (style tokens for headers, cards, buttons, overlays, etc.), this document (UI Style Patterns section)
+- **Actions:**
+  - Define and apply style tokens for headers, nav bars, cards, buttons, overlays, and icons.
+  - Ensure all components use these tokens for consistency.
+  - Reference 'UI Style Patterns' in code comments.
+
+### 5. Motion & Interaction
+- **Where:** components/ (add animation logic), this document (Component Design System Review)
+- **Actions:**
+  - Implement tap feedback (scale bounce, glow accent) in buttons.
+  - Add shimmer animation for discovery unlocks, confetti for route complete, and micro-animations for focus.
+  - Reference 'Motion & Interaction' in code comments.
+
+### 6. Spacing & Layout
+- **Where:** styles/theme.js (spacing variables), this document (Layout & Spacing section)
+- **Actions:**
+  - Define spacing tokens (xs-xl) and use them for padding/margins throughout the app.
+  - Standardize card padding, header margin, and button height.
+  - Reference 'Spacing System' in code comments.
+
+### 7. Voice & Tone
+- **Where:** this document (Voice & Tone section), component props for user-facing text
+- **Actions:**
+  - Ensure all in-app text matches the tone guidelines for each context.
+  - Reference 'Voice & Tone' in documentation and code comments.
+
+### 8. Accessibility & Clarity
+- **Where:** this document (Accessibility section), theme and component files
+- **Actions:**
+  - Check color contrast and update as needed for accessibility.
+  - Use clear layouts and accessible navigation patterns.
+  - Reference 'Accessibility standards' in documentation and code comments.
+
+### 9. Naming & Structure
+- **Where:** components/ (naming), styles/theme.js (centralized variables), this document (Component Design System Review)
+- **Actions:**
+  - Use suggested component names and directory structure.
+  - Reference BRAND_GUIDELINES.md in documentation and code comments.
+
+---
+
+*For each section above, update the relevant files and documentation, always referencing the specific section of docs/BRAND_GUIDELINES.md in code comments or doc headers. Use this document as the central place to summarize and track these integrations.*
 
 ---
 
 *Last Updated: 15 July 2025*  
 *Next Review: August 2025*
+
+---
+
+## 🔢 Prioritized Component & File Update Order for Brand Guideline Alignment
+
+To achieve full alignment with the updated brand guidelines, update the following components and files in this order. For each, update color usage, typography, spacing, and animation as needed, and add documentation/comments referencing the relevant section of docs/BRAND_GUIDELINES.md.
+
+1. **styles/theme.js**
+   - (Already updated) Ensure all color, typography, and spacing tokens match the brand guidelines.
+   - Reference: Visual Identity System > Color Palette, Typography System, UI Style Patterns
+
+2. **components/ZeldaButton.js**
+   - Update to use new theme color tokens, typography (button text), spacing, and add tap feedback animation per guidelines.
+   - Reference: Components & Patterns > HeroButton, UI Style Patterns > Buttons & CTAs, Motion & Interaction
+
+3. **components/ui/Card.js**
+   - Update to use new surface, border, shadow, and spacing tokens. Apply typography for card titles and body.
+   - Reference: UI Style Patterns > Cards & Surfaces, Typography System
+
+4. **components/PingButton.js, PingAnimation.js, PingStats.js**
+   - Update to use new color and animation tokens for feedback and glow effects.
+   - Reference: Motion & Interaction, Visual Identity System > Color Palette
+
+5. **components/SettingsOptionRow.js, ZeldaToggle.js**
+   - Update to use new color, spacing, and toggle animation tokens.
+   - Reference: Components & Patterns > HeroToggle, UI Style Patterns > Buttons & CTAs
+
+6. **components/ui/AppButton.js, ListItem.js, Divider.js, SectionHeader.js**
+   - Update to use new color, typography, and spacing tokens for consistency.
+   - Reference: UI Style Patterns, Typography System
+
+7. **screens/ (all screens)**
+   - Update screen headers, backgrounds, and layout to use new theme tokens and spacing.
+   - Reference: UI Style Patterns > Header & Navigation Bars, Spacing System
+
+8. **contexts/ThemeContext.js**
+   - Ensure theme switching logic and context values use the updated theme tokens.
+   - Reference: Implementation Guidelines > Theme Context
+
+9. **Any custom icon or illustration components**
+   - Update to use new color tokens and consistent stroke/size per guidelines.
+   - Reference: Visual Identity System > Icons & Illustrations
+
+**Note:**
+- For each file/component, update documentation and code comments to reference the relevant section of docs/BRAND_GUIDELINES.md for rationale and future maintenance.
+- Begin with the most widely used and visually impactful components (buttons, cards, theme system), then move to supporting and secondary components.

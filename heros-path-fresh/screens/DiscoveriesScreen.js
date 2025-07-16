@@ -45,8 +45,8 @@
  * - Works with DiscoveryService.js for data persistence and management
  * - Integrates with JourneyService.js for journey completion tracking
  * - Uses NewPlacesService.js for AI summaries and enhanced place data
- * - Connects with UserContext.js for authentication and user preferences
- * - Uses ThemeContext.js for styling and theming
+ * - Connects with UserContext for authentication and user preferences
+ * - Uses ThemeContext for styling and theming
  * - Works with useSuggestedPlaces hook for automatic place suggestions
  * - Integrates with various UI components for consistent user experience
  * 

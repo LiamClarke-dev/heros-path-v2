@@ -1,5 +1,4 @@
 /**
- * UserProfileService
  * USER PROFILE SERVICE (USER DATA MANAGEMENT)
  * ============================================
  * 
