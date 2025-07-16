@@ -25,8 +25,7 @@
     "production": {
       "ios": {
         "resourceClass": "m-medium",
-        "autoIncrement": true,
-        "buildNumber": "1"
+        "autoIncrement": true
       }
     }
   },
