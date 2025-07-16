@@ -1,6 +1,6 @@
-# 🚨 Quick Handover Reference
+# [DEPRECATED] See ONBOARDING_AND_HANDOVER.md
 
-**For immediate handover - read this first!**
+This file is now archived. Please use `ONBOARDING_AND_HANDOVER.md` for all onboarding and handover instructions.
 
 ---
 
