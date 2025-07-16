@@ -1,0 +1,854 @@
+{
+  "heros-path": {
+    "light-theme": {
+      "primary": {
+        "value": "#007AFF",
+        "type": "color",
+        "description": "primary color for light theme"
+      },
+      "secondary": {
+        "value": "#5856D6",
+        "type": "color",
+        "description": "secondary color for light theme"
+      },
+      "background": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "background color for light theme"
+      },
+      "surface": {
+        "value": "#F2F2F7",
+        "type": "color",
+        "description": "surface color for light theme"
+      },
+      "text": {
+        "value": "#000000",
+        "type": "color",
+        "description": "text color for light theme"
+      },
+      "textSecondary": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "textSecondary color for light theme"
+      },
+      "secondaryText": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "secondaryText color for light theme"
+      },
+      "border": {
+        "value": "#C6C6C8",
+        "type": "color",
+        "description": "border color for light theme"
+      },
+      "success": {
+        "value": "#34C759",
+        "type": "color",
+        "description": "success color for light theme"
+      },
+      "warning": {
+        "value": "#FF9500",
+        "type": "color",
+        "description": "warning color for light theme"
+      },
+      "error": {
+        "value": "#FF3B30",
+        "type": "color",
+        "description": "error color for light theme"
+      },
+      "info": {
+        "value": "#007AFF",
+        "type": "color",
+        "description": "info color for light theme"
+      },
+      "swipeSave": {
+        "value": "#4CAF50",
+        "type": "color",
+        "description": "swipeSave color for light theme"
+      },
+      "swipeDismiss": {
+        "value": "#F44336",
+        "type": "color",
+        "description": "swipeDismiss color for light theme"
+      },
+      "tabActive": {
+        "value": "#007AFF",
+        "type": "color",
+        "description": "tabActive color for light theme"
+      },
+      "tabInactive": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "tabInactive color for light theme"
+      },
+      "card": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "card color for light theme"
+      },
+      "shadow": {
+        "value": "#000000",
+        "type": "color",
+        "description": "shadow color for light theme"
+      },
+      "overlay": {
+        "value": "rgba(0, 0, 0, 0.5)",
+        "type": "color",
+        "description": "overlay color for light theme"
+      },
+      "pingGlow": {
+        "value": "#007AFF",
+        "type": "color",
+        "description": "pingGlow color for light theme"
+      },
+      "routeLine": {
+        "value": "rgba(0, 122, 255, 0.8)",
+        "type": "color",
+        "description": "routeLine color for light theme"
+      },
+      "routePreview": {
+        "value": "#5856D6",
+        "type": "color",
+        "description": "routePreview color for light theme"
+      },
+      "spriteShadow": {
+        "value": "rgba(0, 0, 0, 0.3)",
+        "type": "color",
+        "description": "spriteShadow color for light theme"
+      },
+      "buttonPrimary": {
+        "value": "#007AFF",
+        "type": "color",
+        "description": "buttonPrimary color for light theme"
+      },
+      "buttonSecondary": {
+        "value": "#F2F2F7",
+        "type": "color",
+        "description": "buttonSecondary color for light theme"
+      },
+      "buttonText": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "buttonText color for light theme"
+      },
+      "buttonTextSecondary": {
+        "value": "#007AFF",
+        "type": "color",
+        "description": "buttonTextSecondary color for light theme"
+      },
+      "inputBackground": {
+        "value": "#F2F2F7",
+        "type": "color",
+        "description": "inputBackground color for light theme"
+      },
+      "inputBorder": {
+        "value": "#C6C6C8",
+        "type": "color",
+        "description": "inputBorder color for light theme"
+      },
+      "inputText": {
+        "value": "#000000",
+        "type": "color",
+        "description": "inputText color for light theme"
+      },
+      "placeholder": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "placeholder color for light theme"
+      },
+      "switchTrack": {
+        "value": "#E5E5EA",
+        "type": "color",
+        "description": "switchTrack color for light theme"
+      },
+      "switchThumb": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "switchThumb color for light theme"
+      },
+      "switchActive": {
+        "value": "#34C759",
+        "type": "color",
+        "description": "switchActive color for light theme"
+      },
+      "modalBackground": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "modalBackground color for light theme"
+      },
+      "modalOverlay": {
+        "value": "rgba(0, 0, 0, 0.5)",
+        "type": "color",
+        "description": "modalOverlay color for light theme"
+      },
+      "divider": {
+        "value": "#C6C6C8",
+        "type": "color",
+        "description": "divider color for light theme"
+      },
+      "highlight": {
+        "value": "#007AFF20",
+        "type": "color",
+        "description": "highlight color for light theme"
+      },
+      "critical": {
+        "value": "#FF3B30",
+        "type": "color",
+        "description": "critical color for light theme"
+      },
+      "danger": {
+        "value": "#FF3B30",
+        "type": "color",
+        "description": "danger color for light theme"
+      },
+      "onPrimary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onPrimary color for light theme"
+      },
+      "onSecondary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onSecondary color for light theme"
+      },
+      "onError": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onError color for light theme"
+      }
+    },
+    "dark-theme": {
+      "primary": {
+        "value": "#0A84FF",
+        "type": "color",
+        "description": "primary color for dark theme"
+      },
+      "secondary": {
+        "value": "#5E5CE6",
+        "type": "color",
+        "description": "secondary color for dark theme"
+      },
+      "background": {
+        "value": "#000000",
+        "type": "color",
+        "description": "background color for dark theme"
+      },
+      "surface": {
+        "value": "#1C1C1E",
+        "type": "color",
+        "description": "surface color for dark theme"
+      },
+      "text": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "text color for dark theme"
+      },
+      "textSecondary": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "textSecondary color for dark theme"
+      },
+      "secondaryText": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "secondaryText color for dark theme"
+      },
+      "border": {
+        "value": "#38383A",
+        "type": "color",
+        "description": "border color for dark theme"
+      },
+      "success": {
+        "value": "#30D158",
+        "type": "color",
+        "description": "success color for dark theme"
+      },
+      "warning": {
+        "value": "#FF9F0A",
+        "type": "color",
+        "description": "warning color for dark theme"
+      },
+      "error": {
+        "value": "#FF453A",
+        "type": "color",
+        "description": "error color for dark theme"
+      },
+      "info": {
+        "value": "#0A84FF",
+        "type": "color",
+        "description": "info color for dark theme"
+      },
+      "swipeSave": {
+        "value": "#30D158",
+        "type": "color",
+        "description": "swipeSave color for dark theme"
+      },
+      "swipeDismiss": {
+        "value": "#FF453A",
+        "type": "color",
+        "description": "swipeDismiss color for dark theme"
+      },
+      "tabActive": {
+        "value": "#0A84FF",
+        "type": "color",
+        "description": "tabActive color for dark theme"
+      },
+      "tabInactive": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "tabInactive color for dark theme"
+      },
+      "card": {
+        "value": "#1C1C1E",
+        "type": "color",
+        "description": "card color for dark theme"
+      },
+      "shadow": {
+        "value": "#000000",
+        "type": "color",
+        "description": "shadow color for dark theme"
+      },
+      "overlay": {
+        "value": "rgba(0, 0, 0, 0.7)",
+        "type": "color",
+        "description": "overlay color for dark theme"
+      },
+      "pingGlow": {
+        "value": "#0A84FF",
+        "type": "color",
+        "description": "pingGlow color for dark theme"
+      },
+      "routeLine": {
+        "value": "rgba(10, 132, 255, 0.8)",
+        "type": "color",
+        "description": "routeLine color for dark theme"
+      },
+      "routePreview": {
+        "value": "#5E5CE6",
+        "type": "color",
+        "description": "routePreview color for dark theme"
+      },
+      "spriteShadow": {
+        "value": "rgba(0, 0, 0, 0.5)",
+        "type": "color",
+        "description": "spriteShadow color for dark theme"
+      },
+      "buttonPrimary": {
+        "value": "#0A84FF",
+        "type": "color",
+        "description": "buttonPrimary color for dark theme"
+      },
+      "buttonSecondary": {
+        "value": "#1C1C1E",
+        "type": "color",
+        "description": "buttonSecondary color for dark theme"
+      },
+      "buttonText": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "buttonText color for dark theme"
+      },
+      "buttonTextSecondary": {
+        "value": "#0A84FF",
+        "type": "color",
+        "description": "buttonTextSecondary color for dark theme"
+      },
+      "inputBackground": {
+        "value": "#1C1C1E",
+        "type": "color",
+        "description": "inputBackground color for dark theme"
+      },
+      "inputBorder": {
+        "value": "#38383A",
+        "type": "color",
+        "description": "inputBorder color for dark theme"
+      },
+      "inputText": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "inputText color for dark theme"
+      },
+      "placeholder": {
+        "value": "#8E8E93",
+        "type": "color",
+        "description": "placeholder color for dark theme"
+      },
+      "switchTrack": {
+        "value": "#38383A",
+        "type": "color",
+        "description": "switchTrack color for dark theme"
+      },
+      "switchThumb": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "switchThumb color for dark theme"
+      },
+      "switchActive": {
+        "value": "#30D158",
+        "type": "color",
+        "description": "switchActive color for dark theme"
+      },
+      "modalBackground": {
+        "value": "#1C1C1E",
+        "type": "color",
+        "description": "modalBackground color for dark theme"
+      },
+      "modalOverlay": {
+        "value": "rgba(0, 0, 0, 0.7)",
+        "type": "color",
+        "description": "modalOverlay color for dark theme"
+      },
+      "divider": {
+        "value": "#38383A",
+        "type": "color",
+        "description": "divider color for dark theme"
+      },
+      "highlight": {
+        "value": "#0A84FF20",
+        "type": "color",
+        "description": "highlight color for dark theme"
+      },
+      "critical": {
+        "value": "#FF453A",
+        "type": "color",
+        "description": "critical color for dark theme"
+      },
+      "danger": {
+        "value": "#FF453A",
+        "type": "color",
+        "description": "danger color for dark theme"
+      },
+      "onPrimary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onPrimary color for dark theme"
+      },
+      "onSecondary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onSecondary color for dark theme"
+      },
+      "onError": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onError color for dark theme"
+      }
+    },
+    "adventure-theme": {
+      "primary": {
+        "value": "#4A90E2",
+        "type": "color",
+        "description": "primary color for adventure theme"
+      },
+      "secondary": {
+        "value": "#F5A623",
+        "type": "color",
+        "description": "secondary color for adventure theme"
+      },
+      "background": {
+        "value": "#2C3E50",
+        "type": "color",
+        "description": "background color for adventure theme"
+      },
+      "surface": {
+        "value": "#34495E",
+        "type": "color",
+        "description": "surface color for adventure theme"
+      },
+      "text": {
+        "value": "#ECF0F1",
+        "type": "color",
+        "description": "text color for adventure theme"
+      },
+      "textSecondary": {
+        "value": "#BDC3C7",
+        "type": "color",
+        "description": "textSecondary color for adventure theme"
+      },
+      "secondaryText": {
+        "value": "#BDC3C7",
+        "type": "color",
+        "description": "secondaryText color for adventure theme"
+      },
+      "border": {
+        "value": "#7F8C8D",
+        "type": "color",
+        "description": "border color for adventure theme"
+      },
+      "success": {
+        "value": "#27AE60",
+        "type": "color",
+        "description": "success color for adventure theme"
+      },
+      "warning": {
+        "value": "#F39C12",
+        "type": "color",
+        "description": "warning color for adventure theme"
+      },
+      "error": {
+        "value": "#E74C3C",
+        "type": "color",
+        "description": "error color for adventure theme"
+      },
+      "info": {
+        "value": "#3498DB",
+        "type": "color",
+        "description": "info color for adventure theme"
+      },
+      "swipeSave": {
+        "value": "#27AE60",
+        "type": "color",
+        "description": "swipeSave color for adventure theme"
+      },
+      "swipeDismiss": {
+        "value": "#E74C3C",
+        "type": "color",
+        "description": "swipeDismiss color for adventure theme"
+      },
+      "tabActive": {
+        "value": "#4A90E2",
+        "type": "color",
+        "description": "tabActive color for adventure theme"
+      },
+      "tabInactive": {
+        "value": "#BDC3C7",
+        "type": "color",
+        "description": "tabInactive color for adventure theme"
+      },
+      "card": {
+        "value": "#34495E",
+        "type": "color",
+        "description": "card color for adventure theme"
+      },
+      "shadow": {
+        "value": "#000000",
+        "type": "color",
+        "description": "shadow color for adventure theme"
+      },
+      "overlay": {
+        "value": "rgba(0, 0, 0, 0.6)",
+        "type": "color",
+        "description": "overlay color for adventure theme"
+      },
+      "pingGlow": {
+        "value": "#F5A623",
+        "type": "color",
+        "description": "pingGlow color for adventure theme"
+      },
+      "routeLine": {
+        "value": "rgba(74, 144, 226, 0.8)",
+        "type": "color",
+        "description": "routeLine color for adventure theme"
+      },
+      "routePreview": {
+        "value": "#F5A623",
+        "type": "color",
+        "description": "routePreview color for adventure theme"
+      },
+      "spriteShadow": {
+        "value": "rgba(0, 0, 0, 0.4)",
+        "type": "color",
+        "description": "spriteShadow color for adventure theme"
+      },
+      "buttonPrimary": {
+        "value": "#4A90E2",
+        "type": "color",
+        "description": "buttonPrimary color for adventure theme"
+      },
+      "buttonSecondary": {
+        "value": "#34495E",
+        "type": "color",
+        "description": "buttonSecondary color for adventure theme"
+      },
+      "buttonText": {
+        "value": "#ECF0F1",
+        "type": "color",
+        "description": "buttonText color for adventure theme"
+      },
+      "buttonTextSecondary": {
+        "value": "#4A90E2",
+        "type": "color",
+        "description": "buttonTextSecondary color for adventure theme"
+      },
+      "inputBackground": {
+        "value": "#34495E",
+        "type": "color",
+        "description": "inputBackground color for adventure theme"
+      },
+      "inputBorder": {
+        "value": "#7F8C8D",
+        "type": "color",
+        "description": "inputBorder color for adventure theme"
+      },
+      "inputText": {
+        "value": "#ECF0F1",
+        "type": "color",
+        "description": "inputText color for adventure theme"
+      },
+      "placeholder": {
+        "value": "#BDC3C7",
+        "type": "color",
+        "description": "placeholder color for adventure theme"
+      },
+      "switchTrack": {
+        "value": "#7F8C8D",
+        "type": "color",
+        "description": "switchTrack color for adventure theme"
+      },
+      "switchThumb": {
+        "value": "#ECF0F1",
+        "type": "color",
+        "description": "switchThumb color for adventure theme"
+      },
+      "switchActive": {
+        "value": "#27AE60",
+        "type": "color",
+        "description": "switchActive color for adventure theme"
+      },
+      "modalBackground": {
+        "value": "#34495E",
+        "type": "color",
+        "description": "modalBackground color for adventure theme"
+      },
+      "modalOverlay": {
+        "value": "rgba(0, 0, 0, 0.6)",
+        "type": "color",
+        "description": "modalOverlay color for adventure theme"
+      },
+      "divider": {
+        "value": "#7F8C8D",
+        "type": "color",
+        "description": "divider color for adventure theme"
+      },
+      "highlight": {
+        "value": "#4A90E220",
+        "type": "color",
+        "description": "highlight color for adventure theme"
+      },
+      "critical": {
+        "value": "#E74C3C",
+        "type": "color",
+        "description": "critical color for adventure theme"
+      },
+      "danger": {
+        "value": "#E74C3C",
+        "type": "color",
+        "description": "danger color for adventure theme"
+      },
+      "onPrimary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onPrimary color for adventure theme"
+      },
+      "onSecondary": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onSecondary color for adventure theme"
+      },
+      "onError": {
+        "value": "#FFFFFF",
+        "type": "color",
+        "description": "onError color for adventure theme"
+      }
+    },
+    "spacing": {
+      "xs": {
+        "value": "4px",
+        "type": "dimension",
+        "description": "Spacing scale xs"
+      },
+      "sm": {
+        "value": "8px",
+        "type": "dimension",
+        "description": "Spacing scale sm"
+      },
+      "md": {
+        "value": "16px",
+        "type": "dimension",
+        "description": "Spacing scale md"
+      },
+      "lg": {
+        "value": "24px",
+        "type": "dimension",
+        "description": "Spacing scale lg"
+      },
+      "xl": {
+        "value": "32px",
+        "type": "dimension",
+        "description": "Spacing scale xl"
+      },
+      "xxl": {
+        "value": "48px",
+        "type": "dimension",
+        "description": "Spacing scale xxl"
+      }
+    },
+    "typography": {
+      "h1": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "28px",
+          "fontWeight": "700",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for h1"
+      },
+      "h2": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "24px",
+          "fontWeight": "600",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for h2"
+      },
+      "h3": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "20px",
+          "fontWeight": "600",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for h3"
+      },
+      "h4": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "18px",
+          "fontWeight": "600",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for h4"
+      },
+      "body": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for body"
+      },
+      "bodySmall": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "14px",
+          "fontWeight": "400",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for bodySmall"
+      },
+      "caption": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "12px",
+          "fontWeight": "400",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for caption"
+      },
+      "button": {
+        "value": {
+          "fontFamily": "System",
+          "fontSize": "16px",
+          "fontWeight": "600",
+          "lineHeight": "auto"
+        },
+        "type": "typography",
+        "description": "Typography style for button"
+      }
+    },
+    "layout": {
+      "borderRadius": {
+        "value": "8px",
+        "type": "dimension",
+        "description": "Layout constant borderRadius"
+      },
+      "borderRadiusLarge": {
+        "value": "12px",
+        "type": "dimension",
+        "description": "Layout constant borderRadiusLarge"
+      },
+      "borderRadiusSmall": {
+        "value": "4px",
+        "type": "dimension",
+        "description": "Layout constant borderRadiusSmall"
+      },
+      "buttonHeight": {
+        "value": "44px",
+        "type": "dimension",
+        "description": "Layout constant buttonHeight"
+      },
+      "buttonHeightSmall": {
+        "value": "36px",
+        "type": "dimension",
+        "description": "Layout constant buttonHeightSmall"
+      },
+      "cardPadding": {
+        "value": "16px",
+        "type": "dimension",
+        "description": "Layout constant cardPadding"
+      },
+      "screenPadding": {
+        "value": "16px",
+        "type": "dimension",
+        "description": "Layout constant screenPadding"
+      },
+      "headerHeight": {
+        "value": "56px",
+        "type": "dimension",
+        "description": "Layout constant headerHeight"
+      },
+      "tabBarHeight": {
+        "value": "49px",
+        "type": "dimension",
+        "description": "Layout constant tabBarHeight"
+      }
+    },
+    "shadows": {
+      "small": {
+        "value": {
+          "x": 0,
+          "y": 1,
+          "blur": 1,
+          "spread": 0,
+          "color": "#000000",
+          "type": "dropShadow"
+        },
+        "type": "shadow",
+        "description": "Shadow style small"
+      },
+      "medium": {
+        "value": {
+          "x": 0,
+          "y": 2,
+          "blur": 3.84,
+          "spread": 0,
+          "color": "#000000",
+          "type": "dropShadow"
+        },
+        "type": "shadow",
+        "description": "Shadow style medium"
+      },
+      "large": {
+        "value": {
+          "x": 0,
+          "y": 4,
+          "blur": 4.65,
+          "spread": 0,
+          "color": "#000000",
+          "type": "dropShadow"
+        },
+        "type": "shadow",
+        "description": "Shadow style large"
+      }
+    }
+  }
+}
