@@ -96,10 +96,6 @@
  * 19. Add data recovery tools - assist with data recovery from backups
  * 20. Add data automation - automate routine data maintenance and monitoring tasks
  */
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/fix/gps-background-location-tracking
 // utils/FirestoreDataViewer.js
 import { 
   collection, 

@@ -90,7 +90,6 @@
  * 19. Add place visualization - map view showing all saved places
  * 20. Add place achievements - rewards for reaching saved place milestones
  */
-
 // screens/SavedPlacesScreen.js
 import React, { useState, useEffect } from 'react';
 import {
@@ -274,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderRadius: Layout.borderRadius,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: Colors.tabInactive,
   },
   pickerToggleText: {
     ...Typography.body,
@@ -325,11 +324,11 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: '700' },
+  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
-    color: colors.textSecondary,
+    color: Colors.tabInactive,
     marginVertical: Spacing.xs / 2,
   },
   combinedTypes: {
@@ -343,7 +342,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: colors.textSecondary },
+  meta: { ...Typography.body, color: Colors.tabInactive },
   link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   dismiss: {
     justifyContent: 'center',

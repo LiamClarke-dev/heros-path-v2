@@ -45,8 +45,8 @@
  * - Works with DiscoveryService.js for data persistence and management
  * - Integrates with JourneyService.js for journey completion tracking
  * - Uses NewPlacesService.js for AI summaries and enhanced place data
- * - Connects with UserContext.js for authentication and user preferences
- * - Uses ThemeContext.js for styling and theming
+ * - Connects with UserContext for authentication and user preferences
+ * - Uses ThemeContext for styling and theming
  * - Works with useSuggestedPlaces hook for automatic place suggestions
  * - Integrates with various UI components for consistent user experience
  * 
@@ -120,7 +120,7 @@ import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Colors, Spacing, Typography, Layout, Shadows } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -1649,28 +1649,12 @@ export default function DiscoveriesScreen({ navigation, route }) {
           onRefresh={onRefresh}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <MaterialIcons name="explore" size={48} color={colors.textSecondary} style={{ marginBottom: 16 }} />
-              <Text style={[styles.emptyText, { color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8 }]}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 {filterType && filterType !== 'all' 
                   ? `No ${PLACE_TYPES.find(type => type.key === filterType)?.label?.toLowerCase()} found for this journey.`
-                  : 'No discoveries yet!'
+                  : 'No discoveries found for this journey.'
                 }
               </Text>
-              <Text style={[styles.emptyText, { color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 20 }]}>
-                {filterType && filterType !== 'all' 
-                  ? 'Try removing the filter or taking a longer walk through different areas.'
-                  : 'Complete a longer journey to unlock new places. The more you explore, the more you\'ll discover!'
-                }
-              </Text>
-              {(!filterType || filterType === 'all') && (
-                <TouchableOpacity
-                  style={[styles.discoverButton, { backgroundColor: colors.primary, marginTop: 20 }]}
-                  onPress={() => navigation.navigate('Map')}
-                >
-                  <MaterialIcons name="map" size={20} color={colors.background} />
-                  <Text style={[styles.discoverButtonText, { color: colors.background }]}>Start Exploring</Text>
-                </TouchableOpacity>
-              )}
             </View>
           )}
           renderItem={renderSuggestion}
@@ -1983,7 +1967,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
     marginBottom: Spacing.xs / 2,
   },
   headerStats: {
@@ -2079,7 +2063,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: '700' },
+  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
@@ -2097,7 +2081,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: colors.textSecondary },
+  meta: { ...Typography.body, color: Colors.tabInactive },
   link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   action: {
     justifyContent: 'center',
@@ -2238,7 +2222,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   onboardingTitle: {
-    ...Typography.heroHeader,
+    ...Typography.h1,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -2295,7 +2279,7 @@ const styles = StyleSheet.create({
     margin: Spacing.lg,
   },
   dismissModalTitle: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -2348,7 +2332,7 @@ const styles = StyleSheet.create({
     margin: Spacing.lg,
   },
   settingsModalTitle: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -2408,7 +2392,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.tabInactive + '20',
   },
   manageHistoryTitle: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
     color: Colors.text,
     flex: 1,
   },
@@ -2506,19 +2490,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
   },
-  discoverButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: Layout.borderRadius,
-    ...Shadows.medium,
-  },
-  discoverButtonText: {
-    ...Typography.body,
-    fontWeight: '600',
-    marginLeft: Spacing.sm,
-  },
   
   // Shake to Undo Button Styles
   shakeButton: {
@@ -2556,7 +2527,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   completionTitle: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
     color: Colors.text,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,

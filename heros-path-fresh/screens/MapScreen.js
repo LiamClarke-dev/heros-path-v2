@@ -1,31 +1,95 @@
 /*
-  MapScreen.js
-  --------------
-  What this page does:
-  - This is the main map interface of the Hero's Path app. It displays the user's current location, tracks their journey, and shows saved routes and places on a map using Google Maps.
-  - Users can start/stop journey tracking, view their path, see saved places, and interact with map markers. The screen also supports animated Link sprites and a "ping" feature for real-time discovery.
-
-  Why this page exists & its importance:
-  - This is the core experience of the app, where users interact with the map, record their journeys, and discover new places. It ties together location tracking, journey management, and visual feedback.
-  - It is central to the app's value proposition and is referenced by other screens (e.g., journey history, discoveries).
-
-  References & dependencies:
-  - Uses the theme system via useTheme() for dynamic styling.
-  - Relies on JourneyService and DiscoveryService for data.
-  - Uses components like PingButton, PingStats, PingAnimation, SectionHeader, AppButton.
-  - References user and exploration context providers.
-  - Uses Google Maps API and Expo Location for map and geolocation features.
-
-  Suggestions for improvement:
-  - Consider breaking up the file: it's large and handles many responsibilities (map logic, UI, state, permissions). Move map logic, journey management, and UI components into separate hooks or components.
-  - Add more comments explaining complex logic, especially around journey tracking and sprite animation.
-  - Ensure all color and style values use the theme system (avoid hardcoded values).
-  - Improve error handling for location and map errors.
-  - Consider accessibility improvements for map controls and markers.
-*/
+ * MAP SCREEN (CORE APP SCREEN)
+ * ============================
+ * 
+ * PURPOSE:
+ * This is the heart of Hero's Path - the main screen where users track their walks,
+ * see their progress in real-time, and interact with the core features. It displays
+ * a Google Maps interface with GPS tracking, route recording, animated Link sprite,
+ * saved places, and the ping functionality. Think of it as the "adventure interface"
+ * where all the walking and discovery magic happens.
+ * 
+ * FUNCTIONALITY:
+ * - Real-time GPS location tracking with animated Link sprite that moves and faces direction
+ * - Route recording with glowing polylines that show the user's walking path
+ * - Location permission management with automatic requests and background permission warnings
+ * - Journey saving with distance calculation, duration tracking, and Firestore storage
+ * - Ping functionality for real-time place discovery during walks
+ * - Display of saved places and past journey routes on the map
+ * - Theme-aware map styling with 5 different map styles (Standard, Satellite, etc.)
+ * - Background location permission warnings to ensure accurate tracking
+ * - Error handling for location services and map rendering issues
+ * 
+ * WHY IT EXISTS:
+ * This is the primary interface for Hero's Path's core value proposition: gamified
+ * walking with discovery. Users spend most of their time on this screen during active
+ * walks. It needs to be engaging, accurate, and responsive to make walking feel like
+ * an adventure rather than just exercise. The animated sprite and visual feedback
+ * transform mundane walks into engaging experiences.
+ * 
+ * KEY FEATURES:
+ * - Animated Link sprite that shows walking direction and movement
+ * - Real-time route tracking with glowing polylines
+ * - Ping button for discovering places during walks (with credits and cooldown)
+ * - Map style switching (Adventure, Night, Satellite, etc.)
+ * - Background permission warnings for accurate GPS tracking
+ * - Journey completion workflow with automatic saving
+ * - Display of past journeys and saved places for context
+ * - Theme integration for consistent visual experience
+ * 
+ * RELATIONSHIPS:
+ * - Uses multiple contexts: UserContext (auth), ThemeContext (styling), ExplorationContext (history)
+ * - Integrates with JourneyService for saving completed walks
+ * - Uses DiscoveryService for managing place discoveries
+ * - Works with PingButton and PingStats components for real-time discovery
+ * - Uses PingAnimation for visual feedback (currently disabled)
+ * - Connects to various services for data persistence and API calls
+ * 
+ * REFERENCED BY:
+ * - AppNavigator.js (as the main screen in Map stack)
+ * - Most users spend majority of their time on this screen during active use
+ * - Other screens reference this as the "home" or main app experience
+ * 
+ * REFERENCES:
+ * - ThemeContext (for map styling and UI theming)
+ * - UserContext (for user authentication and data)
+ * - ExplorationContext (for tracking exploration history)
+ * - JourneyService (for saving completed journeys)
+ * - DiscoveryService (for managing place discoveries)
+ * - PingButton, PingStats, PingAnimation components
+ * - Location services (expo-location)
+ * - Google Maps (react-native-maps)
+ * 
+ * IMPORTANCE TO APP:
+ * CRITICAL - This is the most important screen in the entire app. It's where users
+ * spend most of their time and experience the core value proposition. If this screen
+ * doesn't work well, the entire app fails. The GPS tracking, visual feedback, and
+ * user experience on this screen determine whether users continue using the app.
+ * 
+ * IMPROVEMENT SUGGESTIONS:
+ * 1. Add offline map support - download map tiles for offline use
+ * 2. Add route planning - let users plan routes before walking
+ * 3. Add compass mode - show traditional compass for navigation
+ * 4. Add AR integration - augmented reality for enhanced discovery
+ * 5. Add weather overlay - show weather conditions on the map
+ * 6. Add traffic information - real-time traffic data for route planning
+ * 7. Add elevation profile - show terrain elevation for hiking
+ * 8. Add social features - see friends' locations and journeys
+ * 9. Add guided tours - pre-planned discovery routes
+ * 10. Add voice navigation - audio cues for route following
+ * 11. Add fitness tracking - heart rate, calories, step counting
+ * 12. Add photo integration - take and associate photos with locations
+ * 13. Add landmark recognition - automatic identification of notable places
+ * 14. Add route sharing - share interesting routes with other users
+ * 15. Add achievement notifications - celebrate milestones during walks
+ * 16. Add better error recovery - handle GPS and network failures gracefully
+ * 17. Add performance optimization - reduce battery usage and improve responsiveness
+ * 18. Add accessibility improvements - better support for users with disabilities
+ * 19. Add customizable UI - let users customize button placement and visibility
+ * 20. Add emergency features - SOS functionality and emergency contacts
+ */
 // NOTE: This screen now uses react-native-maps. Make sure to install it with:
 //   npx expo install react-native-maps
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -39,12 +103,10 @@ import {
   Platform,
   Linking,
   AppState,
-  Modal,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
@@ -55,6 +117,7 @@ import PingStats from '../components/PingStats';
 import PingAnimation from '../components/PingAnimation';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
+import BackgroundLocationService from '../services/BackgroundLocationService';
 import Logger from '../utils/Logger';
 import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
@@ -102,7 +165,6 @@ export default function MapScreen({ navigation, route }) {
   const { setCurrentJourney } = useExploration();
   
   const mapRef = useRef(null);
-  const locationSubscription = useRef(null);
   
   const [currentPosition, setCurrentPosition] = useState(null);
   const [tracking, setTracking] = useState(false);
@@ -119,11 +181,7 @@ export default function MapScreen({ navigation, route }) {
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
   const [mapError, setMapError] = useState(null);
-  const [showTutorial, setShowTutorial] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
-  const [showMinDistanceModal, setShowMinDistanceModal] = useState(false);
-  const [pendingEndWalk, setPendingEndWalk] = useState(false);
-  const [pendingCoords, setPendingCoords] = useState([]);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -159,60 +217,69 @@ export default function MapScreen({ navigation, route }) {
     );
   };
 
-  // Load saved routes and places on mount
+  // Initialize BackgroundLocationService and load data on mount
   useEffect(() => {
-    const fetchLocation = async () => {
+    const initializeLocation = async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to use the map.');
+        // Initialize the background location service
+        const initialized = await BackgroundLocationService.initialize();
+        if (!initialized) {
+          Alert.alert('Location Setup Failed', 'Please enable location permissions in your device settings.');
           return;
         }
-        const location = await Location.getCurrentPositionAsync({});
-        setCurrentPosition({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          timestamp: location.timestamp,
+
+        // Set up location update callback
+        BackgroundLocationService.setLocationUpdateCallback((coords, journey) => {
+          // Update current position
+          setCurrentPosition({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            timestamp: coords.timestamp,
+          });
+          
+          // Update location accuracy indicator
+          setLocationAccuracy(coords.accuracy);
+          
+          // Update path for rendering
+          setPathToRender(journey.coordinates);
+          
+          Logger.debug('Location updated:', {
+            lat: coords.latitude.toFixed(6),
+            lng: coords.longitude.toFixed(6),
+            accuracy: coords.accuracy,
+            points: journey.coordinates.length
+          });
         });
+
+        // Get initial location
+        try {
+          const coords = await BackgroundLocationService.getCurrentLocation();
+          setCurrentPosition({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            timestamp: Date.now(),
+          });
+          setLocationAccuracy(coords.accuracy);
+        } catch (error) {
+          Logger.warn('Could not get initial location:', error);
+        }
+
       } catch (error) {
-        console.error('Error fetching location:', error);
+        Logger.error('Error initializing location service:', error);
+        Alert.alert('Location Error', 'Failed to initialize location services. Please check your permissions.');
       }
     };
 
-    fetchLocation();
+    initializeLocation();
     loadSavedRoutes();
     loadSavedPlaces();
     checkBackgroundPermissions();
-    checkFirstTimeVisit();
+
+    // Cleanup on unmount
+    return () => {
+      BackgroundLocationService.setLocationUpdateCallback(null);
+    };
   }, []);
-
-  // Check if this is the first time visiting the Map screen
-  const checkFirstTimeVisit = async () => {
-    try {
-      const hasSeenTutorial = await AsyncStorage.getItem('@map_tutorial_seen');
-      if (!hasSeenTutorial) {
-        setShowTutorial(true);
-      }
-    } catch (error) {
-      console.error('Error checking tutorial status:', error);
-    }
-  };
-
-  // Mark tutorial as seen and close modal
-  const completeTutorial = async () => {
-    try {
-      await AsyncStorage.setItem('@map_tutorial_seen', 'true');
-      setShowTutorial(false);
-    } catch (error) {
-      console.error('Error saving tutorial status:', error);
-      setShowTutorial(false);
-    }
-  };
-
-  // Show tutorial again when help button is pressed
-  const showTutorialAgain = () => {
-    setShowTutorial(true);
-  };
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -262,18 +329,37 @@ export default function MapScreen({ navigation, route }) {
   };
 
   const locateMe = async () => {
-    if (!currentPosition) return;
-    
     setIsLocating(true);
     try {
+      // Get fresh location from the service
+      const coords = await BackgroundLocationService.getCurrentLocation();
+      
+      const newPosition = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        timestamp: Date.now(),
+      };
+      
+      setCurrentPosition(newPosition);
+      setLocationAccuracy(coords.accuracy);
+      
+      // Animate to the location
       mapRef.current?.animateToRegion({
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
       }, 1000);
+      
+      Logger.debug('Located user:', {
+        lat: coords.latitude.toFixed(6),
+        lng: coords.longitude.toFixed(6),
+        accuracy: coords.accuracy
+      });
+      
     } catch (error) {
-      console.error('Error locating user:', error);
+      Logger.error('Error locating user:', error);
+      Alert.alert('Location Error', 'Could not get your current location. Please check your location settings.');
     } finally {
       setIsLocating(false);
     }
@@ -375,128 +461,89 @@ export default function MapScreen({ navigation, route }) {
     return totalDistance;
   };
 
-  const handleEndWalk = (coords) => {
-    if (coords.length < MIN_ROUTE_POINTS) {
-      setPendingCoords(coords);
-      setShowMinDistanceModal(true);
-      Logger.info('MAP_SCREEN', 'handleEndWalk: walk has too few points', { coordsLength: coords.length });
-      return false;
-    }
-    if (calculateTotalDistance(coords) < MIN_ROUTE_DISTANCE) {
-      setPendingCoords(coords);
-      setShowMinDistanceModal(true);
-      Logger.info('MAP_SCREEN', 'handleEndWalk: walk too short', { distance: calculateTotalDistance(coords) });
-      return false;
-    }
-    return true;
-  };
-
-  const refundPings = async () => {
-    if (pingUsed > 0 && user) {
-      try {
-        // Call PingService to refund credits
-        // (Assume PingService.refundCredits exists or implement it)
-        await JourneyService.refundPingCredits(user.uid, pingUsed);
-        setPingUsed(0);
-      } catch (error) {
-        Logger.error('MAP_SCREEN', 'Failed to refund ping credits', error);
-      }
-    }
-  };
-
   const toggleTracking = async () => {
     if (tracking) {
-      // Stop tracking
-      if (locationSubscription.current) {
-        locationSubscription.current.remove();
-        locationSubscription.current = null;
-      }
-      setTracking(false);
-      // Always check for minimum walk requirement, even if 0 or 1 points
-      if (currentJourneyId) {
-        if (!handleEndWalk(pathToRender)) {
-          setPendingEndWalk(true);
-          Logger.info('MAP_SCREEN', 'Showing minimum distance modal', { pathToRenderLength: pathToRender.length });
-          // Do NOT clear state here; wait for user to choose in modal
-          return;
+      // Stop tracking using BackgroundLocationService
+      try {
+        const journeyData = await BackgroundLocationService.stopTracking();
+        setTracking(false);
+        
+        // Save the journey if we have data
+        if (journeyData && journeyData.coordinates.length > 0) {
+          await saveJourney(journeyData.coordinates);
+        } else {
+          Logger.warn('No journey data to save');
+          Alert.alert('No Data', 'No route data was recorded. Make sure location permissions are enabled.');
         }
-        // Only save if valid
-        if (pathToRender.length >= MIN_ROUTE_POINTS && calculateTotalDistance(pathToRender) >= MIN_ROUTE_DISTANCE) {
-          await saveJourney(pathToRender);
-        }
+        
+        // Reset UI state
+        setCurrentJourneyId(null);
+        setPathToRender([]);
+        setPreviewRoute([]);
+        setPreviewRoadCoords([]);
+        
+      } catch (error) {
+        Logger.error('Error stopping tracking:', error);
+        Alert.alert('Error', 'Failed to stop tracking. Your data may not have been saved.');
+        setTracking(false);
       }
     } else {
-      // Start tracking
+      // Start tracking using BackgroundLocationService
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Location permission is required to track your walks.');
-          return;
-        }
-
-        // Request background permissions
-        const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-        if (backgroundStatus.status !== 'granted') {
-          Alert.alert(
-            'Background Permission Required',
-            'Please grant "Always" location access to track your walks in the background.'
-          );
-          return;
-        }
-
-        // Create new journey
+        // Create new journey ID
         const journeyId = Date.now().toString();
+        
+        // Reset UI state
         setCurrentJourneyId(journeyId);
         setPathToRender([]);
         setPreviewRoute([]);
         setPreviewRoadCoords([]);
         setPingUsed(0);
 
-        // Start location tracking
-        locationSubscription.current = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.BestForNavigation,
-            timeInterval: 1000,
-            distanceInterval: 5,
-            showsBackgroundLocationIndicator: true,
-          },
-          (location) => {
-            const newCoord = {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              timestamp: location.timestamp,
-            };
-
-            setCurrentPosition(newCoord);
-            setPathToRender(prev => [...prev, newCoord]);
-          }
-        );
-
-        setTracking(true);
-        Logger.info('MAP_SCREEN', 'Started tracking', { journeyId });
+        // Start tracking with the enhanced service
+        const success = await BackgroundLocationService.startTracking(journeyId);
+        
+        if (success) {
+          setTracking(true);
+          Logger.info('Started enhanced GPS tracking with background support', { journeyId });
+          
+          // Show success message
+          Alert.alert(
+            'Journey Started! 🗺️',
+            'Your adventure is now being tracked with enhanced GPS accuracy. The app will continue tracking even when your screen is locked.',
+            [{ text: 'Got it!', style: 'default' }]
+          );
+        } else {
+          throw new Error('Failed to start background location service');
+        }
+        
       } catch (error) {
-        Logger.error('MAP_SCREEN', 'Error starting tracking', error);
-        Alert.alert('Error', 'Failed to start tracking. Please try again.');
+        Logger.error('Error starting tracking:', error);
+        setTracking(false);
+        
+        if (error.message.includes('permission')) {
+          Alert.alert(
+            'Permission Required',
+            'Location permissions are required to track your walks. Please enable both "While Using App" and "Always" location access in your device settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Open Settings', 
+                onPress: () => {
+                  if (Platform.OS === 'ios') {
+                    Linking.openURL('app-settings:');
+                  } else {
+                    Linking.openSettings();
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Error', 'Failed to start tracking. Please try again or check your location settings.');
+        }
       }
     }
-  };
-
-  const handleDiscardWalk = async () => {
-    Logger.info('MAP_SCREEN', 'User chose to discard walk, refunding pings and clearing state');
-    setShowMinDistanceModal(false);
-    setPendingEndWalk(false);
-    setPendingCoords([]);
-    await refundPings();
-    setCurrentJourneyId(null);
-    setPathToRender([]);
-    setPreviewRoute([]);
-    setPreviewRoadCoords([]);
-    Alert.alert('Walk Discarded', 'Your walk was too short to be saved. Any used pings have been refunded.');
-  };
-  const handleContinueWalk = () => {
-    setShowMinDistanceModal(false);
-    setPendingEndWalk(false);
-    setPendingCoords([]);
   };
 
   const renderSavedRoutes = () =>
@@ -504,7 +551,7 @@ export default function MapScreen({ navigation, route }) {
       <Polyline
         key={journey.id}
         coordinates={journey.route}
-        strokeColor={colors.primary}
+        strokeColor={colors.routeLine}
         strokeWidth={3}
         opacity={0.6}
       />
@@ -558,7 +605,6 @@ export default function MapScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <SectionHeader title="Explore" />
       {backgroundPermissionWarning && (
         <TouchableOpacity 
           style={[styles.permissionWarning, { backgroundColor: colors.warning }]} 
@@ -570,7 +616,34 @@ export default function MapScreen({ navigation, route }) {
         </TouchableOpacity>
       )}
 
-      {region ? (
+      {/* GPS Accuracy Indicator */}
+      {tracking && locationAccuracy && (
+        <View style={[styles.accuracyIndicator, { backgroundColor: colors.cardBackground }]}>
+          <MaterialIcons 
+            name="gps-fixed" 
+            size={16} 
+            color={
+              locationAccuracy <= 5 ? colors.success :
+              locationAccuracy <= 15 ? colors.warning :
+              colors.error
+            } 
+          />
+          <Text style={[styles.accuracyText, { color: colors.textSecondary }]}>
+            GPS: {Math.round(locationAccuracy)}m
+          </Text>
+          <Text style={[styles.accuracyStatus, { 
+            color: locationAccuracy <= 5 ? colors.success :
+                   locationAccuracy <= 15 ? colors.warning :
+                   colors.error
+          }]}>
+            {locationAccuracy <= 5 ? 'Excellent' :
+             locationAccuracy <= 15 ? 'Good' :
+             locationAccuracy <= 50 ? 'Fair' : 'Poor'}
+          </Text>
+        </View>
+      )}
+
+      {currentPosition ? (
         <MapView
           ref={mapRef}
           style={styles.map}
@@ -586,7 +659,7 @@ export default function MapScreen({ navigation, route }) {
             <Polyline
               key={journey.id}
               coordinates={journey.route}
-              strokeColor={colors.primary}
+              strokeColor={colors.routeLine}
               strokeWidth={3}
             />
           ))}
@@ -602,7 +675,7 @@ export default function MapScreen({ navigation, route }) {
           {pathToRender.length > 0 && (
             <Polyline
               coordinates={pathToRender}
-              strokeColor={colors.primary}
+              strokeColor={colors.routeLine}
               strokeWidth={6}
             />
           )}
@@ -648,14 +721,6 @@ export default function MapScreen({ navigation, route }) {
       
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
-        {/* Help/Tutorial button */}
-        <TouchableOpacity 
-          style={[styles.preferencesButton, { backgroundColor: colors.buttonSecondary }]} 
-          onPress={showTutorialAgain}
-        >
-          <MaterialIcons name="help-outline" size={24} color={colors.primary} />
-        </TouchableOpacity>
-
         {/* Discovery preferences button */}
         <TouchableOpacity 
           style={[styles.preferencesButton, { backgroundColor: colors.buttonSecondary }]} 
@@ -735,98 +800,6 @@ export default function MapScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {showMinDistanceModal && (
-        <Modal
-          visible={showMinDistanceModal}
-          transparent
-          animationType="fade"
-          onRequestClose={handleContinueWalk}
-        >
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <View style={{ backgroundColor: colors.card, padding: 24, borderRadius: 16, alignItems: 'center', maxWidth: 320 }}>
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Hey, listen!</Text>
-              <Text style={{ color: colors.text, fontSize: 16, marginBottom: 16, textAlign: 'center' }}>
-                It seems like your walk has fewer than three points or is less than 50 meters. If you end now, your progress won't be saved. (Any used pings on this walk will be refunded.)
-              </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
-                <TouchableOpacity
-                  style={{ flex: 1, marginRight: 8, backgroundColor: colors.buttonSecondary, padding: 12, borderRadius: 8 }}
-                  onPress={handleContinueWalk}
-                >
-                  <Text style={{ color: colors.primary, textAlign: 'center', fontWeight: 'bold' }}>Go Back</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ flex: 1, marginLeft: 8, backgroundColor: colors.error, padding: 12, borderRadius: 8 }}
-                  onPress={handleDiscardWalk}
-                >
-                  <Text style={{ color: colors.buttonText, textAlign: 'center', fontWeight: 'bold' }}>Discard Walk</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {/* Tutorial Modal */}
-      <Modal
-        visible={showTutorial}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowTutorial(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.tutorialModal, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.tutorialTitle, { color: colors.text }]}>
-              Welcome to the Map! 🗺️
-            </Text>
-            <View style={styles.tutorialContent}>
-              <View style={styles.tutorialItem}>
-                <MaterialIcons name="location-on" size={24} color={colors.primary} />
-                <Text style={[styles.tutorialText, { color: colors.text }]}>
-                  Use "Start Walk" to begin tracking your journey and discover new places
-                </Text>
-              </View>
-              <View style={styles.tutorialItem}>
-                <MaterialIcons name="tune" size={24} color={colors.primary} />
-                <Text style={[styles.tutorialText, { color: colors.text }]}>
-                  Tap the settings button to customize what types of places you want to discover
-                </Text>
-              </View>
-              <View style={styles.tutorialItem}>
-                <MaterialIcons name="explore" size={24} color={colors.primary} />
-                <Text style={[styles.tutorialText, { color: colors.text }]}>
-                  The more you explore, the more interesting places you'll discover along your route
-                </Text>
-              </View>
-              <View style={styles.tutorialItem}>
-                <MaterialIcons name="help-outline" size={24} color={colors.primary} />
-                <Text style={[styles.tutorialText, { color: colors.text }]}>
-                  You can always access this tutorial again by tapping the help button
-                </Text>
-              </View>
-            </View>
-            <View style={styles.tutorialButtons}>
-              <TouchableOpacity
-                style={[styles.tutorialButton, { backgroundColor: colors.primary }]}
-                onPress={() => navigation.navigate('DiscoveryPreferences')}
-              >
-                <Text style={[styles.tutorialButtonText, { color: colors.background }]}>
-                  Set Preferences
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tutorialButtonSecondary, { borderColor: colors.primary }]}
-                onPress={completeTutorial}
-              >
-                <Text style={[styles.tutorialButtonTextSecondary, { color: colors.primary }]}>
-                  Got it!
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       <StatusBar style="auto" />
     </View>
   );
@@ -888,7 +861,7 @@ const styles = StyleSheet.create({
     ...Shadows.large,
   },
   trackButtonText: {
-    ...Typography.body,
+    ...Typography.button,
     fontWeight: '600',
   },
   pingContainer: {
@@ -918,7 +891,7 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   permissionWarningText: {
-    ...Typography.caption,
+    ...Typography.bodySmall,
     flex: 1,
     marginHorizontal: Spacing.sm,
     fontWeight: '500',
@@ -942,65 +915,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Shadows.small,
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tutorialModal: {
-    margin: Spacing.lg,
-    borderRadius: Layout.borderRadiusLarge,
-    padding: Spacing.lg,
-    maxWidth: 350,
-    ...Shadows.large,
-  },
-  tutorialTitle: {
-    ...Typography.sectionTitle,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  tutorialContent: {
-    marginBottom: Spacing.lg,
-  },
-  tutorialItem: {
+  accuracyIndicator: {
+    position: 'absolute',
+    top: 60,
+    right: Spacing.md,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.md,
-  },
-  tutorialText: {
-    ...Typography.body,
-    flex: 1,
-    marginLeft: Spacing.sm,
-    lineHeight: 20,
-  },
-  tutorialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  tutorialButton: {
-    flex: 1,
-    paddingVertical: Spacing.md,
-    borderRadius: Layout.borderRadius,
     alignItems: 'center',
-    ...Shadows.medium,
-  },
-  tutorialButtonText: {
-    ...Typography.body,
-    fontWeight: '600',
-  },
-  tutorialButtonSecondary: {
-    flex: 1,
-    paddingVertical: Spacing.md,
+    padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
-    alignItems: 'center',
-    borderWidth: 1,
+    ...Shadows.small,
   },
-  tutorialButtonTextSecondary: {
-    ...Typography.body,
+  accuracyText: {
+    ...Typography.bodySmall,
+    marginLeft: Spacing.xs,
+    marginRight: Spacing.xs,
+  },
+  accuracyStatus: {
+    ...Typography.bodySmall,
     fontWeight: '600',
   },
 });

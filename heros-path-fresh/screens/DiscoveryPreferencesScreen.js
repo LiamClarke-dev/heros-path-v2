@@ -87,7 +87,6 @@
  * 19. Add preference accessibility - better support for users with disabilities
  * 20. Add preference gamification - achievements and rewards for trying new place types
  */
-
 // screens/DiscoveryPreferencesScreen.js
 import React, { useState, useEffect } from 'react';
 import { 
@@ -101,8 +100,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Spacing, Typography, getFallbackTheme, Colors } from '../styles/theme';
-import { useTheme } from '../contexts/ThemeContext';
+import { Colors, Spacing, Typography } from '../styles/theme';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getUserDiscoveryPreferences, resetDiscoveryPreferences } from '../services/DiscoveriesService';
 import SectionHeader from '../components/ui/SectionHeader';
@@ -146,9 +144,6 @@ const PLACE_CATEGORIES = [
 ];
 
 export default function DiscoveryPreferencesScreen({ navigation }) {
-  const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
-  
   const [discoveryPreferences, setDiscoveryPreferences] = useState({});
   const [minRating, setMinRating] = useState(3.0);
   const [expandedCategories, setExpandedCategories] = useState({});
@@ -226,8 +221,8 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
 
   const renderRatingSelector = () => (
     <View style={styles.section}>
-      <Text style={[styles.sectionHeader, { color: colors.text }]}>Minimum Rating</Text>
-      <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+      <Text style={styles.sectionHeader}>Minimum Rating</Text>
+      <Text style={styles.sectionDescription}>
         Only show places with ratings at or above this level:
       </Text>
       
@@ -237,15 +232,13 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
             key={rating}
             style={[
               styles.ratingOption,
-              { backgroundColor: colors.background, borderColor: colors.border + '50' },
-              minRating === rating && { backgroundColor: colors.primary, borderColor: colors.primary }
+              minRating === rating && styles.ratingOptionActive
             ]}
             onPress={() => updateMinRating(rating)}
           >
             <Text style={[
               styles.ratingOptionText,
-              { color: colors.text },
-              minRating === rating && { color: colors.background }
+              minRating === rating && styles.ratingOptionTextActive
             ]}>
               {rating}+
             </Text>
@@ -262,24 +255,24 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
     return (
       <View key={category.title} style={styles.categoryContainer}>
         <TouchableOpacity
-          style={[styles.categoryHeader, { backgroundColor: colors.surface || colors.border + '20' }]}
+          style={styles.categoryHeader}
           onPress={() => toggleCategory(category.title)}
         >
           <View style={styles.categoryTitleRow}>
             <MaterialIcons 
               name={category.icon} 
               size={24} 
-              color={colors.primary} 
+              color={Colors.primary} 
             />
-            <Text style={[styles.categoryTitle, { color: colors.text }]}>{category.title}</Text>
-            <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>
+            <Text style={styles.categoryTitle}>{category.title}</Text>
+            <Text style={styles.categoryCount}>
               {enabledCount}/{category.types.length}
             </Text>
           </View>
           <MaterialIcons
             name={isExpanded ? 'expand-less' : 'expand-more'}
             size={24}
-                          color={colors.text}
+            color={Colors.text}
           />
         </TouchableOpacity>
         
@@ -288,14 +281,14 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
             {category.types.map(placeType => (
               <View key={placeType} style={styles.preferenceItem}>
                 <View style={styles.preferenceRow}>
-                  <Text style={[styles.preferenceLabel, { color: colors.text }]}>
+                  <Text style={styles.preferenceLabel}>
                     {getPlaceTypeLabel(placeType)}
                   </Text>
                   <Switch
                     value={discoveryPreferences[placeType] || false}
                     onValueChange={() => toggleDiscoveryPreference(placeType)}
-                        trackColor={{ false: colors.border + '50', true: colors.primary + '50' }}
-    thumbColor={discoveryPreferences[placeType] ? colors.primary : colors.border}
+                    trackColor={{ false: Colors.tabInactive + '50', true: Colors.primary + '50' }}
+                    thumbColor={discoveryPreferences[placeType] ? Colors.primary : Colors.tabInactive}
                   />
                 </View>
               </View>
@@ -307,14 +300,14 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={styles.container}>
       <SectionHeader title="Discovery Preferences" />
 
       {renderRatingSelector()}
 
       <View style={styles.section}>
-        <Text style={[styles.sectionHeader, { color: colors.text }]}>Place Types</Text>
-        <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+        <Text style={styles.sectionHeader}>Place Types</Text>
+        <Text style={styles.sectionDescription}>
           Choose which types of places you'd like to discover during your walks:
         </Text>
         
@@ -327,6 +320,7 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -334,13 +328,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border + '30',
+    borderBottomColor: Colors.tabInactive + '30',
   },
   backButton: {
     padding: Spacing.sm,
   },
   headerTitle: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
     color: Colors.text,
     flex: 1,
     textAlign: 'center',
@@ -351,14 +345,16 @@ const styles = StyleSheet.create({
   section: {
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border + '30',
+    borderBottomColor: Colors.tabInactive + '30',
   },
   sectionHeader: {
-    ...Typography.sectionTitle,
+    ...Typography.h2,
+    color: Colors.text,
     marginBottom: Spacing.md,
   },
   sectionDescription: {
     ...Typography.body,
+    color: Colors.text + '80',
     marginBottom: Spacing.md,
     fontStyle: 'italic',
   },
@@ -372,13 +368,21 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
+    borderColor: Colors.tabInactive + '50',
+    backgroundColor: Colors.background,
   },
-
+  ratingOptionActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
   ratingOptionText: {
     ...Typography.body,
+    color: Colors.text,
     fontWeight: '600',
   },
-
+  ratingOptionTextActive: {
+    color: Colors.background,
+  },
   categoryContainer: {
     marginBottom: Spacing.md,
   },
@@ -388,6 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
+    backgroundColor: Colors.tabInactive + '20',
     borderRadius: 8,
   },
   categoryTitleRow: {
@@ -397,12 +402,14 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     ...Typography.body,
+    color: Colors.text,
     fontWeight: '600',
     marginLeft: Spacing.sm,
     flex: 1,
   },
   categoryCount: {
     ...Typography.body,
+    color: Colors.text + '80',
     fontSize: 12,
   },
   categoryContent: {
@@ -420,6 +427,7 @@ const styles = StyleSheet.create({
   },
   preferenceLabel: {
     ...Typography.body,
+    color: Colors.text,
     flex: 1,
   },
 }); 

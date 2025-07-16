@@ -96,8 +96,6 @@
  * 18. Add content insights - provide insights about content performance
  * 19. Add content compliance - ensure content meets legal and regulatory requirements
  * 20. Add content innovation - experiment with new types of enhanced content
- */
-
 /**
  * EnhancedPlacesService
  *

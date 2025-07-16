@@ -1,3 +1,4 @@
+
 /**
  * DISCOVERIES SERVICE (CORE DISCOVERY ENGINE)
  * ============================================
@@ -464,12 +465,11 @@ export async function getUserDiscoveryPreferences() {
       await AsyncStorage.setItem(DISCOVERY_PREFERENCES_KEY, JSON.stringify(syncedPrefs));
       return syncedPrefs;
     }
-    // Return default preferences (selected interesting types) - matches requirements
+    // Return default preferences (all enabled) - matches all types in PlaceTypes.js
     const defaultPrefs = {};
-    const defaultEnabledTypes = ['restaurant', 'cafe', 'bar', 'museum', 'art_gallery', 'tourist_attraction'];
     PLACE_TYPES.forEach(type => {
       if (type.key !== 'all') {
-        defaultPrefs[type.key] = defaultEnabledTypes.includes(type.key);
+        defaultPrefs[type.key] = true;
       }
     });
     return defaultPrefs;
@@ -485,10 +485,10 @@ export async function getUserDiscoveryPreferences() {
 export async function getMinRatingPreference() {
   try {
     const rating = await AsyncStorage.getItem('@discovery_min_rating');
-    return rating ? parseFloat(rating) : 4.0; // Default to 4.0 for better quality
+    return rating ? parseFloat(rating) : 3.0; // Default to 3.0
   } catch (error) {
     console.warn('Failed to load min rating preference:', error);
-    return 4.0;
+    return 3.0;
   }
 }
 
