@@ -1649,12 +1649,28 @@ export default function DiscoveriesScreen({ navigation, route }) {
           onRefresh={onRefresh}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              <MaterialIcons name="explore" size={48} color={colors.textSecondary} style={{ marginBottom: 16 }} />
+              <Text style={[styles.emptyText, { color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8 }]}>
                 {filterType && filterType !== 'all' 
                   ? `No ${PLACE_TYPES.find(type => type.key === filterType)?.label?.toLowerCase()} found for this journey.`
-                  : 'No discoveries found for this journey.'
+                  : 'No discoveries yet!'
                 }
               </Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32, lineHeight: 20 }]}>
+                {filterType && filterType !== 'all' 
+                  ? 'Try removing the filter or taking a longer walk through different areas.'
+                  : 'Complete a longer journey to unlock new places. The more you explore, the more you\'ll discover!'
+                }
+              </Text>
+              {(!filterType || filterType === 'all') && (
+                <TouchableOpacity
+                  style={[styles.discoverButton, { backgroundColor: colors.primary, marginTop: 20 }]}
+                  onPress={() => navigation.navigate('Map')}
+                >
+                  <MaterialIcons name="map" size={20} color={colors.background} />
+                  <Text style={[styles.discoverButtonText, { color: colors.background }]}>Start Exploring</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
           renderItem={renderSuggestion}
@@ -2489,6 +2505,19 @@ const styles = StyleSheet.create({
     ...Typography.body,
     textAlign: 'center',
     marginTop: 40,
+  },
+  discoverButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: Layout.borderRadius,
+    ...Shadows.medium,
+  },
+  discoverButtonText: {
+    ...Typography.body,
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
   },
   
   // Shake to Undo Button Styles
