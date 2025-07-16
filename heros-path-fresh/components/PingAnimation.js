@@ -166,18 +166,18 @@ const PingAnimation = ({
       );
     }
 
-    return (
-      <LottieView
-        ref={lottieRef}
-        source={require('../assets/ping-animation.lottie')}
-        style={styles.lottieContainer}
-        autoPlay={false}
-        loop={false}
-        speed={1}
-        onAnimationFinish={handleAnimationFinish}
-        resizeMode="cover"
-      />
-    );
+         return (
+       <LottieView
+         ref={lottieRef}
+         source={require('../assets/Scanning nearby.lottie')}
+         style={styles.lottieContainer}
+         autoPlay={false}
+         loop={false}
+         speed={1}
+         onAnimationFinish={handleAnimationFinish}
+         resizeMode="cover"
+       />
+     );
   };
 
   if (!isVisible) {
