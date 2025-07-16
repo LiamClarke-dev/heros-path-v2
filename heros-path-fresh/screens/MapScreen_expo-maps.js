@@ -532,7 +532,7 @@ export default function MapScreen({ navigation, route }) {
 
       {currentPosition ? (
         Platform.OS === 'ios' ? (
-          <AppleMaps.View
+          <AppleMaps
             ref={mapRef}
             style={styles.map}
             cameraPosition={{
@@ -544,7 +544,7 @@ export default function MapScreen({ navigation, route }) {
             onError={handleMapError}
           />
         ) : (
-          <GoogleMaps.View
+          <GoogleMaps
             ref={mapRef}
             style={styles.map}
             cameraPosition={{
