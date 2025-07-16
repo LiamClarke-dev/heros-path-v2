@@ -15,6 +15,99 @@ const AnimationDemo = () => {
   const [activeAnimation, setActiveAnimation] = useState(null);
   const [selectedType, setSelectedType] = useState('ripple');
 
+  // Create styles inside component to access colors
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 8,
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 30,
+      color: colors.textSecondary,
+    },
+    animationContainer: {
+      height: 200,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      marginBottom: 30,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    animation: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      marginLeft: -50,
+      marginTop: -50,
+    },
+    buttonContainer: {
+      gap: 12,
+    },
+    button: {
+      backgroundColor: colors.background,
+      padding: 16,
+      borderRadius: 8,
+      borderWidth: 2,
+      borderColor: colors.border,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    buttonActive: {
+      borderColor: colors.primary,
+      backgroundColor: `${colors.primary}10`,
+    },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    buttonTextActive: {
+      color: colors.primary,
+    },
+    buttonDescription: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    infoContainer: {
+      marginTop: 30,
+      padding: 16,
+      backgroundColor: `${colors.primary}10`,
+      borderRadius: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: colors.primary,
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.primary,
+      marginBottom: 8,
+    },
+    infoText: {
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 20,
+    },
+  });
+
   const animationTypes = [
     { key: 'ripple', name: 'Ripple Effect', description: 'Expanding circles with rotation' },
     { key: 'pulse', name: 'Pulse Wave', description: 'Simple expanding pulse' },
@@ -78,97 +171,5 @@ const AnimationDemo = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: colors.textSecondary,
-  },
-  animationContainer: {
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    marginBottom: 30,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  animation: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -50,
-    marginTop: -50,
-  },
-  buttonContainer: {
-    gap: 12,
-  },
-  button: {
-    backgroundColor: colors.background,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  buttonActive: {
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}10`,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  buttonTextActive: {
-    color: colors.primary,
-  },
-  buttonDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  infoContainer: {
-    marginTop: 30,
-    padding: 16,
-    backgroundColor: `${colors.primary}10`,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-});
 
 export default AnimationDemo; 
