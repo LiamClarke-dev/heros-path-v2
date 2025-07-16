@@ -81,7 +81,14 @@ const lightTheme = {
   info: '#007AFF',
   onPrimary: '#FFFFFF',
   onSecondary: '#FFFFFF',
-  onError: '#FFFFFF'
+  onError: '#FFFFFF',
+  
+  // Legacy color mappings for backward compatibility
+  routeLine: 'rgba(0, 122, 255, 0.8)',
+  routePreview: '#5856D6',
+  pingGlow: '#007AFF',
+  spriteShadow: 'rgba(0, 0, 0, 0.3)',
+  critical: '#FF3B30' // maps to error
 };
 
 // Dark Theme
@@ -132,7 +139,14 @@ const darkTheme = {
   info: '#0A84FF',
   onPrimary: '#FFFFFF',
   onSecondary: '#FFFFFF',
-  onError: '#FFFFFF'
+  onError: '#FFFFFF',
+  
+  // Legacy color mappings for backward compatibility  
+  routeLine: 'rgba(10, 132, 255, 0.8)',
+  routePreview: '#5E5CE6',
+  pingGlow: '#0A84FF',
+  spriteShadow: 'rgba(0, 0, 0, 0.5)',
+  critical: '#FF453A' // maps to error
 };
 
 // Adventure Theme
@@ -176,6 +190,17 @@ const adventureTheme = {
   onSecondary: '#4A90E2',
   onError: '#FFFFFF',
   // Additional tokens for map, icons, etc. can be added as needed
+  
+  // Backward compatibility mappings for legacy color keys
+  tabActive: '#4A90E2', // maps to primary
+  tabInactive: '#7F8C8D', // maps to border
+  routeLine: '#4A90E2', // maps to primary
+  routePreview: '#F6AF3C', // maps to accent
+  success: '#739E82', // maps to progress
+  info: '#4A90E2', // maps to primary
+  critical: '#FF453A', // maps to error (but we should use error directly)
+  pingGlow: '#4A90E2', // maps to primary
+  spriteShadow: 'rgba(0,0,0,0.3)', // generic shadow
 };
 
 // Map Style Configurations

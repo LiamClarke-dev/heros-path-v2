@@ -1967,7 +1967,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     marginBottom: Spacing.xs / 2,
   },
   headerStats: {
@@ -2063,7 +2063,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
+  name: { ...Typography.body, fontWeight: '700' },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
@@ -2081,7 +2081,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: Colors.tabInactive },
+  meta: { ...Typography.body, color: colors.textSecondary },
   link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   action: {
     justifyContent: 'center',
@@ -2222,7 +2222,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   onboardingTitle: {
-    ...Typography.h1,
+    ...Typography.heroHeader,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -2279,7 +2279,7 @@ const styles = StyleSheet.create({
     margin: Spacing.lg,
   },
   dismissModalTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -2332,7 +2332,7 @@ const styles = StyleSheet.create({
     margin: Spacing.lg,
   },
   settingsModalTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -2392,7 +2392,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.tabInactive + '20',
   },
   manageHistoryTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     flex: 1,
   },
@@ -2527,7 +2527,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   completionTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,

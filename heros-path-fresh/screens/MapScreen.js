@@ -473,7 +473,7 @@ export default function MapScreen({ navigation, route }) {
       <Polyline
         key={journey.id}
         coordinates={journey.route}
-        strokeColor={colors.routeLine}
+        strokeColor={colors.primary}
         strokeWidth={3}
         opacity={0.6}
       />
@@ -554,7 +554,7 @@ export default function MapScreen({ navigation, route }) {
             <Polyline
               key={journey.id}
               coordinates={journey.route}
-              strokeColor={colors.routeLine}
+              strokeColor={colors.primary}
               strokeWidth={3}
             />
           ))}
@@ -562,7 +562,7 @@ export default function MapScreen({ navigation, route }) {
           {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
             <Polyline
               coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
-              strokeColor={colors.routePreview}
+              strokeColor={colors.accent}
               strokeWidth={4}
             />
           )}
@@ -570,7 +570,7 @@ export default function MapScreen({ navigation, route }) {
           {pathToRender.length > 0 && (
             <Polyline
               coordinates={pathToRender}
-              strokeColor={colors.routeLine}
+              strokeColor={colors.primary}
               strokeWidth={6}
             />
           )}
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     ...Shadows.large,
   },
   trackButtonText: {
-    ...Typography.button,
+    ...Typography.body,
     fontWeight: '600',
   },
   pingContainer: {
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   permissionWarningText: {
-    ...Typography.bodySmall,
+    ...Typography.caption,
     flex: 1,
     marginHorizontal: Spacing.sm,
     fontWeight: '500',
