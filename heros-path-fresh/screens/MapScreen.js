@@ -117,6 +117,7 @@ export default function MapScreen({ navigation, route }) {
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState);
 
   // Check background location permissions
