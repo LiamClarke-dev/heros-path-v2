@@ -64,6 +64,7 @@ import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 
+
 // Import Lottie with fallback for unsupported platforms
 let LottieView;
 try {
@@ -72,9 +73,6 @@ try {
   console.warn('Lottie not available, using fallback animation');
   LottieView = null;
 }
-
-// Define safe fallback colors for modules constants
-const colors = getFallbackTheme();
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -148,7 +146,7 @@ const PingAnimation = ({
         setTimeout(() => onAnimationComplete(), 100);
       }
     }
-  }, [isVisible, animationType]);
+  }, [isVisible, animationType, onAnimationComplete]);
 
   const handleAnimationFinish = () => {
     setAnimationFinished(true);

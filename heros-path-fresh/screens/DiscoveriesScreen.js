@@ -120,7 +120,7 @@ import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Colors, Spacing, Typography, Layout } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout, getFallbackTheme } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -154,7 +154,7 @@ const ONBOARDING_KEY = 'discoveries_onboarding_shown';
 export default function DiscoveriesScreen({ navigation, route }) {
   const { user, migrationStatus } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
@@ -2044,7 +2044,7 @@ const styles = StyleSheet.create({
   tabText: { ...Typography.body, color: Colors.text },
   tabTextActive: {
     color: Colors.background,
-    fontWeight: Typography.body.fontWeight,
+    fontWeight: '600',
   },
   listContainer: { flex: 1, backgroundColor: Colors.background },
   listContent: { paddingVertical: Spacing.sm },
@@ -2063,7 +2063,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
+  name: { ...Typography.body, fontWeight: 'bold' },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
