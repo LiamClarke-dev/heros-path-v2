@@ -44,6 +44,7 @@ import {
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
@@ -118,6 +119,7 @@ export default function MapScreen({ navigation, route }) {
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
   const [showMinDistanceModal, setShowMinDistanceModal] = useState(false);
   const [pendingEndWalk, setPendingEndWalk] = useState(false);
@@ -181,7 +183,36 @@ export default function MapScreen({ navigation, route }) {
     loadSavedRoutes();
     loadSavedPlaces();
     checkBackgroundPermissions();
+    checkFirstTimeVisit();
   }, []);
+
+  // Check if this is the first time visiting the Map screen
+  const checkFirstTimeVisit = async () => {
+    try {
+      const hasSeenTutorial = await AsyncStorage.getItem('@map_tutorial_seen');
+      if (!hasSeenTutorial) {
+        setShowTutorial(true);
+      }
+    } catch (error) {
+      console.error('Error checking tutorial status:', error);
+    }
+  };
+
+  // Mark tutorial as seen and close modal
+  const completeTutorial = async () => {
+    try {
+      await AsyncStorage.setItem('@map_tutorial_seen', 'true');
+      setShowTutorial(false);
+    } catch (error) {
+      console.error('Error saving tutorial status:', error);
+      setShowTutorial(false);
+    }
+  };
+
+  // Show tutorial again when help button is pressed
+  const showTutorialAgain = () => {
+    setShowTutorial(true);
+  };
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -527,6 +558,7 @@ export default function MapScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
+      <SectionHeader title="Explore" />
       {backgroundPermissionWarning && (
         <TouchableOpacity 
           style={[styles.permissionWarning, { backgroundColor: colors.warning }]} 
@@ -616,6 +648,14 @@ export default function MapScreen({ navigation, route }) {
       
       {/* Control buttons */}
       <View style={styles.buttonContainer}>
+        {/* Help/Tutorial button */}
+        <TouchableOpacity 
+          style={[styles.preferencesButton, { backgroundColor: colors.buttonSecondary }]} 
+          onPress={showTutorialAgain}
+        >
+          <MaterialIcons name="help-outline" size={24} color={colors.primary} />
+        </TouchableOpacity>
+
         {/* Discovery preferences button */}
         <TouchableOpacity 
           style={[styles.preferencesButton, { backgroundColor: colors.buttonSecondary }]} 
@@ -726,6 +766,66 @@ export default function MapScreen({ navigation, route }) {
           </View>
         </Modal>
       )}
+
+      {/* Tutorial Modal */}
+      <Modal
+        visible={showTutorial}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTutorial(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.tutorialModal, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.tutorialTitle, { color: colors.text }]}>
+              Welcome to the Map! 🗺️
+            </Text>
+            <View style={styles.tutorialContent}>
+              <View style={styles.tutorialItem}>
+                <MaterialIcons name="location-on" size={24} color={colors.primary} />
+                <Text style={[styles.tutorialText, { color: colors.text }]}>
+                  Use "Start Walk" to begin tracking your journey and discover new places
+                </Text>
+              </View>
+              <View style={styles.tutorialItem}>
+                <MaterialIcons name="tune" size={24} color={colors.primary} />
+                <Text style={[styles.tutorialText, { color: colors.text }]}>
+                  Tap the settings button to customize what types of places you want to discover
+                </Text>
+              </View>
+              <View style={styles.tutorialItem}>
+                <MaterialIcons name="explore" size={24} color={colors.primary} />
+                <Text style={[styles.tutorialText, { color: colors.text }]}>
+                  The more you explore, the more interesting places you'll discover along your route
+                </Text>
+              </View>
+              <View style={styles.tutorialItem}>
+                <MaterialIcons name="help-outline" size={24} color={colors.primary} />
+                <Text style={[styles.tutorialText, { color: colors.text }]}>
+                  You can always access this tutorial again by tapping the help button
+                </Text>
+              </View>
+            </View>
+            <View style={styles.tutorialButtons}>
+              <TouchableOpacity
+                style={[styles.tutorialButton, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate('DiscoveryPreferences')}
+              >
+                <Text style={[styles.tutorialButtonText, { color: colors.background }]}>
+                  Set Preferences
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tutorialButtonSecondary, { borderColor: colors.primary }]}
+                onPress={completeTutorial}
+              >
+                <Text style={[styles.tutorialButtonTextSecondary, { color: colors.primary }]}>
+                  Got it!
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <StatusBar style="auto" />
     </View>
@@ -841,5 +941,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.small,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tutorialModal: {
+    margin: Spacing.lg,
+    borderRadius: Layout.borderRadiusLarge,
+    padding: Spacing.lg,
+    maxWidth: 350,
+    ...Shadows.large,
+  },
+  tutorialTitle: {
+    ...Typography.sectionTitle,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  tutorialContent: {
+    marginBottom: Spacing.lg,
+  },
+  tutorialItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.md,
+  },
+  tutorialText: {
+    ...Typography.body,
+    flex: 1,
+    marginLeft: Spacing.sm,
+    lineHeight: 20,
+  },
+  tutorialButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  tutorialButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: Layout.borderRadius,
+    alignItems: 'center',
+    ...Shadows.medium,
+  },
+  tutorialButtonText: {
+    ...Typography.body,
+    fontWeight: '600',
+  },
+  tutorialButtonSecondary: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: Layout.borderRadius,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  tutorialButtonTextSecondary: {
+    ...Typography.body,
+    fontWeight: '600',
   },
 });

@@ -156,7 +156,7 @@ const adventureTheme = {
   primary: '#4A90E2', // --color-trail-blue
   accent: '#F6AF3C', // --color-sunset-gold
   background: '#FFF7EA', // --color-paper-cream
-  surface: '#FFF7EA', // --color-paper-cream
+  surface: '#F5E9D6', // Slightly darker cream for better container contrast
   progress: '#739E82', // --color-moss-sage
   navBar: '#2C5530', // --color-forest-deep
   border: '#7F8C8D', // --color-stone-gray
@@ -167,22 +167,22 @@ const adventureTheme = {
   text: '#2C5530', // Use forest-deep for high contrast text
   textSecondary: '#739E82', // Use moss-sage for secondary text
   secondaryText: '#739E82', // Alias for textSecondary
-  card: '#FFF7EA', // --color-paper-cream
-  shadow: 'rgba(0,0,0,0.1)', // Card shadow as per guidelines
+  card: '#F5E9D6', // Slightly darker cream for better contrast
+  shadow: 'rgba(0,0,0,0.15)', // Slightly stronger shadow for better definition
   buttonPrimary: '#4A90E2', // --color-trail-blue
   buttonSecondary: 'transparent', // Secondary: transparent BG, trail-blue border & text
   buttonText: '#FFFFFF', // White text for primary
   buttonTextSecondary: '#4A90E2', // Trail-blue for secondary
   disabled: '#7F8C8D', // --color-stone-gray
   disabledText: 'rgba(255,255,255,0.6)', // As per guidelines
-  inputBackground: '#FFF7EA', // --color-paper-cream
+  inputBackground: '#F5E9D6', // Darker cream for inputs
   inputBorder: '#7F8C8D', // --color-stone-gray
   inputText: '#2C5530', // forest-deep
   placeholder: '#7F8C8D', // stone-gray
   switchTrack: '#739E82', // moss-sage
   switchThumb: '#FFFFFF', // white
   switchActive: '#739E82', // moss-sage
-  modalBackground: '#FFF7EA', // --color-paper-cream
+  modalBackground: '#F5E9D6', // Darker cream for modals
   modalOverlay: 'rgba(0,0,0,0.4)', // --color-shadow-overlay
   divider: '#7F8C8D', // --color-stone-gray
   highlight: 'rgba(74,144,226,0.08)', // subtle blue highlight
