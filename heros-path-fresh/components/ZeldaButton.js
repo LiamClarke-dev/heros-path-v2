@@ -76,12 +76,12 @@ export default function ZeldaButton({ onPress, children, disabled, selected, sty
   const colors = getCurrentThemeColors() || getFallbackTheme();
   
   // Zelda-specific palette with theme integration - moved inside component
-  const colorGray200 = selected ? colors.surface : colors.surface + '99'; // 60% opacity
+  const colorGray200 = colors.surface; // Use theme surface for unselected background
   const colorGray100 = colors.surface;
-  const colorGainsboro200 = colors.border + '4D'; // 30% opacity
+  const colorGainsboro200 = colors.textSecondary; // Use secondary text color for lighter border
   const colorGainsboro100 = colors.border;
   const colorDimgray = colors.secondaryText;
-  const colorBeige = colors.primary + 'CC'; // 80% opacity
+  const colorBeige = colors.primary; // Use primary color for shadow without opacity concatenation
 
   return (
     <TouchableOpacity
@@ -111,7 +111,9 @@ export default function ZeldaButton({ onPress, children, disabled, selected, sty
           selected ? styles.backgroundSelected : styles.backgroundUnselected,
           { 
             borderColor: selected ? colorGainsboro100 : colorGainsboro200,
-            backgroundColor: selected ? colors.overlay : colors.overlay + '99', // 60% opacity for unselected
+            backgroundColor: selected 
+              ? colors.overlay // Use theme overlay for selected state
+              : colors.surface, // Use theme surface for unselected state
           },
         ]} />
         {selected && (
@@ -170,10 +172,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   backgroundSelected: {
-    backgroundColor: 'transparent', // Will use theme overlay dynamically
+    // No backgroundColor - applied dynamically to avoid override
   },
   backgroundUnselected: {
-    backgroundColor: 'transparent', // Will use theme overlay dynamically
+    // No backgroundColor - applied dynamically to avoid override
   },
   buttonText: {
     fontSize: 30,
