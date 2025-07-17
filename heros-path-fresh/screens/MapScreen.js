@@ -103,8 +103,10 @@ import {
   Platform,
   Linking,
   AppState,
+  Modal,
+  TextInput,
 } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -183,6 +185,12 @@ export default function MapScreen({ navigation, route }) {
   const [mapError, setMapError] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
+  
+  // Journey naming modal state
+  const [showNamingModal, setShowNamingModal] = useState(false);
+  const [journeyName, setJourneyName] = useState('');
+  const [originalDefaultName, setOriginalDefaultName] = useState('');
+  const [pendingJourneyData, setPendingJourneyData] = useState(null);
 
   // Check background location permissions
   const checkBackgroundPermissions = async () => {
@@ -370,7 +378,7 @@ export default function MapScreen({ navigation, route }) {
     setShowSavedPlaces(!showSavedPlaces);
   };
 
-  const saveJourney = async (rawCoords) => {
+  const saveJourney = async (rawCoords, name) => {
     if (!user || rawCoords.length === 0) return;
 
     try {
@@ -382,7 +390,7 @@ export default function MapScreen({ navigation, route }) {
       // Create journey data
       const journeyData = {
         userId: user.uid,
-        name: `Walk on ${new Date().toLocaleDateString()}`,
+        name: name,
         startTime: rawCoords[0].timestamp,
         endTime: rawCoords[rawCoords.length - 1].timestamp,
         route: rawCoords.map(coord => ({
@@ -437,6 +445,65 @@ export default function MapScreen({ navigation, route }) {
     }
   };
 
+  // Journey naming modal handlers
+  const handleSaveJourneyWithName = async () => {
+    if (!pendingJourneyData) return;
+    
+    try {
+      setShowNamingModal(false);
+      
+      // Save the journey with the custom name
+      const finalName = journeyName.trim() || originalDefaultName;
+      await saveJourney(pendingJourneyData.coordinates, finalName);
+      
+      // Clear modal state
+      setPendingJourneyData(null);
+      setJourneyName('');
+      setOriginalDefaultName('');
+      
+      Alert.alert('Journey Saved! 🎉', `Your walk "${finalName}" has been saved successfully.`);
+    } catch (error) {
+      Logger.error('Error saving named journey:', error);
+      Alert.alert('Error', 'Failed to save your journey. Please try again.');
+    }
+  };
+
+  const handleCancelNaming = () => {
+    // Still save the journey with default name
+    Alert.alert(
+      'Save Journey?',
+      'Do you want to save this journey with the default name?',
+      [
+        { 
+          text: 'Don\'t Save', 
+          style: 'destructive',
+          onPress: () => {
+            setShowNamingModal(false);
+            setPendingJourneyData(null);
+            setJourneyName('');
+            setOriginalDefaultName('');
+          }
+        },
+        { 
+          text: 'Save with Default Name', 
+          onPress: async () => {
+            try {
+              setShowNamingModal(false);
+              await saveJourney(pendingJourneyData.coordinates, originalDefaultName);
+              setPendingJourneyData(null);
+              setJourneyName('');
+              setOriginalDefaultName('');
+              Alert.alert('Journey Saved!', `Your walk "${originalDefaultName}" has been saved with the default name.`);
+            } catch (error) {
+              Logger.error('Error saving journey with default name:', error);
+              Alert.alert('Error', 'Failed to save your journey.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const calculateTotalDistance = (coords) => {
     if (coords.length < 2) return 0;
     
@@ -469,9 +536,30 @@ export default function MapScreen({ navigation, route }) {
         const journeyData = await BackgroundLocationService.stopTracking();
         setTracking(false);
         
-        // Save the journey if we have data
+        // Save the journey if we have data - show naming modal first
         if (journeyData && journeyData.coordinates.length > 0) {
-          await saveJourney(journeyData.coordinates);
+          // Generate default name with date and starting location
+          const date = new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: '2-digit'
+          }).replace(',', '');
+          const time = new Date().toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
+          
+          // Try to get starting location name for better default
+          let defaultName = `Walk - ${date} ${time}`;
+          if (journeyData.startLocation) {
+            defaultName = `Walk - ${date} ${time}`;
+          }
+          
+          setJourneyName(defaultName);
+          setOriginalDefaultName(defaultName); // Store the original default name
+          setPendingJourneyData(journeyData);
+          setShowNamingModal(true);
         } else {
           Logger.warn('No journey data to save');
           Alert.alert('No Data', 'No route data was recorded. Make sure location permissions are enabled.');
@@ -654,6 +742,7 @@ export default function MapScreen({ navigation, route }) {
           showsUserLocation={false}
           showsMyLocationButton={false}
           toolbarEnabled={false}
+          provider={PROVIDER_GOOGLE}
         >
           {/* Saved routes as polylines */}
           {savedRoutes.map(journey => (
@@ -803,6 +892,60 @@ export default function MapScreen({ navigation, route }) {
       </View>
 
       <StatusBar style="auto" />
+      
+      {/* Journey Naming Modal */}
+      <Modal
+        visible={showNamingModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCancelNaming}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.modalBackground }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              🎉 Walk Completed!
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+              Give your journey a memorable name:
+            </Text>
+            
+            <TextInput
+              style={[styles.nameInput, { 
+                backgroundColor: colors.inputBackground,
+                borderColor: colors.inputBorder,
+                color: colors.inputText
+              }]}
+              value={journeyName}
+              onChangeText={setJourneyName}
+              placeholder="Enter journey name..."
+              placeholderTextColor={colors.placeholder}
+              maxLength={50}
+              selectTextOnFocus
+              autoFocus
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { borderColor: colors.border }]}
+                onPress={handleCancelNaming}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.buttonPrimary }]}
+                onPress={handleSaveJourneyWithName}
+              >
+                <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>
+                  Save Journey
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -934,6 +1077,64 @@ const styles = StyleSheet.create({
   },
   accuracyStatus: {
     ...Typography.bodySmall,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContainer: {
+    width: '80%',
+    padding: Spacing.lg,
+    borderRadius: Layout.borderRadiusLarge,
+    alignItems: 'center',
+    ...Shadows.large,
+  },
+  modalTitle: {
+    ...Typography.h4,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    ...Typography.body,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  nameInput: {
+    width: '100%',
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderRadius: Layout.borderRadiusSmall,
+    marginBottom: Spacing.md,
+    ...Typography.body,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Layout.borderRadiusSmall,
+    alignItems: 'center',
+    marginHorizontal: Spacing.xs,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  cancelButtonText: {
+    ...Typography.button,
+  },
+  saveButton: {
+    // backgroundColor will be set dynamically
+  },
+  saveButtonText: {
+    ...Typography.button,
     fontWeight: '600',
   },
 });
