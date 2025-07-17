@@ -189,6 +189,7 @@ export default function MapScreen({ navigation, route }) {
   // Journey naming modal state
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [journeyName, setJourneyName] = useState('');
+  const [originalDefaultName, setOriginalDefaultName] = useState('');
   const [pendingJourneyData, setPendingJourneyData] = useState(null);
 
   // Check background location permissions
@@ -452,13 +453,15 @@ export default function MapScreen({ navigation, route }) {
       setShowNamingModal(false);
       
       // Save the journey with the custom name
-      await saveJourney(pendingJourneyData.coordinates, journeyName.trim() || `Walk - ${new Date().toLocaleDateString()}`);
+      const finalName = journeyName.trim() || originalDefaultName;
+      await saveJourney(pendingJourneyData.coordinates, finalName);
       
       // Clear modal state
       setPendingJourneyData(null);
       setJourneyName('');
+      setOriginalDefaultName('');
       
-      Alert.alert('Journey Saved! 🎉', `Your walk "${journeyName}" has been saved successfully.`);
+      Alert.alert('Journey Saved! 🎉', `Your walk "${finalName}" has been saved successfully.`);
     } catch (error) {
       Logger.error('Error saving named journey:', error);
       Alert.alert('Error', 'Failed to save your journey. Please try again.');
@@ -478,6 +481,7 @@ export default function MapScreen({ navigation, route }) {
             setShowNamingModal(false);
             setPendingJourneyData(null);
             setJourneyName('');
+            setOriginalDefaultName('');
           }
         },
         { 
@@ -485,10 +489,11 @@ export default function MapScreen({ navigation, route }) {
           onPress: async () => {
             try {
               setShowNamingModal(false);
-              await saveJourney(pendingJourneyData.coordinates, journeyName);
+              await saveJourney(pendingJourneyData.coordinates, originalDefaultName);
               setPendingJourneyData(null);
               setJourneyName('');
-              Alert.alert('Journey Saved!', 'Your walk has been saved with the default name.');
+              setOriginalDefaultName('');
+              Alert.alert('Journey Saved!', `Your walk "${originalDefaultName}" has been saved with the default name.`);
             } catch (error) {
               Logger.error('Error saving journey with default name:', error);
               Alert.alert('Error', 'Failed to save your journey.');
@@ -552,6 +557,7 @@ export default function MapScreen({ navigation, route }) {
           }
           
           setJourneyName(defaultName);
+          setOriginalDefaultName(defaultName); // Store the original default name
           setPendingJourneyData(journeyData);
           setShowNamingModal(true);
         } else {

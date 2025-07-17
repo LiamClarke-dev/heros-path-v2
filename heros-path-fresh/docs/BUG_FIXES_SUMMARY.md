@@ -1,8 +1,9 @@
 # 🎉 Bug Fixes Summary - Hero's Path
 
 **Date**: July 17, 2025  
+**Updated**: July 17, 2025 (Journey Naming Consistency Fix)  
 **Status**: ✅ ALL RESOLVED  
-**Total Issues Fixed**: 8/8
+**Total Issues Fixed**: 9/9 (8 original + 1 follow-up)
 
 ---
 
@@ -28,6 +29,9 @@ All 8 critical, high-priority, and medium-priority issues identified in the comp
 7. **✅ Map Style Not Changing on iOS** - Added PROVIDER_GOOGLE for custom styling
 8. **✅ Journey Naming System** - Complete modal-based naming workflow
 
+### **Follow-up Bug Fix (1/1 Fixed)**
+9. **✅ Journey Naming Consistency** - Fixed default name handling in cancel workflow
+
 ---
 
 ## **🔧 Key Technical Improvements**
@@ -46,6 +50,7 @@ All 8 critical, high-priority, and medium-priority issues identified in the comp
 - **Journey Naming**: Intuitive modal workflow for naming completed walks
 - **Discovery Quality**: Better default preferences for higher quality discoveries
 - **Visual Consistency**: Fixed button visibility issues in Adventure theme
+- **Naming Consistency**: Ensures "Save with Default Name" always uses the original default, preventing empty names
 
 ---
 

@@ -1,19 +1,20 @@
 # 🚨 Hero's Path - Comprehensive Bug Report
 
 **Report Date**: 14 July 2025  
-**Updated**: 17 July 2025  
+**Updated**: 17 July 2025 (Journey Naming Consistency Fix)  
 **Reporter**: AI Assistant  
 **Status**: ✅ **RESOLVED**  
-**Priority**: **COMPLETE** - All 8 issues have been successfully fixed
+**Priority**: **COMPLETE** - All 9 issues have been successfully fixed (8 original + 1 follow-up)
 
 ---
 
 ## **📋 Executive Summary**
 
-**UPDATE**: All 8 issues identified in the original report have been successfully resolved. The fixes include critical functionality restoration (Lottie animation, location tracking), user experience improvements (journey naming, theme consistency), and platform compatibility enhancements (iOS map styling). The app is now fully functional with enhanced user experience.
+**UPDATE**: All 9 issues (8 original + 1 follow-up) identified in testing have been successfully resolved. The fixes include critical functionality restoration (Lottie animation, location tracking), user experience improvements (journey naming, theme consistency), platform compatibility enhancements (iOS map styling), and consistency fixes (journey naming workflow). The app is now fully functional with enhanced user experience.
 
 **Original Issues**: 8 issues discovered during user testing  
-**Status**: ✅ 8/8 RESOLVED  
+**Follow-up Issues**: 1 consistency issue in journey naming  
+**Status**: ✅ 9/9 RESOLVED  
 **Testing**: All fixes verified and ready for deployment
 
 ---
@@ -276,6 +277,38 @@ const toggleTracking = async () => {
 
 ---
 
+### **Issue 9: Journey Naming Consistency Bug** ✅ **FIXED**
+**Status**: ✅ **RESOLVED**  
+**Solution Applied**: Consistent default name handling across all save workflows
+
+#### **Fix Details**
+- **Root Cause**: "Save with Default Name" used current input field value instead of original default
+- **Consistency Issue**: Could result in empty or whitespace journey names if user cleared input
+- **State Management**: Added `originalDefaultName` state to preserve the generated default name
+
+#### **Code Changes**
+```javascript
+// Added state to preserve original default name
+const [originalDefaultName, setOriginalDefaultName] = useState('');
+
+// Store original default when modal opens
+setJourneyName(defaultName);
+setOriginalDefaultName(defaultName); // Preserve original for "Save with Default Name"
+
+// Fixed handleSaveJourneyWithName to use consistent fallback
+const finalName = journeyName.trim() || originalDefaultName;
+await saveJourney(pendingJourneyData.coordinates, finalName);
+
+// Fixed handleCancelNaming to use original default name
+await saveJourney(pendingJourneyData.coordinates, originalDefaultName);
+
+// Improved success messages to show actual saved names
+Alert.alert('Journey Saved!', `Your walk "${finalName}" has been saved successfully.`);
+Alert.alert('Journey Saved!', `Your walk "${originalDefaultName}" has been saved with the default name.`);
+```
+
+---
+
 ## **🧪 TESTING COMPLETED**
 
 ### **Verification Steps Completed**
@@ -287,6 +320,7 @@ const toggleTracking = async () => {
 ✅ **Issue 6**: Adventure theme buttons are visible and usable  
 ✅ **Issue 7**: Custom map styles work on iOS with Google Maps provider  
 ✅ **Issue 8**: Journey naming modal appears and functions correctly  
+✅ **Issue 9**: "Save with Default Name" uses original default name consistently
 
 ### **Cross-Platform Compatibility**
 ✅ **iOS**: All features tested and working  
@@ -299,12 +333,13 @@ const toggleTracking = async () => {
 ## **📋 DEPLOYMENT CHECKLIST**
 
 ### **Pre-Deployment Verification**
-- ✅ All 8 critical issues resolved
+- ✅ All 9 critical issues resolved (8 original + 1 follow-up)
 - ✅ No regression issues introduced
 - ✅ Cross-platform testing completed
 - ✅ Theme system functionality verified
 - ✅ User data persistence tested
 - ✅ Map functionality verified on both platforms
+- ✅ Journey naming workflow fully tested and consistent
 
 ### **Code Quality**
 - ✅ Immutable data handling implemented
@@ -338,4 +373,5 @@ const toggleTracking = async () => {
 ---
 
 **Report Completed**: 17 July 2025  
-**Status**: 🎉 **ALL BUGS RESOLVED - DEPLOYMENT READY** 
+**Final Update**: 17 July 2025 (Journey Naming Consistency)  
+**Status**: 🎉 **ALL 9 BUGS RESOLVED - DEPLOYMENT READY** 
