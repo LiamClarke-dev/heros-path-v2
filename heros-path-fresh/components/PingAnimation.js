@@ -22,7 +22,7 @@
  * Lottie animations provide smooth, professional-looking effects that enhance the user experience.
  * 
  * CURRENT STATUS:
- * ANIMATIONS_ENABLED is set to true, using Lottie animation for smooth effects.
+ * HOTFIX: Temporarily using fallback animation due to Lottie compatibility issues.
  * 
  * RELATIONSHIPS:
  * - Used by MapScreen.js when users tap the ping button during active walks
@@ -60,48 +60,29 @@
 
 // components/PingAnimation.js
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
+import { View, StyleSheet, Dimensions, Platform, Text, Animated } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 
-
-// Import Lottie with fallback for unsupported platforms
-let LottieView;
-try {
-  // Try multiple import methods for better compatibility
-  if (typeof require !== 'undefined') {
-    try {
-      LottieView = require('lottie-react-native');
-    } catch (error) {
-      try {
-        LottieView = require('lottie-react-native').default;
-      } catch (error2) {
-        console.warn('Lottie not available, using fallback animation');
-        LottieView = null;
-      }
-    }
-  }
-} catch (error) {
-  console.warn('Lottie not available, using fallback animation');
-  LottieView = null;
-}
-
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// ANIMATION ENABLED - Using Lottie for smooth, professional effects
+// HOTFIX: Disable Lottie due to import compatibility issues
+// Using reliable fallback animation to prevent app crashes
 const ANIMATIONS_ENABLED = true;
+const USE_LOTTIE = false; // Temporarily disabled to prevent crashes
 
 const PingAnimation = ({ 
   isVisible, 
   onAnimationComplete,
   style,
-  animationType = 'lottie' // Now defaults to 'lottie'
+  animationType = 'fallback' // Changed default to fallback
 }) => {
   const { getCurrentThemeColors } = useTheme();
-  const themeColors = getCurrentThemeColors() || colors;
+  const themeColors = getCurrentThemeColors() || getFallbackTheme();
   
   const [animationFinished, setAnimationFinished] = useState(false);
-  const lottieRef = useRef(null);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Create styles inside component to access colors
   const styles = StyleSheet.create({
@@ -114,37 +95,45 @@ const PingAnimation = ({
       zIndex: 1000,
       backgroundColor: 'transparent',
     },
-    lottieContainer: {
-      width: screenWidth,
-      height: screenHeight,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     fallbackContainer: {
       position: 'absolute',
       width: 200,
       height: 200,
       borderRadius: 100,
-      backgroundColor: `${themeColors.primary}20`,
+      backgroundColor: `${themeColors.primary}15`,
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: 2,
-      borderColor: `${themeColors.primary}40`,
+      borderWidth: 3,
+      borderColor: `${themeColors.primary}60`,
     },
     fallbackText: {
       color: themeColors.primary,
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: 'bold',
       textAlign: 'center',
+      marginTop: 8,
     },
     fallbackPulse: {
       position: 'absolute',
       width: 160,
       height: 160,
       borderRadius: 80,
-      backgroundColor: `${themeColors.primary}10`,
+      backgroundColor: `${themeColors.primary}08`,
+      borderWidth: 2,
+      borderColor: `${themeColors.primary}40`,
+    },
+    fallbackInnerPulse: {
+      position: 'absolute',
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: `${themeColors.primary}12`,
       borderWidth: 1,
       borderColor: `${themeColors.primary}30`,
+    },
+    scanIcon: {
+      fontSize: 32,
+      marginBottom: 4,
     },
   });
 
@@ -152,18 +141,8 @@ const PingAnimation = ({
     if (isVisible && ANIMATIONS_ENABLED) {
       setAnimationFinished(false);
       
-      if (LottieView && lottieRef.current) {
-        // Play the Lottie animation
-        lottieRef.current.play();
-      } else {
-        // Fallback for devices without Lottie support
-        setTimeout(() => {
-          setAnimationFinished(true);
-          if (onAnimationComplete) {
-            onAnimationComplete();
-          }
-        }, 2000);
-      }
+      // Start fallback animation
+      startFallbackAnimation();
     } else if (isVisible && !ANIMATIONS_ENABLED) {
       // Animations disabled - just call completion immediately
       if (onAnimationComplete) {
@@ -172,6 +151,45 @@ const PingAnimation = ({
     }
   }, [isVisible, animationType, onAnimationComplete]);
 
+  const startFallbackAnimation = () => {
+    // Reset animations
+    pulseAnim.setValue(0);
+    fadeAnim.setValue(0);
+
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // Pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: 2 }
+    ).start(() => {
+      // Fade out and complete
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        handleAnimationFinish();
+      });
+    });
+  };
+
   const handleAnimationFinish = () => {
     setAnimationFinished(true);
     if (onAnimationComplete) {
@@ -179,14 +197,46 @@ const PingAnimation = ({
     }
   };
 
-  const renderLottieAnimation = () => {
-    // HOTFIX: Temporarily disable Lottie animation due to import issues
-    // Use simple fallback animation instead to prevent app crashes
+  const renderFallbackAnimation = () => {
+    const pulseScale = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.3],
+    });
+
+    const innerPulseScale = pulseAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.5],
+    });
+
     return (
-      <View style={styles.fallbackContainer}>
-        <View style={styles.fallbackPulse} />
-        <Text style={styles.fallbackText}>{'🎯Scanning...Nearby Places'}</Text>
-      </View>
+      <Animated.View 
+        style={[
+          styles.fallbackContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: pulseScale }],
+          }
+        ]}
+      >
+        <Animated.View 
+          style={[
+            styles.fallbackPulse,
+            {
+              transform: [{ scale: pulseScale }],
+            }
+          ]} 
+        />
+        <Animated.View 
+          style={[
+            styles.fallbackInnerPulse,
+            {
+              transform: [{ scale: innerPulseScale }],
+            }
+          ]} 
+        />
+        <Text style={styles.scanIcon}>🎯</Text>
+        <Text style={styles.fallbackText}>Scanning{'\n'}Nearby Places</Text>
+      </Animated.View>
     );
   };
 
@@ -196,7 +246,7 @@ const PingAnimation = ({
 
   return (
     <View style={[styles.container, style]} pointerEvents="none">
-      {renderLottieAnimation()}
+      {renderFallbackAnimation()}
     </View>
   );
 };
