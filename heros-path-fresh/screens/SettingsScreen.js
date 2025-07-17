@@ -59,7 +59,7 @@
  * - Integrates with Firebase for data operations and user management
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the Settings stack navigation)
+ * - App.js (as part of the main Drawer navigation)
  * - Users access this for all app customization and configuration
  * - Developers use this for testing, debugging, and data management
  * - Support workflows for troubleshooting user issues

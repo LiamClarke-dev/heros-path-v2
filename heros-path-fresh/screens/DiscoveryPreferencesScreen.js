@@ -47,7 +47,7 @@
  * 
  * REFERENCED BY:
  * - SettingsScreen.js (primary access point for preference management)
- * - AppNavigator.js (as part of the Settings stack)
+ * - App.js (as part of the main Drawer navigation)
  * - Discovery workflows that respect user preferences
  * - Onboarding flows that help users set initial preferences
  * 

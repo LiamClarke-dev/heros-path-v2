@@ -51,7 +51,7 @@
  * - Integrates with various UI components for consistent user experience
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the Discoveries tab navigation)
+ * - App.js (as part of the main Drawer navigation)
  * - Users spend significant time on this screen reviewing discoveries
  * - Journey completion workflows that direct users to review discoveries
  * - Onboarding flows that introduce the discovery system

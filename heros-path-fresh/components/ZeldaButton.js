@@ -109,7 +109,10 @@ export default function ZeldaButton({ onPress, children, disabled, selected, sty
         <View style={[
           styles.background,
           selected ? styles.backgroundSelected : styles.backgroundUnselected,
-          { borderColor: selected ? colorGainsboro100 : colorGainsboro200 },
+          { 
+            borderColor: selected ? colorGainsboro100 : colorGainsboro200,
+            backgroundColor: selected ? colors.overlay : colors.overlay + '99', // 60% opacity for unselected
+          },
         ]} />
         {selected && (
           <>
@@ -167,10 +170,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   backgroundSelected: {
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: 'transparent', // Will use theme overlay dynamically
   },
   backgroundUnselected: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'transparent', // Will use theme overlay dynamically
   },
   buttonText: {
     fontSize: 30,
