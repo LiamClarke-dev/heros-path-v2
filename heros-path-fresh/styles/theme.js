@@ -168,7 +168,7 @@ const adventureTheme = {
   textSecondary: '#739E82', // Use moss-sage for secondary text
   secondaryText: '#739E82', // Alias for textSecondary
   card: '#F5E9D6', // Slightly darker cream for better contrast
-  shadow: 'rgba(0,0,0,0.15)', // Slightly stronger shadow for better definition
+  shadow: 'rgba(0, 0, 0, 0.66)', // Slightly stronger shadow for better definition
   buttonPrimary: '#4A90E2', // --color-trail-blue
   buttonSecondary: 'rgba(245, 233, 214, 0.9)', // Semi-transparent cream background for visibility
   buttonText: '#FFFFFF', // White text for primary

@@ -180,27 +180,16 @@ const PingAnimation = ({
   };
 
   const renderLottieAnimation = () => {
-    if (!LottieView) {
-      return (
-        <View style={styles.fallbackContainer}>
-          <View style={styles.fallbackPulse} />
-          <Text style={styles.fallbackText}>🎯{'\n'}Scanning...{'\n'}Nearby Places</Text>
-        </View>
-      );
-    }
-
-         return (
-       <LottieView
-         ref={lottieRef}
-         source={require('../assets/scanning-nearby.json')}
-         style={styles.lottieContainer}
-         autoPlay={false}
-         loop={false}
-         speed={1}
-         onAnimationFinish={handleAnimationFinish}
-         resizeMode="cover"
-       />
-     );
+    // HOTFIX: Temporarily disable Lottie animation due to import issues
+    // Use simple fallback animation instead to prevent app crashes
+    return (
+      <View style={styles.fallbackContainer}>
+        <View style={styles.fallbackPulse} />
+        <Text style={styles.fallbackText}>🎯{'
+'}Scanning...
+Nearby Places</Text>
+      </View>
+    );
   };
 
   if (!isVisible) {
