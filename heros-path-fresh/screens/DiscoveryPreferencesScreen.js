@@ -47,7 +47,7 @@
  * 
  * REFERENCED BY:
  * - SettingsScreen.js (primary access point for preference management)
- * - AppNavigator.js (as part of the Settings stack)
+ * - App.js (as part of the main Drawer navigation)
  * - Discovery workflows that respect user preferences
  * - Onboarding flows that help users set initial preferences
  * 
@@ -101,6 +101,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../styles/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
 import { getUserDiscoveryPreferences, resetDiscoveryPreferences } from '../services/DiscoveriesService';
 import SectionHeader from '../components/ui/SectionHeader';
@@ -144,6 +145,9 @@ const PLACE_CATEGORIES = [
 ];
 
 export default function DiscoveryPreferencesScreen({ navigation }) {
+  const { getCurrentThemeColors } = useTheme();
+  const colors = getCurrentThemeColors();
+  
   const [discoveryPreferences, setDiscoveryPreferences] = useState({});
   const [minRating, setMinRating] = useState(3.0);
   const [expandedCategories, setExpandedCategories] = useState({});
@@ -287,8 +291,8 @@ export default function DiscoveryPreferencesScreen({ navigation }) {
                   <Switch
                     value={discoveryPreferences[placeType] || false}
                     onValueChange={() => toggleDiscoveryPreference(placeType)}
-                    trackColor={{ false: Colors.tabInactive + '50', true: Colors.primary + '50' }}
-                    thumbColor={discoveryPreferences[placeType] ? Colors.primary : Colors.tabInactive}
+                    trackColor={{ false: colors.surface, true: colors.highlight }}
+                    thumbColor={discoveryPreferences[placeType] ? colors.primary : colors.textSecondary}
                   />
                 </View>
               </View>
@@ -328,7 +332,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: Colors.border,
   },
   backButton: {
     padding: Spacing.sm,
@@ -345,7 +349,7 @@ const styles = StyleSheet.create({
   section: {
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.tabInactive + '30',
+    borderBottomColor: Colors.border,
   },
   sectionHeader: {
     ...Typography.h2,
@@ -354,7 +358,7 @@ const styles = StyleSheet.create({
   },
   sectionDescription: {
     ...Typography.body,
-    color: Colors.text + '80',
+    color: Colors.textSecondary,
     marginBottom: Spacing.md,
     fontStyle: 'italic',
   },
@@ -368,7 +372,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.tabInactive + '50',
+    borderColor: Colors.border,
     backgroundColor: Colors.background,
   },
   ratingOptionActive: {
@@ -392,7 +396,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
-    backgroundColor: Colors.tabInactive + '20',
+    backgroundColor: Colors.surface,
     borderRadius: 8,
   },
   categoryTitleRow: {
@@ -409,7 +413,7 @@ const styles = StyleSheet.create({
   },
   categoryCount: {
     ...Typography.body,
-    color: Colors.text + '80',
+    color: Colors.textSecondary,
     fontSize: 12,
   },
   categoryContent: {

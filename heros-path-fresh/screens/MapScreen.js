@@ -46,7 +46,7 @@
  * - Connects to various services for data persistence and API calls
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as the main screen in Map stack)
+ * - App.js (as the main screen in the Drawer navigation)
  * - Most users spend majority of their time on this screen during active use
  * - Other screens reference this as the "home" or main app experience
  * 

@@ -477,7 +477,7 @@ class BackgroundLocationService {
           foregroundService: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             killServiceOnDestroy: false, // Keep service alive
           },
           // iOS-specific optimizations
@@ -488,7 +488,7 @@ class BackgroundLocationService {
           android: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             notificationIcon: null, // Use app icon
             enableHighAccuracy: true,
           }
@@ -640,7 +640,7 @@ class BackgroundLocationService {
           foregroundService: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             killServiceOnDestroy: false,
           },
           activityType: Location.ActivityType.Fitness,
@@ -649,7 +649,7 @@ class BackgroundLocationService {
           android: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             notificationIcon: null,
             enableHighAccuracy: true,
           }
