@@ -249,6 +249,18 @@ class BackgroundLocationService {
     return true;
   }
 
+  // CRITICAL FIX: Validate coordinates to prevent smoothing towards origin (0,0)
+  // This prevents GPS errors from invalid coordinate fallbacks
+  isValidLocationCoordinates(location) {
+    return location.coords && 
+      typeof location.coords.latitude === 'number' && 
+      typeof location.coords.longitude === 'number' &&
+      !isNaN(location.coords.latitude) && 
+      !isNaN(location.coords.longitude) &&
+      Math.abs(location.coords.latitude) <= 90 &&
+      Math.abs(location.coords.longitude) <= 180;
+  }
+
   // Smooth location using recent points to reduce GPS noise
   smoothLocation(newLocation) {
     try {
@@ -267,9 +279,15 @@ class BackgroundLocationService {
       
       // If we have enough points for smoothing, check if new location is an outlier
       if (this.recentLocations.length >= 2) {
-        // Calculate average of EXISTING locations (excluding the new one)
-        const avgLat = this.recentLocations.reduce((sum, loc) => sum + (loc.coords?.latitude || 0), 0) / this.recentLocations.length;
-        const avgLng = this.recentLocations.reduce((sum, loc) => sum + (loc.coords?.longitude || 0), 0) / this.recentLocations.length;
+        // CRITICAL FIX: Filter out invalid locations before calculating average
+        // Using || 0 would skew towards origin (0,0) causing massive GPS errors
+        const validLocations = this.recentLocations.filter(loc => this.isValidLocationCoordinates(loc));
+        
+        // Only proceed with smoothing if we have enough valid locations
+        if (validLocations.length >= 2) {
+          // Calculate average of VALID existing locations only (excluding the new one)
+          const avgLat = validLocations.reduce((sum, loc) => sum + loc.coords.latitude, 0) / validLocations.length;
+          const avgLng = validLocations.reduce((sum, loc) => sum + loc.coords.longitude, 0) / validLocations.length;
         
         const distance = this.calculateDistance(
           newLocation.coords.latitude,
@@ -300,16 +318,31 @@ class BackgroundLocationService {
           
           Logger.debug(`Applied weighted smoothing with accuracy weight: ${accuracyWeight.toFixed(2)}`);
         }
+        } else {
+          Logger.debug('BackgroundLocationService: Not enough valid locations for smoothing', {
+            totalLocations: this.recentLocations.length,
+            validLocations: validLocations?.length || 0
+          });
+        }
       }
       
       // Use completely immutable array operations to prevent Hermes engine errors
-      // Create new array with spread operator, never mutate existing arrays
-      const newRecentLocations = [...this.recentLocations, locationToReturn];
-      
-      // Keep only last 5 points for smoothing using slice (immutable)
-      this.recentLocations = newRecentLocations.length > 5 
-        ? newRecentLocations.slice(-5) 
-        : newRecentLocations;
+      // CRITICAL FIX: Validate location before adding to recent locations array
+      // This prevents accumulation of invalid coordinates that would skew future smoothing
+      if (this.isValidLocationCoordinates(locationToReturn)) {
+        // Create new array with spread operator, never mutate existing arrays
+        const newRecentLocations = [...this.recentLocations, locationToReturn];
+        
+        // Keep only last 5 points for smoothing using slice (immutable)
+        this.recentLocations = newRecentLocations.length > 5 
+          ? newRecentLocations.slice(-5) 
+          : newRecentLocations;
+      } else {
+        Logger.warn('BackgroundLocationService: Skipping invalid location for recent locations', {
+          lat: locationToReturn.coords?.latitude,
+          lng: locationToReturn.coords?.longitude
+        });
+      }
       
       return locationToReturn;
       
