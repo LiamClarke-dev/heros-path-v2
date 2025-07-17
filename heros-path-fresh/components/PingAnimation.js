@@ -68,7 +68,19 @@ import { getFallbackTheme } from '../styles/theme';
 // Import Lottie with fallback for unsupported platforms
 let LottieView;
 try {
-  LottieView = require('lottie-react-native').default;
+  // Try multiple import methods for better compatibility
+  if (typeof require !== 'undefined') {
+    try {
+      LottieView = require('lottie-react-native');
+    } catch (error) {
+      try {
+        LottieView = require('lottie-react-native').default;
+      } catch (error2) {
+        console.warn('Lottie not available, using fallback animation');
+        LottieView = null;
+      }
+    }
+  }
 } catch (error) {
   console.warn('Lottie not available, using fallback animation');
   LottieView = null;
@@ -116,11 +128,23 @@ const PingAnimation = ({
       backgroundColor: `${themeColors.primary}20`,
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 2,
+      borderColor: `${themeColors.primary}40`,
     },
     fallbackText: {
       color: themeColors.primary,
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: 'bold',
+      textAlign: 'center',
+    },
+    fallbackPulse: {
+      position: 'absolute',
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      backgroundColor: `${themeColors.primary}10`,
+      borderWidth: 1,
+      borderColor: `${themeColors.primary}30`,
     },
   });
 
@@ -159,7 +183,8 @@ const PingAnimation = ({
     if (!LottieView) {
       return (
         <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackText}>Ping!</Text>
+          <View style={styles.fallbackPulse} />
+          <Text style={styles.fallbackText}>🎯{'\n'}Scanning...{'\n'}Nearby Places</Text>
         </View>
       );
     }

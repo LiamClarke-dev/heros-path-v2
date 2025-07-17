@@ -518,7 +518,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
-        if (route.params?.journeyId) {
+        if (route?.params?.journeyId) {
           // Find the journey by ID from the passed parameter
           const journey = journeys.find(j => j.id === route.params.journeyId);
           if (journey) {
@@ -529,7 +529,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
               setSelectedRoute(journeys[0]);
             }
           }
-        } else if (route.params?.selectedRoute) {
+        } else if (route?.params?.selectedRoute) {
           setSelectedRoute(route.params.selectedRoute);
         } else if (journeys.length > 0) {
           setSelectedRoute(journeys[0]);
@@ -554,7 +554,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
-        if (route.params?.journeyId) {
+        if (route?.params?.journeyId) {
           // Find the journey by ID from the passed parameter
           const journey = journeys.find(j => j.id === route.params.journeyId);
           if (journey) {
@@ -565,7 +565,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
               setSelectedRoute(journeys[0]);
             }
           }
-        } else if (route.params?.selectedRoute) {
+        } else if (route?.params?.selectedRoute) {
           setSelectedRoute(route.params.selectedRoute);
         } else if (journeys.length > 0) {
           setSelectedRoute(journeys[0]);

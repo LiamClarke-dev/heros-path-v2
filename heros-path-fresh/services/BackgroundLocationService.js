@@ -251,7 +251,13 @@ class BackgroundLocationService {
 
   // Smooth location using recent points to reduce GPS noise
   smoothLocation(newLocation) {
-    let locationToReturn = newLocation;
+    // Create a safe copy of the new location to avoid mutation issues
+    let locationToReturn = {
+      ...newLocation,
+      coords: {
+        ...newLocation.coords
+      }
+    };
     
     // If we have enough points for smoothing, check if new location is an outlier
     if (this.recentLocations.length >= 2) {
@@ -273,6 +279,7 @@ class BackgroundLocationService {
         // Use weighted smoothing: blend the new location with the average based on accuracy
         const accuracyWeight = Math.max(0.1, Math.min(0.9, ACCURACY_THRESHOLDS.EXCELLENT / newLocation.coords.accuracy));
         
+        // Create completely new object instead of modifying existing ones
         locationToReturn = {
           ...newLocation,
           coords: {
@@ -286,12 +293,12 @@ class BackgroundLocationService {
       }
     }
     
-    // Add the final location (original or smoothed) to recent locations
-    this.recentLocations.push(locationToReturn);
+    // Use immutable array operations instead of push/shift to avoid mutation errors
+    this.recentLocations = [...this.recentLocations, locationToReturn];
     
-    // Keep only last 5 points for smoothing
+    // Keep only last 5 points for smoothing using immutable operations
     if (this.recentLocations.length > 5) {
-      this.recentLocations.shift();
+      this.recentLocations = this.recentLocations.slice(-5);
     }
     
     return locationToReturn;
@@ -570,7 +577,8 @@ class BackgroundLocationService {
       if (this.currentJourney) {
         this.currentJourney.isActive = false;
         this.currentJourney.endTime = Date.now();
-        this.currentJourney.duration = this.currentJourney.endTime - this.currentJourney.startTime;
+        // Convert duration from milliseconds to seconds for consistent display
+        this.currentJourney.duration = (this.currentJourney.endTime - this.currentJourney.startTime) / 1000;
       }
 
       this.isTracking = false;
