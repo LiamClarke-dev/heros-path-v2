@@ -118,8 +118,8 @@ export default function SettingsOptionRow({
 
   // Distinguish toggle types visually - moved inside component
   let toggleBg = colors.inputBackground;
-  if (toggleType === 'multivalue') toggleBg = colors.primary + '20'; // blue accent with opacity
-  if (toggleType === 'value') toggleBg = colors.secondary + '20'; // gold accent with opacity
+  if (toggleType === 'multivalue') toggleBg = colors.highlight; // blue accent with built-in opacity
+  if (toggleType === 'value') toggleBg = colors.surface; // use surface color for value toggle
 
   return (
     <Container

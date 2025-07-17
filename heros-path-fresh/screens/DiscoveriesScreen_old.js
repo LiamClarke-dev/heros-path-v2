@@ -1396,7 +1396,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
       <SectionHeader title="Discoveries" />
       
       {/* Filter Controls */}
-      <View style={[styles.filterContainer, { borderBottomColor: colors.tabInactive + '20' }]}>
+      <View style={[styles.filterContainer, { borderBottomColor: colors.border }]}>
         {/* Route Selection */}
         <View style={styles.dropdownWrapper}>
           <TouchableOpacity
