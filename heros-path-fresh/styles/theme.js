@@ -170,9 +170,11 @@ const adventureTheme = {
   card: '#F5E9D6', // Slightly darker cream for better contrast
   shadow: 'rgba(0, 0, 0, 0.66)', // Slightly stronger shadow for better definition
   buttonPrimary: '#4A90E2', // --color-trail-blue
-  buttonSecondary: 'rgba(245, 233, 214, 0.9)', // Semi-transparent cream background for visibility
+  buttonSecondary: '#F5E9D6', // Solid cream background for better visibility (no transparency)
   buttonText: '#FFFFFF', // White text for primary
   buttonTextSecondary: '#4A90E2', // Trail-blue for secondary
+  buttonDanger: '#DC3545', // Solid red for delete buttons
+  buttonDangerText: '#FFFFFF', // White text for danger buttons
   disabled: '#7F8C8D', // --color-stone-gray
   disabledText: 'rgba(255,255,255,0.6)', // As per guidelines
   inputBackground: '#F5E9D6', // Darker cream for inputs
@@ -197,8 +199,11 @@ const adventureTheme = {
   routeLine: '#4A90E2', // maps to primary
   routePreview: '#F6AF3C', // maps to accent
   success: '#739E82', // maps to progress
+  warning: '#F6AF3C', // maps to accent
+  error: '#DC3545', // Solid red for errors
   info: '#4A90E2', // maps to primary
-  critical: '#FF453A', // maps to error (but we should use error directly)
+  critical: '#DC3545', // maps to error (solid red)
+  danger: '#DC3545', // maps to error (solid red)
   pingGlow: '#4A90E2', // maps to primary
   spriteShadow: 'rgba(0,0,0,0.3)', // generic shadow
 };

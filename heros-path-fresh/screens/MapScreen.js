@@ -230,6 +230,11 @@ export default function MapScreen({ navigation, route }) {
   useEffect(() => {
     const initializeLocation = async () => {
       try {
+        // HOTFIX: Reset any stuck tracking state from previous app sessions
+        // This prevents the service from being stuck in tracking mode after app reload
+        await BackgroundLocationService.cleanup();
+        Logger.info('MapScreen: Reset location service state on initialization');
+        
         // Initialize the background location service
         const initialized = await BackgroundLocationService.initialize();
         if (!initialized) {
@@ -260,17 +265,50 @@ export default function MapScreen({ navigation, route }) {
           });
         });
 
-        // Get initial location
+        // Get initial location with enhanced error handling and fallback
         try {
+          Logger.debug('MapScreen: Attempting to get initial location for sprite');
           const coords = await BackgroundLocationService.getCurrentLocation();
-          setCurrentPosition({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            timestamp: Date.now(),
-          });
-          setLocationAccuracy(coords.accuracy);
+          
+          if (coords && coords.latitude && coords.longitude) {
+            const initialPosition = {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              timestamp: Date.now(),
+            };
+            setCurrentPosition(initialPosition);
+            setLocationAccuracy(coords.accuracy);
+            Logger.debug('MapScreen: Initial position set for Link sprite', initialPosition);
+          } else {
+            Logger.warn('MapScreen: Invalid coordinates received from getCurrentLocation');
+            throw new Error('Invalid coordinates');
+          }
         } catch (error) {
-          Logger.warn('Could not get initial location:', error);
+          Logger.warn('MapScreen: Could not get initial location, trying fallback', error);
+          
+          // HOTFIX: Try to get location using Expo Location as fallback
+          try {
+            const { status } = await Location.getForegroundPermissionsAsync();
+            if (status === 'granted') {
+              const fallbackLocation = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+                maximumAge: 10000,
+              });
+              
+              if (fallbackLocation?.coords) {
+                const fallbackPosition = {
+                  latitude: fallbackLocation.coords.latitude,
+                  longitude: fallbackLocation.coords.longitude,
+                  timestamp: Date.now(),
+                };
+                setCurrentPosition(fallbackPosition);
+                setLocationAccuracy(fallbackLocation.coords.accuracy);
+                Logger.info('MapScreen: Fallback position set for Link sprite', fallbackPosition);
+              }
+            }
+          } catch (fallbackError) {
+            Logger.error('MapScreen: Both initial location and fallback failed', fallbackError);
+          }
         }
 
       } catch (error) {
@@ -289,6 +327,19 @@ export default function MapScreen({ navigation, route }) {
       BackgroundLocationService.setLocationUpdateCallback(null);
     };
   }, []);
+
+  // Debug useEffect to monitor Link sprite position state
+  useEffect(() => {
+    if (currentPosition) {
+      Logger.debug('MapScreen: Link sprite position updated:', {
+        lat: currentPosition.latitude,
+        lng: currentPosition.longitude,
+        timestamp: currentPosition.timestamp
+      });
+    } else {
+      Logger.debug('MapScreen: Link sprite position is null - sprite will not render');
+    }
+  }, [currentPosition]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -775,8 +826,15 @@ export default function MapScreen({ navigation, route }) {
               coordinate={currentPosition}
               anchor={{ x: 0.5, y: 0.9 }}
               tracksViewChanges={false}
+              onPress={() => Logger.debug('Link sprite pressed', currentPosition)}
             >
-              <Image source={spriteSource} style={{ width: 16, height: 32 }} resizeMode="contain" />
+              <Image 
+                source={spriteSource} 
+                style={{ width: 16, height: 32 }} 
+                resizeMode="contain"
+                onLoad={() => Logger.debug('Link sprite image loaded')}
+                onError={(error) => Logger.error('Link sprite image error', error)}
+              />
             </Marker>
           )}
           {/* Saved places markers */}
