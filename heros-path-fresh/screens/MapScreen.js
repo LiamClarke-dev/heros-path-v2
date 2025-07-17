@@ -137,6 +137,16 @@ const SPRITE_STATES = {
   WALK_RIGHT: 'walk_right',
 };
 
+// Simple sprite colors instead of GIF files
+const SPRITE_COLORS = {
+  [SPRITE_STATES.IDLE]: '#4A90E2',      // Blue
+  [SPRITE_STATES.WALK_DOWN]: '#50C878', // Green
+  [SPRITE_STATES.WALK_UP]: '#FF6B6B',   // Red
+  [SPRITE_STATES.WALK_LEFT]: '#FFD93D', // Yellow
+  [SPRITE_STATES.WALK_RIGHT]: '#9B59B6', // Purple
+};
+
+// Keep the old SPRITE_SOURCES for reference but don't use them
 const SPRITE_SOURCES = {
   [SPRITE_STATES.IDLE]: require('../assets/link_sprites/link_idle.gif'),
   [SPRITE_STATES.WALK_DOWN]: require('../assets/link_sprites/link_walk_down.gif'),
@@ -355,13 +365,29 @@ export default function MapScreen({ navigation, route }) {
   useEffect(() => {
     if (pathToRender.length >= 2) {
       const direction = getDirection(pathToRender.slice(-2));
+      Logger.debug('Sprite direction calculated:', { 
+        pathLength: pathToRender.length, 
+        direction, 
+        lastTwoPoints: pathToRender.slice(-2).map(p => ({ lat: p.latitude, lng: p.longitude }))
+      });
       setSpriteState(direction);
     } else {
+      Logger.debug('Setting sprite to idle state - no path data');
       setSpriteState(SPRITE_STATES.IDLE);
     }
   }, [pathToRender]);
 
-  const spriteSource = SPRITE_SOURCES[spriteState];
+  const spriteColor = SPRITE_COLORS[spriteState];
+  
+  // Debug sprite state
+  useEffect(() => {
+    Logger.debug('Sprite state updated:', { 
+      spriteState, 
+      spriteColor,
+      currentPosition: currentPosition ? 'set' : 'null',
+      spriteColors: Object.keys(SPRITE_COLORS)
+    });
+  }, [spriteState, spriteColor, currentPosition]);
 
   const loadSavedRoutes = async () => {
     if (!user) return;
@@ -824,19 +850,25 @@ export default function MapScreen({ navigation, route }) {
           {currentPosition && (
             <Marker
               coordinate={currentPosition}
-              anchor={{ x: 0.5, y: 0.9 }}
+              anchor={{ x: 0.5, y: 0.5 }}
               tracksViewChanges={false}
               onPress={() => Logger.debug('Link sprite pressed', currentPosition)}
             >
-              <Image 
-                source={spriteSource} 
-                style={{ width: 16, height: 32 }} 
-                resizeMode="contain"
-                onLoad={() => Logger.debug('Link sprite image loaded')}
-                onError={(error) => Logger.error('Link sprite image error', error)}
-              />
+              <View style={styles.spriteContainer}>
+                {/* Main Link sprite - colored rectangle */}
+                <View style={[styles.linkSprite, { backgroundColor: spriteColor }]} />
+                
+                {/* Sprite status indicator */}
+                <View style={[styles.spriteStatusIndicator, { backgroundColor: colors.success }]} />
+                
+                <Text style={[styles.spriteDebugText, { color: colors.buttonText }]}>
+                  Link
+                </Text>
+              </View>
             </Marker>
           )}
+          
+
           {/* Saved places markers */}
           {showSavedPlaces && savedPlaces.map(place => (
             <Marker
@@ -1015,9 +1047,17 @@ const styles = StyleSheet.create({
   map: { 
     flex: 1 
   },
-  sprite: { 
-    width: 16, 
-    height: 32 
+  linkSprite: { 
+    width: 48, 
+    height: 64,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   buttonContainer: {
     position: 'absolute',
@@ -1194,5 +1234,34 @@ const styles = StyleSheet.create({
   saveButtonText: {
     ...Typography.button,
     fontWeight: '600',
+  },
+  spriteContainer: {
+    width: 48,
+    height: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spriteDebugText: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -15 }, { translateY: -8 }],
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#fff',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  spriteStatusIndicator: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
 });
