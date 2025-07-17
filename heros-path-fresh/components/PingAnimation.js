@@ -185,9 +185,7 @@ const PingAnimation = ({
     return (
       <View style={styles.fallbackContainer}>
         <View style={styles.fallbackPulse} />
-        <Text style={styles.fallbackText}>🎯{'
-'}Scanning...
-Nearby Places</Text>
+        <Text style={styles.fallbackText}>{'🎯Scanning...Nearby Places'}</Text>
       </View>
     );
   };
