@@ -597,10 +597,6 @@ export const MAP_STYLE_CONFIGS = {
 
 // Theme selector function
 export const getTheme = (themeType = THEME_TYPES.LIGHT) => {
-  if (__DEV__) {
-    console.debug('[THEME]', 'getTheme called', { themeType, availableTypes: Object.values(THEME_TYPES) });
-  }
-  
   let result;
   switch (themeType) {
     case THEME_TYPES.DARK:
@@ -615,23 +611,11 @@ export const getTheme = (themeType = THEME_TYPES.LIGHT) => {
       break;
   }
   
-  if (__DEV__) {
-    console.debug('[THEME]', 'getTheme result', { 
-      themeType, 
-      resultExists: !!result, 
-      resultKeys: result ? Object.keys(result) : null 
-    });
-  }
-  
   return result;
 };
 
 // Fallback theme for when theme context is not ready
 export const getFallbackTheme = () => {
-  if (__DEV__) {
-    console.debug('[THEME]', 'getFallbackTheme called');
-  }
-  
   const fallback = {
     ...lightTheme,
     // Ensure all properties are available
@@ -640,13 +624,6 @@ export const getFallbackTheme = () => {
     onSecondary: '#FFFFFF',
     onError: '#FFFFFF'
   };
-  
-  if (__DEV__) {
-    console.debug('[THEME]', 'getFallbackTheme result', { 
-      fallbackExists: !!fallback, 
-      fallbackKeys: fallback ? Object.keys(fallback) : null 
-    });
-  }
   
   return fallback;
 };

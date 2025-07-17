@@ -167,7 +167,7 @@ const PingAnimation = ({
          return (
        <LottieView
          ref={lottieRef}
-         source={require('../assets/scanning-nearby.lottie')}
+         source={require('../assets/scanning-nearby.json')}
          style={styles.lottieContainer}
          autoPlay={false}
          loop={false}
