@@ -1,0 +1,342 @@
+- **Tech Stack Requirements:**
+  - **Framework**: React Native (v0.79.5) with Expo SDK (v53.0.19)
+  - **Language**: JavaScript (no TypeScript)
+  - **State Management**: React Context API (UserContext, ThemeContext, ExplorationContext)
+  - **Navigation**: React Navigation v7 (Drawer, Stack)
+  - **Backend**: Firebase (Authentication, Firestore)
+  - **Storage**: AsyncStorage for local persistence
+  - **Maps**: Google Maps (react-native-maps), Expo Maps
+  - **Location**: expo-location, expo-task-manager
+  - **Animation**: react-native-reanimated, lottie-react-native
+
+- **Component Architecture:**
+  ```javascript
+  // ✅ DO: Use functional components with hooks
+  import React, { useState, useEffect } from 'react';
+  import { View, Text } from 'react-native';
+  import { useTheme } from '../contexts/ThemeContext';
+  
+  const MyComponent = ({ prop1, prop2 }) => {
+    const { colors } = useTheme();
+    const [state, setState] = useState(null);
+    
+    useEffect(() => {
+      // Side effects here
+    }, []);
+    
+    return (
+      <View style={{ backgroundColor: colors.background }}>
+        <Text style={{ color: colors.text }}>{prop1}</Text>
+      </View>
+    );
+  };
+  ```
+
+- **Context Provider Pattern:**
+  ```javascript
+  // ✅ DO: Create context providers for global state
+  import React, { createContext, useContext, useState } from 'react';
+  
+  const MyContext = createContext();
+  
+  export const MyProvider = ({ children }) => {
+    const [state, setState] = useState(initialState);
+    
+    const value = {
+      state,
+      setState,
+      // Other methods
+    };
+    
+    return (
+      <MyContext.Provider value={value}>
+        {children}
+      </MyContext.Provider>
+    );
+  };
+  
+  export const useMyContext = () => {
+    const context = useContext(MyContext);
+    if (!context) {
+      throw new Error('useMyContext must be used within MyProvider');
+    }
+    return context;
+  };
+  ```
+
+- **Service Layer Pattern:**
+  ```javascript
+  // ✅ DO: Group business logic in service files
+  import { Logger } from '../utils/Logger';
+  
+  export class JourneyService {
+    static async createJourney(journeyData) {
+      try {
+        Logger.info('Creating new journey', { journeyData });
+        // Implementation
+        return result;
+      } catch (error) {
+        Logger.error('Failed to create journey', error);
+        throw error;
+      }
+    }
+    
+    static async getJourneys(userId) {
+      try {
+        Logger.info('Fetching journeys for user', { userId });
+        // Implementation
+        return journeys;
+      } catch (error) {
+        Logger.error('Failed to fetch journeys', error);
+        throw error;
+      }
+    }
+  }
+  ```
+
+- **Error Handling Pattern:**
+  ```javascript
+  // ✅ DO: Use consistent error handling with try/catch
+  const handleAsyncOperation = async () => {
+    try {
+      const result = await someAsyncOperation();
+      Logger.info('Operation successful', { result });
+      return result;
+    } catch (error) {
+      Logger.error('Operation failed', error);
+      // Handle error appropriately
+      throw error;
+    }
+  };
+  ```
+
+- **Logging Pattern:**
+  ```javascript
+  // ✅ DO: Use the Logger utility for all logging
+  import { Logger } from '../utils/Logger';
+  
+  // Info logging for normal operations
+  Logger.info('User started journey', { userId, location });
+  
+  // Error logging for exceptions
+  Logger.error('Failed to save journey', error);
+  
+  // Debug logging (only in development)
+  Logger.debug('API response received', { response });
+  ```
+
+- **Theme Integration:**
+  ```javascript
+  // ✅ DO: Use the theme system for all styling
+  import { useTheme } from '../contexts/ThemeContext';
+  
+  const MyComponent = () => {
+    const { colors, spacing, typography } = useTheme();
+    
+    return (
+      <View style={{
+        backgroundColor: colors.background,
+        padding: spacing.medium,
+      }}>
+        <Text style={{
+          color: colors.text,
+          fontSize: typography.body,
+        }}>
+          Content
+        </Text>
+      </View>
+    );
+  };
+  ```
+
+- **Navigation Pattern:**
+  ```javascript
+  // ✅ DO: Use React Navigation hooks
+  import { useNavigation } from '@react-navigation/native';
+  
+  const MyScreen = () => {
+    const navigation = useNavigation();
+    
+    const handleNavigate = () => {
+      navigation.navigate('TargetScreen', { param: 'value' });
+    };
+    
+    return (
+      <AppButton onPress={handleNavigate} title="Navigate" />
+    );
+  };
+  ```
+
+- **API Integration Pattern:**
+  ```javascript
+  // ✅ DO: Use environment variables for API keys
+  import { GOOGLE_MAPS_API_KEY_IOS } from '../config';
+  
+  const apiCall = async () => {
+    const response = await fetch(`https://api.example.com?key=${GOOGLE_MAPS_API_KEY_IOS}`);
+    return response.json();
+  };
+  ```
+
+- **Location Services Pattern:**
+  ```javascript
+  // ✅ DO: Use expo-location for location services
+  import * as Location from 'expo-location';
+  
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
+      }
+      
+      const location = await Location.getCurrentPositionAsync({});
+      return location;
+    } catch (error) {
+      Logger.error('Failed to get location', error);
+      throw error;
+    }
+  };
+  ```
+
+- **Firebase Integration Pattern:**
+  ```javascript
+  // ✅ DO: Use Firebase services consistently
+  import { firestore } from '../firebase';
+  
+  const saveToFirestore = async (collection, data) => {
+    try {
+      const docRef = await firestore.collection(collection).add(data);
+      Logger.info('Data saved to Firestore', { docId: docRef.id });
+      return docRef;
+    } catch (error) {
+      Logger.error('Failed to save to Firestore', error);
+      throw error;
+    }
+  };
+  ```
+
+- **AsyncStorage Pattern:**
+  ```javascript
+  // ✅ DO: Use AsyncStorage for local persistence
+  import AsyncStorage from '@react-native-async-storage/async-storage';
+  
+  const saveToStorage = async (key, value) => {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+      Logger.info('Data saved to storage', { key });
+    } catch (error) {
+      Logger.error('Failed to save to storage', error);
+      throw error;
+    }
+  };
+  
+  const getFromStorage = async (key) => {
+    try {
+      const value = await AsyncStorage.getItem(key);
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      Logger.error('Failed to get from storage', error);
+      throw error;
+    }
+  };
+  ```
+
+- **Performance Optimization:**
+  ```javascript
+  // ✅ DO: Optimize re-renders with useMemo and useCallback
+  import React, { useMemo, useCallback } from 'react';
+  
+  const MyComponent = ({ data, onPress }) => {
+    const processedData = useMemo(() => {
+      return data.map(item => ({ ...item, processed: true }));
+    }, [data]);
+    
+    const handlePress = useCallback(() => {
+      onPress(processedData);
+    }, [onPress, processedData]);
+    
+    return (
+      <View>
+        {processedData.map(item => (
+          <AppButton key={item.id} onPress={handlePress} title={item.name} />
+        ))}
+      </View>
+    );
+  };
+  ```
+
+- **Map Integration Pattern:**
+  ```javascript
+  // ✅ DO: Use react-native-maps for map functionality
+  import MapView, { Marker, Polyline } from 'react-native-maps';
+  
+  const MapComponent = ({ region, markers, route }) => {
+    return (
+      <MapView
+        style={{ flex: 1 }}
+        region={region}
+        showsUserLocation
+        showsMyLocationButton
+      >
+        {markers.map(marker => (
+          <Marker
+            key={marker.id}
+            coordinate={marker.coordinate}
+            title={marker.title}
+          />
+        ))}
+        {route && (
+          <Polyline
+            coordinates={route}
+            strokeColor="#FF0000"
+            strokeWidth={3}
+          />
+        )}
+      </MapView>
+    );
+  };
+  ```
+
+- **Animation Pattern:**
+  ```javascript
+  // ✅ DO: Use react-native-reanimated for animations
+  import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+  
+  const AnimatedComponent = () => {
+    const opacity = useSharedValue(0);
+    
+    const animatedStyle = useAnimatedStyle(() => ({
+      opacity: opacity.value,
+    }));
+    
+    useEffect(() => {
+      opacity.value = withTiming(1, { duration: 1000 });
+    }, []);
+    
+    return (
+      <Animated.View style={animatedStyle}>
+        <Text>Animated Content</Text>
+      </Animated.View>
+    );
+  };
+  ```
+
+- **Testing Guidelines:**
+  - Manual testing for UI components
+  - API connectivity testing through Settings screen
+  - Performance testing for critical operations
+  - Cross-platform testing (iOS priority)
+  - Test error scenarios and edge cases
+
+- **Security Best Practices:**
+  - Never hardcode API keys
+  - Use environment variables for sensitive data
+  - Validate all user input
+  - Implement proper authentication checks
+  - Follow Firebase security rules
+  - Use HTTPS for all API calls
+description:
+globs:
+alwaysApply: false
+---

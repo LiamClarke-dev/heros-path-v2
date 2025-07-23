@@ -1,0 +1,117 @@
+- **Directory Organization:**
+  - **`components/`**: Reusable UI components
+    - `ui/` subdirectory for core UI primitives (buttons, cards, dividers)
+    - Feature-specific components directly in `components/`
+  - **`screens/`**: Full app pages imported by navigation
+  - **`services/`**: Business logic and API interactions
+  - **`contexts/`**: React Context providers for global state
+  - **`hooks/`**: Custom React hooks
+  - **`utils/`**: Utility functions and helpers
+  - **`constants/`**: App-wide constants and enums
+  - **`styles/`**: Styling and theming definitions
+
+- **File Naming Conventions:**
+  - **Components**: PascalCase (e.g., `PingButton.js`, `ZeldaToggle.js`)
+  - **Screens**: PascalCase with "Screen" suffix (e.g., `MapScreen.js`)
+  - **Services**: PascalCase with "Service" suffix (e.g., `JourneyService.js`)
+  - **Contexts**: PascalCase with "Context" suffix (e.g., `UserContext.js`)
+  - **Hooks**: camelCase with "use" prefix (e.g., `useSuggestedPlaces.js`)
+  - **Utils**: camelCase (e.g., `Logger.js`)
+
+- **Component Organization:**
+  ```javascript
+  // ✅ DO: Organize components by feature
+  components/
+    ui/
+      AppButton.js
+      Card.js
+      Divider.js
+    PingButton.js
+    ZeldaToggle.js
+    PingStats.js
+  ```
+
+- **Service Layer Pattern:**
+  ```javascript
+  // ✅ DO: Group related business logic in service files
+  services/
+    JourneyService.js      // Journey tracking and management
+    DiscoveriesService.js  // Discovery engine
+    NewPlacesService.js    // Google Places API integration
+    PingService.js         // Ping discovery features
+  ```
+
+- **Context Provider Pattern:**
+  ```javascript
+  // ✅ DO: Use Context for global state management
+  contexts/
+    UserContext.js         // Authentication and user data
+    ThemeContext.js        // Theme and styling
+    ExplorationContext.js  // Exploration state
+  ```
+
+- **Screen Organization:**
+  ```javascript
+  // ✅ DO: Keep screens focused on single responsibility
+  screens/
+    MapScreen.js           // Main map interface
+    DiscoveriesScreen.js   // Discoveries interface
+    SettingsScreen.js      // App settings
+    PastJourneysScreen.js  // Journey history
+  ```
+
+- **Asset Organization:**
+  - **`assets/`**: Images, icons, animations, fonts
+    - `link_sprites/` for character animations
+    - `fonts/` for custom typography
+    - SVG assets for UI elements
+
+- **Documentation Structure:**
+  - **`docs/`**: Organized by category (API, FEATURES, PLATFORM, etc.)
+  - Use clear naming for documentation files
+  - Include version information and changelogs
+
+- **Configuration Files:**
+  - **`config.js`**: Environment variables and app configuration
+  - **`firebase.js`**: Firebase initialization
+  - **`app.json`**: Expo configuration
+  - **`eas.json`**: EAS build configuration
+
+- **Import Organization:**
+  ```javascript
+  // ✅ DO: Group imports logically
+  // React and navigation
+  import React from 'react';
+  import { View, Text } from 'react-native';
+  
+  // Third-party libraries
+  import { useNavigation } from '@react-navigation/native';
+  
+  // Local imports
+  import { useTheme } from '../contexts/ThemeContext';
+  import { AppButton } from '../components/ui/AppButton';
+  import { Logger } from '../utils/Logger';
+  ```
+
+- **State Management Hierarchy:**
+  1. **Global State**: React Context API (UserContext, ThemeContext, ExplorationContext)
+  2. **Local State**: React's useState hook for component-specific state
+  3. **Persistence**: AsyncStorage for local data, Firestore for remote data
+
+- **Navigation Structure:**
+  - **Drawer Navigation**: Main app navigation (MapScreen, DiscoveriesScreen, etc.)
+  - **Stack Navigation**: Authentication flow and modal screens
+  - **Tab Navigation**: Used within specific sections (e.g., Discoveries)
+
+- **Code Style Guidelines:**
+  - Use functional components with hooks instead of class components
+  - Prefer destructuring for props and state
+  - Use async/await for asynchronous operations
+  - Include JSDoc comments for complex functions
+  - Group related functions in service files
+  - Use consistent error handling with try/catch
+  - Implement proper logging with the Logger utility
+description:
+globs:
+alwaysApply: false
+---

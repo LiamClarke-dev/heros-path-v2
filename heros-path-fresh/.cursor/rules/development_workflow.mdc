@@ -1,0 +1,167 @@
+- **Branch Strategy:**
+  - **`main`**: Production-ready code, always stable and deployable
+  - **`develop`**: Integration branch for features, stable but may contain features not ready for production
+  - **Feature Branches**: `feature/descriptive-feature-name`
+  - **Bug Fix Branches**: `fix/descriptive-bug-name`
+  - **Refactoring Branches**: `refactor/descriptive-name`
+  - **Documentation Branches**: `docs/descriptive-name`
+
+- **Branch Naming Examples:**
+  ```bash
+  # ✅ DO: Use descriptive branch names
+  feature/user-authentication
+  feature/map-navigation
+  feature/ping-animation
+  fix/login-crash
+  fix/map-rendering-issue
+  refactor/journey-service
+  docs/api-documentation
+  ```
+
+- **Commit Message Format:**
+  ```
+  <type>(<scope>): <subject>
+  
+  <body>
+  
+  <footer>
+  ```
+
+- **Commit Types:**
+  - **feat**: A new feature
+  - **fix**: A bug fix
+  - **docs**: Documentation only changes
+  - **style**: Changes that do not affect the meaning of the code
+  - **refactor**: Code change that neither fixes a bug nor adds a feature
+  - **perf**: Code change that improves performance
+  - **test**: Adding missing tests or correcting existing tests
+  - **chore**: Changes to the build process or auxiliary tools
+
+- **Commit Examples:**
+  ```bash
+  # ✅ DO: Use conventional commit messages
+  feat(auth): add email verification
+  
+  Add email verification step after registration to ensure valid email addresses.
+  
+  Closes #123
+  ```
+
+  ```bash
+  # ✅ DO: Reference issues in commits
+  fix(map): resolve marker positioning issue
+  
+  Fixed incorrect positioning of markers on the map when zooming in/out.
+  
+  Fixes #456
+  ```
+
+- **Development Workflow:**
+  ```bash
+  # ✅ DO: Start from latest develop
+  git checkout develop
+  git pull
+  
+  # Create feature branch
+  git checkout -b feature/new-feature
+  
+  # Make changes, commit, and push
+  git add .
+  git commit -m "feat(scope): description"
+  git push -u origin feature/new-feature
+  ```
+
+- **Branch Hygiene:**
+  ```bash
+  # ✅ DO: Keep branches updated
+  git checkout develop
+  git pull
+  git checkout feature/your-feature
+  git merge develop
+  
+  # Clean up after merging
+  git branch -d feature/your-feature
+  git push origin --delete feature/your-feature
+  ```
+
+- **Pull Request Process:**
+  1. Create PR from feature branch to `develop`
+  2. Fill out PR template with description, related issues, testing performed
+  3. Request reviews from appropriate team members
+  4. Address review comments and make necessary changes
+  5. Merge once approved and CI passes
+
+- **Feature Development Guidelines:**
+  - Keep PRs focused on a single feature or fix
+  - Include screenshots for UI changes
+  - Test thoroughly before submitting PR
+  - Update documentation when adding new features
+  - Follow existing code patterns and conventions
+
+- **Bug Fix Workflow:**
+  ```bash
+  # ✅ DO: Create dedicated bug fix branches
+  git checkout develop
+  git pull
+  git checkout -b fix/bug-description
+  
+  # Make minimal changes to fix the issue
+  # Test the fix thoroughly
+  # Commit with descriptive message
+  git commit -m "fix(scope): description of the fix"
+  ```
+
+- **Code Review Guidelines:**
+  - Review for functionality, performance, and security
+  - Check for proper error handling
+  - Verify logging is implemented appropriately
+  - Ensure tests are included for new features
+  - Validate against existing patterns in the codebase
+
+- **Testing Requirements:**
+  - Manual testing for UI changes
+  - API connectivity testing through Settings screen
+  - Performance testing for critical path operations
+  - Cross-platform testing (iOS priority, then Android)
+
+- **Documentation Updates:**
+  - Update relevant docs when adding new features
+  - Include API documentation for new services
+  - Update setup guides when dependencies change
+  - Maintain changelog for significant changes
+
+- **Performance Considerations:**
+  - Optimize API calls by caching journey data
+  - Reduce unnecessary re-renders in map components
+  - Be mindful of background location tracking battery usage
+  - Set `DEBUG_MODE = false` in production builds
+
+- **Security Guidelines:**
+  - Never hardcode API keys in source code
+  - Use environment variables for sensitive configuration
+  - Validate user input in all forms
+  - Implement proper authentication checks
+  - Follow Firebase security best practices
+
+- **Build Process:**
+  ```bash
+  # Development builds (for native dependencies)
+  eas build --platform ios --profile development
+  
+  # TestFlight builds (for final validation)
+  eas build --platform ios --profile preview
+  
+  # Production builds
+  eas build --platform ios --profile production
+  ```
+
+- **Environment Management:**
+  - Use `config.js` for environment variables
+  - Store API keys in environment variables, not hardcoded
+  - Use different configurations for development, staging, and production
+  - Follow Expo's environment variable best practices
+  
+description:
+globs:
+alwaysApply: false
+---

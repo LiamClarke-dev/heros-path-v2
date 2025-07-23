@@ -184,6 +184,12 @@ export const ThemeProvider = ({ children }) => {
     return config?.style || null;
   };
 
+  // Get current map provider
+  const getCurrentMapProvider = () => {
+    const config = getCurrentMapStyleConfig();
+    return config?.provider || 'default';
+  };
+
   // Reset to defaults
   const resetToDefaults = async () => {
     try {
@@ -259,6 +265,7 @@ export const ThemeProvider = ({ children }) => {
     getCurrentThemeColors,
     getCurrentMapStyleConfig,
     getCurrentMapStyleArray,
+    getCurrentMapProvider,
     resetToDefaults,
     getNavigationTheme,
     

@@ -1,0 +1,337 @@
+- **Core Product Vision:**
+  - Transform ordinary walks into adventures of discovery
+  - Track walking routes with glowing polylines and animated Link sprite
+  - Save past routes for later review
+  - Help users discover interesting places along their journeys
+  - Gamify the walking experience with Zelda-inspired elements
+
+- **Target User Personas:**
+  - Walking enthusiasts who want to make walks more engaging
+  - Explorers interested in discovering new places in their area
+  - Gamers who enjoy gamified fitness experiences
+  - Travelers looking to discover points of interest while exploring new areas
+
+- **Feature Prioritization Tiers:**
+
+  **Tier 1: Critical Core Features**
+  - User Authentication
+  - Map Navigation & GPS
+  - Background Location
+  - Journey Tracking
+  - Search Along Route (SAR)
+
+  **Tier 2: Important User Features**
+  - Ping Discovery
+  - Discovery Preferences
+  - Past Journeys Review
+  - Saved Places Management
+  - Discovery Consolidation
+  - Developer Tools (Core)
+  - Data Migration (Core)
+
+  **Tier 3: Enhancement Features**
+  - Theme & Map Style
+  - Journey Completion
+  - Enhanced Places Integration
+  - Performance Optimization
+  - Custom Lists
+  - Destination Routing
+  - Gamification
+
+  **Tier 4: Advanced Features**
+  - Social Sharing
+  - Developer Tools (Advanced)
+  - Data Migration (Advanced)
+  - Google Maps Import/Export
+
+- **Core Feature Implementation Guidelines:**
+
+  **Route Tracking:**
+  ```javascript
+  // ✅ DO: Implement real-time route tracking with GPS
+  const trackRoute = async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({});
+      const newPoint = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        timestamp: Date.now(),
+      };
+      
+      setRoutePoints(prev => [...prev, newPoint]);
+      Logger.info('Route point added', { newPoint });
+    } catch (error) {
+      Logger.error('Failed to track route point', error);
+    }
+  };
+  ```
+
+  **Place Discovery:**
+  ```javascript
+  // ✅ DO: Use Search Along Route (SAR) for place discovery
+  const discoverPlacesAlongRoute = async (routePoints) => {
+    try {
+      const places = await NewPlacesService.searchAlongRoute(routePoints);
+      Logger.info('Places discovered along route', { count: places.length });
+      return places;
+    } catch (error) {
+      Logger.error('Failed to discover places', error);
+      throw error;
+    }
+  };
+  ```
+
+  **Journey Management:**
+  ```javascript
+  // ✅ DO: Save and manage journey data
+  const saveJourney = async (journeyData) => {
+    try {
+      const journey = await JourneyService.createJourney({
+        ...journeyData,
+        userId: currentUser.id,
+        createdAt: Date.now(),
+      });
+      Logger.info('Journey saved successfully', { journeyId: journey.id });
+      return journey;
+    } catch (error) {
+      Logger.error('Failed to save journey', error);
+      throw error;
+    }
+  };
+  ```
+
+- **User Experience Guidelines:**
+
+  **Gamification Elements:**
+  ```javascript
+  // ✅ DO: Include Zelda-inspired UI elements
+  const ZeldaButton = ({ onPress, title, disabled }) => {
+    const { colors } = useTheme();
+    
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled}
+        style={{
+          backgroundColor: colors.primary,
+          borderWidth: 2,
+          borderColor: colors.accent,
+          borderRadius: 8,
+          padding: 16,
+          opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        <Text style={{ color: colors.text, textAlign: 'center', fontWeight: 'bold' }}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+  ```
+
+  **Discovery System:**
+  ```javascript
+  // ✅ DO: Implement discovery review system
+  const DiscoveryCard = ({ discovery, onSave, onDismiss }) => {
+    const { colors } = useTheme();
+    
+    return (
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        padding: 16,
+        margin: 8,
+        borderWidth: 1,
+        borderColor: colors.border,
+      }}>
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
+          {discovery.name}
+        </Text>
+        <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
+          {discovery.vicinity}
+        </Text>
+        <View style={{ flexDirection: 'row', marginTop: 12 }}>
+          <AppButton onPress={() => onSave(discovery)} title="Save" />
+          <AppButton onPress={() => onDismiss(discovery)} title="Dismiss" />
+        </View>
+      </View>
+    );
+  };
+  ```
+
+- **Theme System Implementation:**
+  ```javascript
+  // ✅ DO: Support multiple themes (Light, Dark, Adventure)
+  const themeConfigs = {
+    light: {
+      colors: {
+        background: '#FFFFFF',
+        text: '#000000',
+        primary: '#4A90E2',
+        accent: '#F5A623',
+      },
+      mapStyle: 'standard',
+    },
+    dark: {
+      colors: {
+        background: '#1A1A1A',
+        text: '#FFFFFF',
+        primary: '#4A90E2',
+        accent: '#F5A623',
+      },
+      mapStyle: 'night',
+    },
+    adventure: {
+      colors: {
+        background: '#2D5016',
+        text: '#F4D03F',
+        primary: '#8B4513',
+        accent: '#FFD700',
+      },
+      mapStyle: 'terrain',
+    },
+  };
+  ```
+
+- **Ping System Implementation:**
+  ```javascript
+  // ✅ DO: Implement real-time place discovery with credits
+  const usePingSystem = () => {
+    const [credits, setCredits] = useState(10);
+    const [nearbyPlaces, setNearbyPlaces] = useState([]);
+    
+    const pingNearby = async (location) => {
+      if (credits <= 0) {
+        throw new Error('No credits remaining');
+      }
+      
+      try {
+        const places = await PingService.discoverNearby(location);
+        setNearbyPlaces(places);
+        setCredits(prev => prev - 1);
+        Logger.info('Ping successful', { placesFound: places.length, creditsRemaining: credits - 1 });
+        return places;
+      } catch (error) {
+        Logger.error('Ping failed', error);
+        throw error;
+      }
+    };
+    
+    return { credits, nearbyPlaces, pingNearby };
+  };
+  ```
+
+- **Performance Optimization Guidelines:**
+  ```javascript
+  // ✅ DO: Optimize API calls and data caching
+  const useJourneyCache = () => {
+    const [cachedJourneys, setCachedJourneys] = useState(new Map());
+    
+    const getJourney = useCallback(async (journeyId) => {
+      if (cachedJourneys.has(journeyId)) {
+        return cachedJourneys.get(journeyId);
+      }
+      
+      const journey = await JourneyService.getJourney(journeyId);
+      setCachedJourneys(prev => new Map(prev).set(journeyId, journey));
+      return journey;
+    }, [cachedJourneys]);
+    
+    return { getJourney };
+  };
+  ```
+
+- **Accessibility Guidelines:**
+  ```javascript
+  // ✅ DO: Implement accessibility features
+  const AccessibleButton = ({ onPress, title, accessibilityLabel }) => {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        accessible={true}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        accessibilityHint="Double tap to activate"
+      >
+        <Text>{title}</Text>
+      </TouchableOpacity>
+    );
+  };
+  ```
+
+- **Error Handling for User Experience:**
+  ```javascript
+  // ✅ DO: Provide user-friendly error messages
+  const handleDiscoveryError = (error) => {
+    Logger.error('Discovery error', error);
+    
+    let userMessage = 'Something went wrong. Please try again.';
+    
+    if (error.code === 'NETWORK_ERROR') {
+      userMessage = 'No internet connection. Please check your network.';
+    } else if (error.code === 'LOCATION_DENIED') {
+      userMessage = 'Location access is required to discover places.';
+    } else if (error.code === 'NO_CREDITS') {
+      userMessage = 'No discovery credits remaining.';
+    }
+    
+    Alert.alert('Discovery Error', userMessage);
+  };
+  ```
+
+- **Data Persistence Guidelines:**
+  ```javascript
+  // ✅ DO: Implement robust data persistence
+  const saveUserPreferences = async (preferences) => {
+    try {
+      // Save locally for immediate access
+      await AsyncStorage.setItem('userPreferences', JSON.stringify(preferences));
+      
+      // Sync to Firebase for cross-device access
+      await UserProfileService.updatePreferences(currentUser.id, preferences);
+      
+      Logger.info('User preferences saved', { preferences });
+    } catch (error) {
+      Logger.error('Failed to save user preferences', error);
+      throw error;
+    }
+  };
+  ```
+
+- **Social Features Guidelines:**
+  ```javascript
+  // ✅ DO: Implement social sharing capabilities
+  const shareJourney = async (journey) => {
+    try {
+      const shareMessage = `Check out my adventure on Hero's Path! I walked ${journey.distance}km and discovered ${journey.discoveries.length} places.`;
+      
+      await Share.share({
+        message: shareMessage,
+        url: `heros-path://journey/${journey.id}`,
+      });
+      
+      Logger.info('Journey shared successfully', { journeyId: journey.id });
+    } catch (error) {
+      Logger.error('Failed to share journey', error);
+    }
+  };
+  ```
+
+- **Development Phase Guidelines:**
+  - **Foundation Phase**: Focus on authentication, map navigation, background location
+  - **Core Features Phase**: Implement journey tracking, SAR, ping discovery
+  - **User Experience Phase**: Add discovery consolidation, past journeys, saved places
+  - **Enhancement Phase**: Include enhanced places integration, custom lists, routing
+  - **Advanced Phase**: Implement gamification, social sharing, Google Maps integration
+
+- **Quality Assurance Guidelines:**
+  - Test all features on both iOS and Android (iOS priority)
+  - Verify GPS accuracy and battery usage
+  - Test offline functionality and data sync
+  - Validate API rate limits and error handling
+  - Ensure accessibility compliance
+  - Test theme switching and map style changes
+description:
+globs:
+alwaysApply: false
+---

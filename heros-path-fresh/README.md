@@ -4,6 +4,32 @@
 
 Hero's Path is a React Native/Expo app that lets users track their walks with a glowing polyline and an animated Link sprite, save past routes for later review, and discover nearby points of interest after each outing. It also includes social sharing of walks and curated "Discoveries," plus user-defined goals to make daily walking more engaging.
 
+## 📚 **Documentation System**
+
+Hero's Path uses a comprehensive documentation system with two complementary parts:
+
+### 🎯 **For New Developers**
+**⚠️ IMPORTANT:** Start with our feature specifications to understand the app's architecture and features:
+
+📖 **[Feature Specifications](.kiro/specs/README.md)** - Comprehensive documentation covering:
+- Feature requirements and user stories
+- Technical design and architecture  
+- Implementation tasks and checklists
+- Feature relationships and dependencies
+
+### 🧭 **Steering Documents**
+📋 **[Steering Documents](.kiro/steering/README.md)** - High-level guidance covering:
+- Product vision and feature prioritization
+- Technical architecture and patterns
+- Development workflow and best practices
+- Project structure and organization
+
+### 🗺️ **Feature Map**
+See the [Feature Map](.kiro/specs/FEATURE_MAP.md) for a visual overview of all features and their relationships.
+
+### 📋 **Documentation Guide**
+Read the [Documentation Guide](.kiro/specs/DOCUMENTATION_GUIDE.md) to learn how to use and maintain the specification system.
+
 ## 🚨 **CRITICAL UPDATE: Google Places API Migration**
 
 ### ✅ **Migration Status: COMPLETE** (July 2025)
@@ -11,7 +37,7 @@ Hero's Path is a React Native/Expo app that lets users track their walks with a 
 - **Migration Status:** ✅ **FULLY COMPLETE** - Using Google Places API (New) with automatic fallback
 - **Documentation:** See [📚 Documentation Index](docs/README.md) for complete guide
 
-### 🎯 **For New Developers**
+### 🎯 **For API Integration**
 **⚠️ IMPORTANT:** Before working with Google Places API functionality, please read the complete migration documentation in the [docs directory](docs/README.md):
 
 📖 **`GOOGLE_PLACES_API_MIGRATION_COMPLETE.md`** - Comprehensive guide covering:
@@ -67,7 +93,58 @@ This transforms the app's core value proposition - users now discover places alo
 - ✅ **All place types** compatible with new API
 - ✅ **Production-ready** with comprehensive error handling
 
-## 🚀 **Latest Updates (12 July 2025)**
+## 🎯 **Development Sequence**
+
+Based on our dependency analysis, the recommended development sequence is:
+
+### **Phase 1: Foundation** (Tier 1 + Core Tier 2)
+- User Authentication ✅
+- Map Navigation & GPS ✅
+- **[Developer Tools (Core)](.kiro/specs/tier-2-important/developer-tools-core/)** - Testing utilities for accelerated development
+- Background Location ✅
+- **[Data Migration (Core)](.kiro/specs/tier-2-important/data-migration-core/)** - Schema evolution framework
+
+### **Phase 2: Core Features** (Tier 2)
+- Journey Tracking ✅
+- Search Along Route (SAR) ✅
+- Discovery Preferences ✅
+- Ping Discovery ✅
+- Past Journeys Review
+- Saved Places Management
+- Discovery Consolidation
+
+### **Phase 3: Enhancement** (Tier 3)
+- Theme & Map Style
+- Journey Completion
+- Enhanced Places Integration
+- Performance Optimization
+- Custom Lists
+- Destination Routing
+- Gamification
+
+### **Phase 4: Advanced** (Tier 4)
+- Social Sharing
+- Developer Tools (Advanced)
+- Data Migration (Advanced)
+- Google Maps Import/Export
+
+See [FEATURE_MAP.md](.kiro/specs/FEATURE_MAP.md) for detailed dependency information and [NEXT_STEPS.md](.kiro/specs/NEXT_STEPS.md) for implementation guidance.
+
+## 🚀 **Latest Updates (23 July 2025)**
+
+### 🆕 **July 2025: Feature Reprioritization & Documentation System**
+
+**🎯 Feature Reprioritization:**
+- **Developer Tools (Core)** moved from Tier 4 to Tier 2 for earlier testing capabilities
+- **Data Migration (Core)** moved from Tier 4 to Tier 2 to prevent technical debt
+- Enhanced dependency analysis and development sequence planning
+- Updated feature specifications with extension points for future enhancements
+
+**📚 Documentation System:**
+- Comprehensive feature specification system with tier-based organization
+- Steering documents for product vision and technical guidance
+- Dependency analysis and development sequence recommendations
+- Multi-agent documentation workflow for efficient spec creation
 
 ### 🆕 **July 2025: Major UI/UX Refactor & Bugfixes**
 

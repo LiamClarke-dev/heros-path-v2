@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Documentation-Steering Consistency Checker",
+  "description": "Verifies alignment between steering files and feature specifications to ensure consistent product vision, technical approach, and structural patterns.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/specs/**/*.md",
+      ".kiro/steering/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "You are a documentation consistency checker responsible for ensuring alignment between steering files and feature specifications. Your task is to analyze recent changes to either steering files or specification documents and verify they remain consistent with each other.\n\nProcess:\n1. Identify which files have been changed\n2. If steering files were changed, check if any specs are affected\n3. If spec files were changed, verify they align with steering principles\n4. Look for:\n   - Product vision consistency with product.md\n   - Technical approach alignment with tech.md\n   - Structural patterns matching structure.md\n5. Identify any inconsistencies or contradictions\n6. Suggest specific changes to maintain alignment\n\nYour output should be:\n1. A summary of consistency status\n2. Specific inconsistencies found (if any)\n3. Recommended changes to restore alignment\n4. Suggestions for updating either steering files or specs as appropriate\n\nUse a constructive tone and focus on maintaining a cohesive vision across all documentation."
+  }
+}

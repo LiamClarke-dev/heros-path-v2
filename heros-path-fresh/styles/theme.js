@@ -214,12 +214,14 @@ export const MAP_STYLE_CONFIGS = {
     name: 'Standard',
     description: 'Classic map view with roads and landmarks',
     icon: 'map',
-    style: null // Uses default Google Maps style
+    style: null, // Uses default map style
+    provider: 'default' // Uses Apple Maps on iOS, Google Maps on Android
   },
   [MAP_STYLES.SATELLITE]: {
     name: 'Satellite',
     description: 'Aerial view with satellite imagery',
     icon: 'satellite',
+    provider: 'google', // Requires Google Maps for custom styling
     style: [
       {
         featureType: 'all',
@@ -317,6 +319,7 @@ export const MAP_STYLE_CONFIGS = {
     name: 'Terrain',
     description: 'Topographic view with elevation details',
     icon: 'terrain',
+    provider: 'google', // Requires Google Maps for custom styling
     style: [
       {
         featureType: 'all',
@@ -414,6 +417,7 @@ export const MAP_STYLE_CONFIGS = {
     name: 'Night',
     description: 'Dark theme optimized for low-light conditions',
     icon: 'nightlight',
+    provider: 'google', // Requires Google Maps for custom styling
     style: [
       {
         elementType: 'geometry',
@@ -508,6 +512,7 @@ export const MAP_STYLE_CONFIGS = {
     name: 'Adventure',
     description: 'Fantasy-inspired map style for explorers',
     icon: 'explore',
+    provider: 'google', // Requires Google Maps for custom styling
     style: [
       {
         elementType: 'geometry',

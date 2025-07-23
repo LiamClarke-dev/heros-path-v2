@@ -1,0 +1,90 @@
+{
+  "enabled": true,
+  "name": "PR Template Generator",
+  "description": "Generates a comprehensive pull request template based on branch changes and project guidelines.",
+  "version": "1",
+  "when": {
+    "type": "manual",
+    "buttonText": "Generate PR Template"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "You are a pull request template generator responsible for creating comprehensive PR descriptions for the Hero's Path project. Your task is to gather information about the changes being made and generate a well-structured PR template that follows the project's guidelines.
+
+Process:
+1. Ask the user for information about their changes:
+   - Branch name
+   - Type of changes (feature, bug fix, refactor, etc.)
+   - Brief description of changes
+   - Related issues or tickets
+   - Testing performed
+   - Screenshots or videos (if applicable)
+
+2. Generate a PR template with the following sections:
+   - Title (following conventional format)
+   - Description
+   - Changes Made
+   - Related Issues
+   - Testing Performed
+   - Screenshots/Videos (if applicable)
+   - Checklist
+
+3. Format the PR template according to GitHub markdown standards
+
+PR Template Structure:
+```markdown
+## Description
+[Brief description of the changes and their purpose]
+
+## Changes Made
+- [Specific change 1]
+- [Specific change 2]
+- [Specific change 3]
+
+## Related Issues
+- Closes #[issue number]
+- Related to #[issue number]
+
+## Testing Performed
+- [Test 1]
+- [Test 2]
+- [Test 3]
+
+## Screenshots/Videos
+[If applicable, add screenshots or videos to demonstrate the changes]
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Documentation has been updated (if applicable)
+- [ ] Tests have been added/updated (if applicable)
+- [ ] All tests pass locally
+- [ ] Self-review of code has been performed
+```
+
+Use a constructive tone and focus on creating a comprehensive PR template that provides all necessary information for reviewers according to the guidelines in .kiro/steering/github.md."
+  },
+  "inputs": [
+    {
+      "name": "branchName",
+      "type": "string",
+      "description": "The name of the branch being prepared for PR"
+    },
+    {
+      "name": "changeType",
+      "type": "string",
+      "description": "The type of changes (feature, bug fix, refactor, etc.)",
+      "options": ["feature", "fix", "refactor", "docs", "style", "perf", "test", "chore"]
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Brief description of the changes"
+    },
+    {
+      "name": "relatedIssues",
+      "type": "string",
+      "description": "Related issue numbers (comma-separated)",
+      "optional": true
+    }
+  ]
+}

@@ -169,9 +169,10 @@ function getDirection([prev, curr]) {
 }
 
 export default function MapScreen({ navigation, route }) {
-  const { getCurrentThemeColors, getCurrentMapStyleArray } = useTheme();
+  const { getCurrentThemeColors, getCurrentMapStyleArray, getCurrentMapProvider } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();
   const mapStyleArray = getCurrentMapStyleArray();
+  const mapProvider = getCurrentMapProvider();
   
   const { user } = useUser();
   const { setCurrentJourney } = useExploration();
@@ -378,6 +379,17 @@ export default function MapScreen({ navigation, route }) {
   }, [pathToRender]);
 
   const spriteColor = SPRITE_COLORS[spriteState];
+  
+  // Determine map provider based on platform and style
+  const getMapProvider = () => {
+    if (mapProvider === 'google') {
+      return PROVIDER_GOOGLE;
+    } else if (mapProvider === 'default') {
+      // Use Apple Maps on iOS for standard style, Google Maps on Android
+      return Platform.OS === 'ios' ? undefined : PROVIDER_GOOGLE;
+    }
+    return undefined; // Default to Apple Maps on iOS, Google Maps on Android
+  };
   
   // Debug sprite state
   useEffect(() => {
@@ -746,7 +758,19 @@ export default function MapScreen({ navigation, route }) {
   // Error boundary for MapView
   function handleMapError(e) {
     console.error('MapScreen: MapView error:', e?.nativeEvent || e);
-    setMapError(e?.nativeEvent?.message || e?.message || 'Unknown map error');
+    const errorCode = e?.nativeEvent?.code || 'Unknown error';
+    const errorMessage = e?.nativeEvent?.message || e?.message || 'Unknown map error';
+    setMapError(`${errorCode}: ${errorMessage}`);
+    
+    // Log additional debugging info
+    Logger.debug('Map error details:', {
+      errorCode,
+      errorMessage,
+      mapProvider: getMapProvider(),
+      mapStyle: mapStyleArray ? 'custom' : 'default',
+      platform: Platform.OS,
+      hasApiKey: !!GOOGLE_MAPS_API_KEY_IOS
+    });
   }
 
   if (mapError) {
@@ -819,7 +843,7 @@ export default function MapScreen({ navigation, route }) {
           showsUserLocation={false}
           showsMyLocationButton={false}
           toolbarEnabled={false}
-          provider={PROVIDER_GOOGLE}
+          provider={getMapProvider()}
         >
           {/* Saved routes as polylines */}
           {savedRoutes.map(journey => (
