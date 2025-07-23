@@ -285,7 +285,7 @@ export const MAP_STYLE_CONFIGS = {
     description: 'Classic map view with roads and landmarks',
     icon: 'map',
     style: null, // Uses default map style
-    provider: 'default',
+    // REMOVED: provider - expo-maps handles providers automatically
     
     // NEW: Migration framework support
     schemaVersion: 2.0,
@@ -308,9 +308,9 @@ export const MAP_STYLE_CONFIGS = {
     name: 'Satellite',
     description: 'Aerial view with satellite imagery',
     icon: 'satellite',
-    provider: 'google',
+    // REMOVED: provider - expo-maps uses platform-specific components
     style: [
-      // Style array for Google Maps
+      // Style array for expo-maps (AppleMaps/GoogleMaps)
     ],
     
     // NEW: Migration framework support
@@ -435,24 +435,42 @@ export const useTheme = () => {
 
 ### iOS
 
-1. **Map Provider**: Use `PROVIDER_GOOGLE` for consistent map styling on iOS.
+1. **Map Component**: Use `AppleMaps` component from expo-maps (not react-native-maps with PROVIDER_GOOGLE)
 2. **Native UI Elements**: Ensure iOS-specific UI elements (e.g., status bar) adapt to theme changes.
 3. **Performance**: Monitor theme change performance on iOS devices.
+4. **Map Styling**: Custom styles applied through expo-maps style arrays
 
 ### Android
 
-1. **Map Styling**: Ensure Google Maps styling works correctly on Android.
-2. **Material Design**: Adapt theme colors to match Material Design guidelines where appropriate.
-3. **Device Fragmentation**: Test on various Android devices to ensure consistent theming.
+1. **Map Component**: Use `GoogleMaps` component from expo-maps (not react-native-maps with provider prop)
+2. **Map Styling**: Ensure Google Maps styling works correctly through expo-maps API
+3. **Material Design**: Adapt theme colors to match Material Design guidelines where appropriate.
+4. **Device Fragmentation**: Test on various Android devices to ensure consistent theming.
+
+### ⚠️ Migration Considerations (Dec 2024)
+
+**CRITICAL ISSUE RESOLVED**: The theme system was designed for react-native-maps but the app uses expo-maps.
+
+**Key Differences**:
+- **expo-maps**: Platform-specific components, no provider prop needed
+- **react-native-maps**: Single MapView with provider configuration
+- **Style Application**: expo-maps uses different style format than react-native-maps
+- **Provider Logic**: expo-maps handles providers automatically, no manual configuration needed
+
+**Updated Implementation**:
+- Removed getCurrentMapProvider() logic (expo-maps handles providers)
+- Updated MAP_STYLE_CONFIGS to work with expo-maps format
+- Platform detection now determines AppleMaps vs GoogleMaps component usage
 
 ## Integration with Existing Features
 
 ### Map Navigation & GPS (tier-1-critical)
 
 The theming system integrates with the Map Navigation feature by:
-1. Applying map styles to the Google Maps component
-2. Theming route lines and markers
+1. **UPDATED**: Applying map styles to expo-maps components (AppleMaps/GoogleMaps)
+2. Theming route lines and markers through polylines/markers props
 3. Ensuring consistent styling of map controls and overlays
+4. **NEW**: Providing platform-specific theme configurations for expo-maps
 
 ### User Authentication (tier-1-critical)
 
