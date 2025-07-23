@@ -447,7 +447,7 @@ export const useTheme = () => {
 3. **Material Design**: Adapt theme colors to match Material Design guidelines where appropriate.
 4. **Device Fragmentation**: Test on various Android devices to ensure consistent theming.
 
-### ⚠️ Migration Considerations (Dec 2024)
+### ⚠️ Migration Considerations (23 July 2025)
 
 **CRITICAL ISSUE RESOLVED**: The theme system was designed for react-native-maps but the app uses expo-maps.
 

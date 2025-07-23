@@ -6,7 +6,7 @@ The Map Navigation & GPS feature is the central experience of Hero's Path, combi
 
 The feature transforms ordinary walks into adventures by displaying an animated Link sprite that moves and changes direction as the user walks, drawing a glowing path behind them, and enabling discovery of interesting places along their route. It handles complex challenges like GPS accuracy, background tracking, battery optimization, and cross-platform compatibility.
 
-## ⚠️ Critical Migration Note (Dec 2024)
+## ⚠️ Critical Migration Note (23 July 2025)
 
 **RESOLVED ISSUE**: A critical bug was discovered where the app was configured for `expo-maps` but the MapScreen component was using `react-native-maps` API, causing white screen issues. The migration from react-native-maps to expo-maps was incomplete.
 
