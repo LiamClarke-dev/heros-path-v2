@@ -183,7 +183,24 @@ async function dismissPlace(userId, placeId, dismissData = {}) {
       dismissedAt: serverTimestamp(),
       dismissedForever: dismissData.dismissedForever || false,
       reason: dismissData.reason || null,
-      ...dismissData
+      ...dismissData,
+      
+      // NEW: Migration framework support
+      schemaVersion: 2.0,
+      lastMigrationAt: null,
+      migrationHistory: [],
+      
+      // NEW: Developer tools support
+      devMode: false,
+      mockData: false,
+      
+      // NEW: Performance optimization
+      lastUpdated: serverTimestamp(),
+      cacheKey: null,
+      
+      // NEW: Extension points for future features
+      metadata: {},
+      extensions: {}
     };
 
     await setDoc(dismissedDoc, dismissedPlace);
@@ -411,6 +428,55 @@ The Performance Optimization feature will implement comprehensive error handling
 2. **Firestore Errors**: When Firestore operations fail, the app will attempt to use AsyncStorage as a fallback.
 3. **Data Consistency Errors**: When data consistency issues are detected, the app will attempt to reconcile the data.
 4. **API Rate Limiting**: When API rate limits are reached, the app will queue requests and retry later.
+
+## Dependencies and Extensions
+
+### Dependent Features
+- [Theme & Map Style](../theme-map-style/design.md) - Uses performance optimization for theme loading and rendering
+- [Enhanced Places Integration](../enhanced-places-integration/design.md) - Relies on caching and optimization strategies
+- [Journey Completion](../journey-completion/design.md) - Benefits from performance optimization during completion processing
+- [Custom Lists](../custom-lists/design.md) - Uses optimization for list data management
+
+### Extension Points
+
+#### Smart Caching
+Intelligent data caching strategies for improved performance across all features.
+- **Used by**: All data-dependent features
+- **Implementation**: Multi-layer caching with intelligent invalidation and background updates
+- **Features**: Predictive caching, memory optimization, offline capability, smart prefetching
+
+#### Batch Operations  
+Efficient bulk data processing for improved performance and reduced resource usage.
+- **Used by**: [Enhanced Places Integration](../enhanced-places-integration/design.md), [Custom Lists](../custom-lists/design.md)
+- **Implementation**: Batch processing algorithms with queue management and priority handling
+- **Features**: Bulk API operations, transaction optimization, parallel processing, resource pooling
+
+#### UI Rendering
+Optimized UI rendering techniques for smooth user experience.
+- **Used by**: [Theme & Map Style](../theme-map-style/design.md), [Journey Completion](../journey-completion/design.md)
+- **Implementation**: Virtual scrolling, lazy loading, render optimization, animation performance
+- **Features**: 60fps performance, memory-efficient rendering, progressive loading, smooth transitions
+
+#### Developer Tools
+Performance monitoring and analysis tools for development and optimization.
+- **Used by**: All features requiring performance analysis
+- **Implementation**: Performance profiling, metrics collection, bottleneck identification, optimization recommendations
+- **Features**: Real-time monitoring, performance analytics, automated optimization, debugging tools
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: Performance data structure updates, caching system migration
+- **Backward Compatibility**: Legacy performance data support with automatic migration
+
+### Developer Tools Integration
+- **Testing Support**: Performance testing utilities, load testing, optimization validation
+- **Mock Data Support**: Performance scenario simulation, stress testing data
+- **Simulation Capabilities**: Performance bottleneck simulation, resource constraint testing
+
+### Performance Optimization
+- **Caching Strategy**: Multi-layer intelligent caching with predictive algorithms
+- **Optimization Hooks**: Background processing, memory management, resource optimization
+- **Performance Considerations**: Real-time monitoring, automatic optimization, resource efficiency
 
 ## Testing Strategy
 

@@ -196,6 +196,24 @@ const lightTheme = {
   surface: '#F2F2F7',
   text: '#000000',
   textSecondary: '#8E8E93',
+  
+  // NEW: Migration framework support
+  schemaVersion: 2.0,
+  lastMigrationAt: null,
+  migrationHistory: [],
+  
+  // NEW: Developer tools support
+  devMode: false,
+  mockData: false,
+  
+  // NEW: Performance optimization
+  lastUpdated: new Date().toISOString(),
+  cacheKey: null,
+  
+  // NEW: Extension points for future features
+  metadata: {},
+  extensions: {},
+  
   // Additional color variables
 };
 
@@ -206,6 +224,24 @@ const darkTheme = {
   surface: '#1C1C1E',
   text: '#FFFFFF',
   textSecondary: '#8E8E93',
+  
+  // NEW: Migration framework support
+  schemaVersion: 2.0,
+  lastMigrationAt: null,
+  migrationHistory: [],
+  
+  // NEW: Developer tools support
+  devMode: false,
+  mockData: false,
+  
+  // NEW: Performance optimization
+  lastUpdated: new Date().toISOString(),
+  cacheKey: null,
+  
+  // NEW: Extension points for future features
+  metadata: {},
+  extensions: {},
+  
   // Additional color variables
 };
 
@@ -216,6 +252,24 @@ const adventureTheme = {
   surface: '#F5E9D6',
   text: '#2C5530',
   textSecondary: '#739E82',
+  
+  // NEW: Migration framework support
+  schemaVersion: 2.0,
+  lastMigrationAt: null,
+  migrationHistory: [],
+  
+  // NEW: Developer tools support
+  devMode: false,
+  mockData: false,
+  
+  // NEW: Performance optimization
+  lastUpdated: new Date().toISOString(),
+  cacheKey: null,
+  
+  // NEW: Extension points for future features
+  metadata: {},
+  extensions: {},
+  
   // Additional color variables
 };
 ```
@@ -231,7 +285,24 @@ export const MAP_STYLE_CONFIGS = {
     description: 'Classic map view with roads and landmarks',
     icon: 'map',
     style: null, // Uses default map style
-    provider: 'default'
+    provider: 'default',
+    
+    // NEW: Migration framework support
+    schemaVersion: 2.0,
+    lastMigrationAt: null,
+    migrationHistory: [],
+    
+    // NEW: Developer tools support
+    devMode: false,
+    mockData: false,
+    
+    // NEW: Performance optimization
+    lastUpdated: new Date().toISOString(),
+    cacheKey: null,
+    
+    // NEW: Extension points for future features
+    metadata: {},
+    extensions: {}
   },
   [MAP_STYLES.SATELLITE]: {
     name: 'Satellite',
@@ -240,7 +311,24 @@ export const MAP_STYLE_CONFIGS = {
     provider: 'google',
     style: [
       // Style array for Google Maps
-    ]
+    ],
+    
+    // NEW: Migration framework support
+    schemaVersion: 2.0,
+    lastMigrationAt: null,
+    migrationHistory: [],
+    
+    // NEW: Developer tools support
+    devMode: false,
+    mockData: false,
+    
+    // NEW: Performance optimization
+    lastUpdated: new Date().toISOString(),
+    cacheKey: null,
+    
+    // NEW: Extension points for future features
+    metadata: {},
+    extensions: {}
   },
   // Additional map styles
 };
@@ -399,6 +487,55 @@ The theming system integrates with Journey Tracking by:
 2. **Touch Targets**: Ensure theme selection buttons meet minimum size requirements.
 3. **Screen Reader Support**: Provide appropriate accessibility labels for theme options.
 4. **Keyboard Navigation**: Support keyboard navigation for theme selection.
+
+## Dependencies and Extensions
+
+### Dependent Features
+- [Gamification](../gamification/design.md) - Uses theme system for achievement displays and progress indicators
+- [Enhanced Places Integration](../enhanced-places-integration/design.md) - Applies themes to place cards and detail views
+- [Journey Completion](../journey-completion/design.md) - Uses themes for completion celebrations and visualizations
+- [Custom Lists](../custom-lists/design.md) - Applies theme styling to list interfaces
+
+### Extension Points
+
+#### Dynamic Theme System
+Support for runtime theme switching and advanced theme management capabilities.
+- **Used by**: [Gamification](../gamification/design.md), [Journey Completion](../journey-completion/design.md)
+- **Implementation**: Dynamic theme context management with real-time updates
+- **Features**: System theme detection, time-based switching, accessibility themes
+
+#### Custom Map Styles  
+User-defined map appearance customization with advanced styling options.
+- **Used by**: [Destination Routing](../destination-routing/design.md), [Enhanced Places Integration](../enhanced-places-integration/design.md)
+- **Implementation**: Extensible map style framework with custom style editor
+- **Features**: Style sharing, location-based themes, seasonal themes
+
+#### Performance Optimization
+Theme caching and optimization for smooth user experience.
+- **Used by**: All features requiring theme integration
+- **Implementation**: Intelligent caching strategies, optimized theme loading, render optimization
+- **Features**: Theme preloading, style memoization, transition animations
+
+#### Developer Tools
+Theme testing and preview utilities for development and testing.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md)
+- **Implementation**: Theme simulation tools, visual debugging, accessibility testing
+- **Features**: Theme previews, contrast testing, accessibility validation
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: Theme data structure updates, new extension point support
+- **Backward Compatibility**: Legacy theme support with automatic migration
+
+### Developer Tools Integration
+- **Testing Support**: Theme preview tools, accessibility validation
+- **Mock Data Support**: Mock theme configurations for testing
+- **Simulation Capabilities**: Theme switching simulation, performance testing
+
+### Performance Optimization
+- **Caching Strategy**: Theme definition caching, map style optimization
+- **Optimization Hooks**: Theme loading optimization, render performance monitoring
+- **Performance Considerations**: Memory usage optimization, battery impact minimization
 
 ## Future Enhancements
 

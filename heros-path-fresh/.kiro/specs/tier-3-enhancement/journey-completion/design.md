@@ -162,6 +162,27 @@ interface EnhancedJourneyData extends JourneyData {
   endLocationName?: string;
   saveAttempts?: number;
   lastSaveAttempt?: number;
+  
+  // NEW: Migration framework support
+  schemaVersion: number;
+  lastMigrationAt?: string;
+  migrationHistory?: {
+    version: number;
+    migratedAt: string;
+    changes: string[];
+  }[];
+  
+  // NEW: Developer tools support
+  devMode?: boolean;
+  mockData?: boolean;
+  
+  // NEW: Performance optimization
+  lastUpdated: string;
+  cacheKey?: string;
+  
+  // NEW: Extension points for future features
+  metadata?: Record<string, any>;
+  extensions?: Record<string, any>;
 }
 ```
 
@@ -180,6 +201,23 @@ interface JourneyCompletionState {
     placesFound: number;
     journeyId: string;
   };
+  
+  // NEW: Migration framework support
+  schemaVersion: number;
+  lastMigrationAt?: string;
+  migrationHistory?: object[];
+  
+  // NEW: Developer tools support
+  devMode?: boolean;
+  mockData?: boolean;
+  
+  // NEW: Performance optimization
+  lastUpdated: string;
+  cacheKey?: string;
+  
+  // NEW: Extension points for future features
+  metadata?: Record<string, any>;
+  extensions?: Record<string, any>;
 }
 ```
 
@@ -194,6 +232,23 @@ interface PendingJourney {
   timestamp: number;
   saveAttempts: number;
   lastError?: string;
+  
+  // NEW: Migration framework support
+  schemaVersion: number;
+  lastMigrationAt?: string;
+  migrationHistory?: object[];
+  
+  // NEW: Developer tools support
+  devMode?: boolean;
+  mockData?: boolean;
+  
+  // NEW: Performance optimization
+  lastUpdated: string;
+  cacheKey?: string;
+  
+  // NEW: Extension points for future features
+  metadata?: Record<string, any>;
+  extensions?: Record<string, any>;
 }
 ```
 
@@ -447,6 +502,55 @@ The Journey Completion Enhancement will implement comprehensive error handling:
    - Maintain support for journeys saved with the old system
    - Ensure the enhanced workflow gracefully degrades if needed
    - Provide migration path for any data structure changes
+
+## Dependencies and Extensions
+
+### Dependent Features
+- [Gamification](../gamification/design.md) - Integrates with achievement system for journey completion milestones
+- [Social Sharing](../../tier-4-advanced/social-sharing/design.md) - Uses journey completion data for sharing achievements
+- [Enhanced Places Integration](../enhanced-places-integration/design.md) - Displays rich place data in completion statistics
+- [Theme & Map Style](../theme-map-style/design.md) - Applies theme styling to completion modals and celebrations
+
+### Extension Points
+
+#### Achievement System
+Integration with gamification system for journey completion achievements and celebrations.
+- **Used by**: [Gamification](../gamification/design.md)
+- **Implementation**: Achievement triggers on journey completion with experience points and badge integration
+- **Features**: Completion milestones, distance achievements, exploration badges, streak tracking
+
+#### Social Sharing
+Journey completion sharing capabilities for social media and friend networks.
+- **Used by**: [Social Sharing](../../tier-4-advanced/social-sharing/design.md)
+- **Implementation**: Share journey statistics, route visualizations, and achievements
+- **Features**: Social platform integration, privacy controls, engagement metrics
+
+#### Enhanced Analytics
+Rich completion statistics and detailed journey analytics display.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md)
+- **Implementation**: Advanced statistics calculation, visualization, and insights
+- **Features**: Pace analysis, elevation tracking, health metrics integration, comparative analytics
+
+#### Performance Optimization
+Completion data processing and caching optimization for smooth user experience.
+- **Used by**: All journey-related features
+- **Implementation**: Intelligent caching strategies, background processing, data compression
+- **Features**: Fast completion processing, offline capability, battery optimization
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: Journey completion data structure updates, achievement integration support
+- **Backward Compatibility**: Legacy journey completion support with automatic migration
+
+### Developer Tools Integration
+- **Testing Support**: Journey completion simulation, mock completion scenarios
+- **Mock Data Support**: Mock journey data with configurable statistics and outcomes
+- **Simulation Capabilities**: Completion workflow testing, error scenario simulation
+
+### Performance Optimization
+- **Caching Strategy**: Journey completion data caching, statistics calculation optimization
+- **Optimization Hooks**: Background processing, memory management, battery optimization
+- **Performance Considerations**: Smooth UI transitions, fast completion processing, efficient data storage
 
 ## Future Enhancements
 
