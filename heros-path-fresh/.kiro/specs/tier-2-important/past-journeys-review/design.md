@@ -225,7 +225,55 @@ export default function CompletionStatusBadge({
   reviewedDiscoveriesCount: number, // Number of reviewed discoveries
   totalDiscoveriesCount: number, // Total number of discoveries
   completionPercentage: number,  // Percentage of reviewed discoveries
-  lastStatusUpdate: Timestamp    // When status was last updated
+  lastStatusUpdate: Timestamp,   // When status was last updated
+
+  // NEW: Migration framework support
+  schemaVersion: Number,         // Schema version for migration tracking
+  lastMigrationAt: String,       // Timestamp of last migration
+  migrationHistory: Array,       // Array of migration records
+
+  // NEW: Developer tools support
+  devMode: Boolean,              // Whether in developer mode
+  mockData: Boolean,             // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: String,           // Last update timestamp
+  cacheKey: String,              // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object,              // Extensible metadata
+  extensions: Object,            // Extension points for future features
+
+  // NEW: Social sharing support
+  socialData: {
+    shareCount: Number,          // Number of times shared
+    likes: Number,               // Number of likes from other users
+    comments: Array,             // Comments from other users
+    privacyLevel: String,        // public, friends, private
+    shareHistory: Array,         // History of sharing events
+    tags: Array                  // User-generated tags
+  },
+
+  // NEW: Gamification overlays
+  gamificationData: {
+    experienceGained: Number,    // Experience points earned
+    achievementsUnlocked: Array, // Achievements unlocked during journey
+    badges: Array,               // Badges earned
+    streakContribution: Number,  // Contribution to user streaks
+    rarityScore: Number,         // Rarity score of discoveries
+    completionBonus: Number      // Bonus for completing the journey
+  },
+
+  // NEW: Enhanced visualization
+  visualizationData: {
+    mapStyle: String,            // Map style used for visualization
+    routeStyle: Object,          // Custom route styling
+    markerStyles: Array,         // Custom marker styles for discoveries
+    timelapseData: Object,       // Data for timelapse visualization
+    elevationProfile: Array,     // Elevation data for route
+    weatherData: Object,         // Weather conditions during journey
+    photos: Array                // Photos taken during journey
+  }
 }
 ```
 
@@ -245,7 +293,33 @@ export default function CompletionStatusBadge({
   saved: boolean,                // Whether user saved this place
   dismissed: boolean,            // Whether user dismissed this place
   createdAt: Timestamp,          // When discovery was created
-  updatedAt: Timestamp           // When discovery was last updated
+  updatedAt: Timestamp,          // When discovery was last updated
+
+  // NEW: Migration framework support
+  schemaVersion: Number,         // Schema version for migration tracking
+  lastMigrationAt: String,       // Timestamp of last migration
+
+  // NEW: Developer tools support
+  devMode: Boolean,              // Whether in developer mode
+  mockData: Boolean,             // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: String,           // Last update timestamp
+  cacheKey: String,              // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object,              // Extensible metadata
+  extensions: Object,            // Extension points for future features
+
+  // NEW: Enhanced discovery data for visualization
+  visualizationData: {
+    importance: Number,          // Importance score for visualization
+    category: String,            // Visual category for grouping
+    color: String,               // Custom color for map markers
+    icon: String,                // Custom icon identifier
+    highlightLevel: Number,      // Highlight intensity (0-10)
+    animationStyle: String       // Animation style for revealing
+  }
 }
 ```
 
@@ -407,3 +481,100 @@ Group journeys by time periods to improve navigation:
    - Conduct performance testing
    - Implement UI improvements based on testing
    - Add final polish and documentation
+
+## Dependencies and Extensions
+
+### Dependent Features
+
+- [Social Sharing](../tier-4-advanced/social-sharing/design.md) - Uses social data for sharing journey summaries and achievements
+- [Gamification](../tier-3-enhancement/gamification/design.md) - Uses gamification data for progress tracking and achievement display
+- [Enhanced Visualization](../tier-3-enhancement/enhanced-visualization/design.md) - Uses visualization data for rich journey display
+- [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md) - Uses caching and optimization strategies for large journey datasets
+
+### Extension Points
+
+#### **Social Sharing Indicators**: Support for social sharing features
+- **Used by**: [Social Sharing](../tier-4-advanced/social-sharing/design.md)
+- **Implementation**: Extended `socialData` object in Journey Model
+- **Features**:
+  - Share count and engagement metrics display
+  - Privacy level indicators for journey sharing
+  - Comment and like system integration
+  - Sharing history tracking and analytics
+  - Tag-based journey organization
+
+#### **Gamification Overlays**: Achievement and progress display
+- **Used by**: [Gamification](../tier-3-enhancement/gamification/design.md)
+- **Implementation**: Enhanced `gamificationData` object in Journey Model
+- **Features**:
+  - Experience points and achievement badge display
+  - Streak contribution indicators
+  - Rarity scoring for unique discoveries
+  - Completion bonus calculations
+  - Progress tracking across multiple journeys
+
+#### **Enhanced Visualization**: Rich journey display capabilities
+- **Used by**: [Enhanced Visualization](../tier-3-enhancement/enhanced-visualization/design.md)
+- **Implementation**: Enhanced `visualizationData` object in Journey and Discovery Models
+- **Features**:
+  - Custom map styles and route styling
+  - Timelapse and elevation profile visualization
+  - Weather overlay integration
+  - Photo integration with journey timeline
+  - Custom marker styles and importance scoring
+
+#### **Performance Optimization**: Journey data caching and loading
+- **Used by**: [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md)
+- **Implementation**: Caching strategies and performance monitoring
+- **Features**:
+  - Intelligent journey data caching with TTL
+  - Pagination optimization for large journey lists
+  - Memory management for journey visualization
+  - Network-efficient data loading strategies
+
+### Migration Considerations
+
+- **Schema version**: 2.0
+- **Migration requirements**:
+  - Add new fields to existing journey and discovery models
+  - Initialize social data with default privacy settings
+  - Migrate completion status for existing journeys
+  - Update visualization data with default styling
+- **Backward compatibility**: Yes - new fields are optional with sensible defaults
+- **Migration strategy**: Progressive migration during journey loading with fallback to calculated values
+
+### Developer Tools Integration
+
+- **Testing support**:
+  - Mock journey data with various completion states
+  - Social sharing simulation for testing
+  - Gamification data simulation with different achievement levels
+  - Visualization testing with different data sizes
+- **Mock data support**:
+  - Configurable journey datasets for testing
+  - Simulated social interaction data
+  - Achievement and gamification test scenarios
+  - Performance benchmark datasets
+- **Simulation capabilities**:
+  - Journey completion flow simulation
+  - Social sharing workflow testing
+  - Large dataset performance simulation
+  - Network condition simulation for journey loading
+
+### Performance Optimization
+
+- **Caching strategy**:
+  - Journey list caching with intelligent invalidation
+  - Discovery data caching by journey ID
+  - Social and gamification data caching
+  - Visualization asset preloading and caching
+- **Optimization hooks**:
+  - Lazy loading of journey details and discovery data
+  - Virtual scrolling for large journey lists
+  - Background preloading of frequently accessed journeys
+  - Memory cleanup for unused journey data
+- **Performance considerations**:
+  - UI rendering optimization for complex journey visualizations
+  - Network usage minimization for journey synchronization
+  - Battery impact reduction through efficient data processing
+  - Responsive UI during journey loading and processing

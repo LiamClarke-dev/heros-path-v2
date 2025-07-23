@@ -68,6 +68,42 @@ Data Migration (Core) provides essential data structure evolution capabilities t
 - **FR-DM-033**: Maintain data relationships during migration
 - **FR-DM-034**: Support offline migration capabilities
 
+### Requirement 8: Complex Data Transformations
+**User Story:** As a developer, I want advanced data transformation capabilities, so that I can handle sophisticated migration scenarios.
+#### Acceptance Criteria
+1. WHEN migrating complex data THEN the system SHALL support complex transformations and cross-schema migrations
+2. WHEN validating data THEN the system SHALL provide data validation and integrity checking
+3. WHEN handling transformations THEN the system SHALL offer transformation rollback capabilities
+4. WHEN processing large datasets THEN the system SHALL optimize transformation performance
+5. WHEN debugging migrations THEN the system SHALL provide detailed transformation logging and analysis
+
+### Requirement 9: Security Model Migration
+**User Story:** As a developer, I want security-aware migration capabilities, so that sensitive data is handled properly during migrations.
+#### Acceptance Criteria
+1. WHEN migrating encrypted data THEN the system SHALL maintain encryption during migration processes
+2. WHEN updating security models THEN the system SHALL support security model updates and access control migration
+3. WHEN handling sensitive data THEN the system SHALL provide data anonymization during migration
+4. WHEN validating security THEN the system SHALL ensure security compliance throughout migration
+5. WHEN auditing migrations THEN the system SHALL provide comprehensive security audit trails
+
+### Requirement 10: Migration Performance Optimization
+**User Story:** As a developer, I want performance-optimized migrations, so that migrations complete efficiently without impacting users.
+#### Acceptance Criteria
+1. WHEN processing large datasets THEN the system SHALL implement batch processing optimization
+2. WHEN managing memory THEN the system SHALL provide memory-efficient migration strategies
+3. WHEN monitoring progress THEN the system SHALL offer progress monitoring and performance analytics
+4. WHEN optimizing performance THEN the system SHALL minimize app downtime during migration
+5. WHEN tracking efficiency THEN the system SHALL provide comprehensive performance metrics
+
+### Requirement 11: Comprehensive Rollback Support
+**User Story:** As a developer, I want robust rollback capabilities, so that I can safely recover from failed migrations.
+#### Acceptance Criteria
+1. WHEN migrations fail THEN the system SHALL provide full migration rollback capabilities
+2. WHEN partial failures occur THEN the system SHALL support partial rollback capabilities
+3. WHEN validating rollback THEN the system SHALL provide rollback validation and verification
+4. WHEN recovering from errors THEN the system SHALL offer comprehensive recovery mechanisms
+5. WHEN ensuring safety THEN the system SHALL maintain data integrity throughout rollback processes
+
 ## Non-Functional Requirements
 
 ### Performance

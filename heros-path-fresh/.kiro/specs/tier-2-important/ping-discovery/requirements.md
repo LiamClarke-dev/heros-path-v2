@@ -94,3 +94,51 @@ The Ping Discovery feature is a core interactive element of the Hero's Path app 
 3. WHEN ping results are stored THEN the system SHALL include metadata about the ping (timestamp, location, etc.)
 4. WHEN ping results are stored THEN the system SHALL ensure data consistency and prevent corruption
 5. WHEN journey is viewed in past journeys THEN the system SHALL include ping discoveries in the journey summary
+
+### Requirement 8
+
+**User Story:** As a user, I want enhanced ping animations with customizable visual effects, so that I can personalize my discovery experience and enjoy improved visual feedback.
+
+#### Acceptance Criteria
+
+1. WHEN user triggers a ping THEN the system SHALL support multiple animation types (ripple, pulse, explosion, custom)
+2. WHEN user configures animation preferences THEN the system SHALL save and apply these settings to future pings
+3. WHEN ping animation plays THEN the system SHALL support different intensity levels (low, medium, high)
+4. WHEN ping completes THEN the system SHALL store animation metadata for future reference and analytics
+5. WHEN device has limited performance THEN the system SHALL automatically adjust animation complexity
+
+### Requirement 9
+
+**User Story:** As a user, I want ping discoveries to integrate with gamification features, so that I can earn experience points, achievements, and bonus credits through my exploration activities.
+
+#### Acceptance Criteria
+
+1. WHEN user performs a ping THEN the system SHALL award experience points based on discoveries found
+2. WHEN user discovers new places through pings THEN the system SHALL trigger relevant achievements
+3. WHEN user has achievement bonuses THEN the system SHALL apply bonus credits to the ping system
+4. WHEN user maintains ping streaks THEN the system SHALL apply credit multipliers
+5. WHEN ping contributes to user level progression THEN the system SHALL update gamification statistics
+
+### Requirement 10
+
+**User Story:** As a developer, I want comprehensive ping simulation and testing tools, so that I can test ping functionality without consuming API credits or requiring specific location contexts.
+
+#### Acceptance Criteria
+
+1. WHEN in developer mode THEN the system SHALL provide ping simulation capabilities without API calls
+2. WHEN testing ping functionality THEN the system SHALL support configurable mock place data
+3. WHEN testing credit system THEN the system SHALL simulate various credit states and scenarios
+4. WHEN testing animations THEN the system SHALL provide animation preview and testing utilities
+5. WHEN debugging ping issues THEN the system SHALL provide detailed logging and state inspection
+
+### Requirement 11
+
+**User Story:** As a user, I want ping performance to be optimized for battery life and network efficiency, so that I can use the feature frequently without impacting my device performance or data usage.
+
+#### Acceptance Criteria
+
+1. WHEN user performs multiple pings THEN the system SHALL implement intelligent caching to reduce API calls
+2. WHEN ping results are processed THEN the system SHALL use efficient data structures and algorithms
+3. WHEN animations are displayed THEN the system SHALL optimize rendering for smooth performance
+4. WHEN ping data is stored THEN the system SHALL implement efficient storage and retrieval mechanisms
+5. WHEN network is slow or unavailable THEN the system SHALL handle gracefully with appropriate feedback

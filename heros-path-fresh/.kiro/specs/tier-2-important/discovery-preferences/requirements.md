@@ -74,3 +74,51 @@ The Discovery Preferences feature allows users to customize the types of places 
 2. WHEN the user uses the Ping Discovery feature THEN the system SHALL apply their discovery preferences to the real-time discovery results.
 3. WHEN the user searches for places manually THEN the system SHALL apply their discovery preferences to the search results.
 4. WHEN the user's preferences change THEN the system SHALL apply these changes to all future discoveries immediately.
+
+### Requirement 8
+
+**User Story:** As a user, I want theme-based discovery preferences including map styles and routing options, so that I can customize both the visual appearance and discovery behavior according to my preferences.
+
+#### Acceptance Criteria
+
+1. WHEN user configures theme preferences THEN the system SHALL support multiple map styles (default, satellite, terrain)
+2. WHEN user sets routing preferences THEN the system SHALL support transport mode selection (walking, cycling)
+3. WHEN user configures visual preferences THEN the system SHALL apply custom color schemes and icon styles
+4. WHEN user sets detour preferences THEN the system SHALL respect maximum detour distance limits during discovery
+5. WHEN destination routing is used THEN the system SHALL apply scenic route preferences and highway avoidance settings
+
+### Requirement 9
+
+**User Story:** As a user, I want an extensible UI framework for managing discovery preferences, so that I can easily organize and customize my preference settings as new options become available.
+
+#### Acceptance Criteria
+
+1. WHEN preference categories are displayed THEN the system SHALL support expandable and collapsible category management
+2. WHEN managing place types THEN the system SHALL allow sortable and customizable ordering of options
+3. WHEN configuring advanced preferences THEN the system SHALL provide visibility controls for advanced options
+4. WHEN customizing UI elements THEN the system SHALL support custom icons and grouping for place types
+5. WHEN new preference types are added THEN the system SHALL integrate them seamlessly into the existing UI framework
+
+### Requirement 10
+
+**User Story:** As a user, I want enhanced place data preferences, so that I can control what additional information is included with my discoveries and optimize the experience for my needs.
+
+#### Acceptance Criteria
+
+1. WHEN configuring enhanced data THEN the system SHALL allow enabling/disabling place photos, reviews, and operating hours
+2. WHEN setting accessibility preferences THEN the system SHALL include accessibility information preferences
+3. WHEN managing data caching THEN the system SHALL allow configurable cache expiry settings for enhanced data
+4. WHEN enhanced places integration is available THEN the system SHALL seamlessly integrate rich place metadata
+5. WHEN data preferences change THEN the system SHALL apply changes to future discovery requests immediately
+
+### Requirement 11
+
+**User Story:** As a user, I want discovery preference performance to be optimized for fast loading and efficient synchronization, so that managing my preferences is responsive and doesn't impact my device's performance.
+
+#### Acceptance Criteria
+
+1. WHEN loading preferences THEN the system SHALL implement intelligent caching to minimize load times
+2. WHEN saving preferences THEN the system SHALL use efficient batch processing to reduce I/O operations
+3. WHEN managing large preference sets THEN the system SHALL optimize memory usage and UI rendering
+4. WHEN synchronizing preferences THEN the system SHALL minimize network usage while maintaining data consistency
+5. WHEN preferences are updated THEN the system SHALL provide responsive UI feedback without blocking user interaction

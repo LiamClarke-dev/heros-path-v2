@@ -126,6 +126,51 @@ Service for fetching rich place details with AI summaries.
     generativeSummary: Object,  // AI-generated summary with Gemini attribution
     editorialSummary: Object,   // Editorial summary from Google
     topReview: Object           // Top review for quick reference
+  },
+
+  // NEW: Migration framework support
+  schemaVersion: Number,   // Schema version for migration tracking
+  lastMigrationAt: String, // Timestamp of last migration
+  migrationHistory: Array, // Array of migration records
+
+  // NEW: Developer tools support
+  devMode: Boolean,        // Whether in developer mode
+  mockData: Boolean,       // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: String,     // Last update timestamp
+  cacheKey: String,        // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object,        // Extensible metadata
+  extensions: Object,      // Extension points for future features
+
+  // NEW: Custom list associations
+  customLists: {
+    listIds: Array,        // IDs of custom lists this place belongs to
+    primaryList: String,   // Primary list ID
+    tags: Array,           // User-generated tags for organization
+    categories: Array,     // Custom categories assigned by user
+    notes: String          // Personal notes about the place
+  },
+
+  // NEW: Google Maps export integration
+  googleMapsData: {
+    exportable: Boolean,   // Whether place can be exported to Google Maps
+    exportHistory: Array,  // History of export operations
+    lastExportAt: String,  // Timestamp of last export
+    syncStatus: String,    // Synchronization status with Google Maps
+    googleListId: String   // ID in Google Maps saved places
+  },
+
+  // NEW: Enhanced place data
+  enhancedData: {
+    popularity: Number,    // Popularity score
+    accessibility: Object, // Accessibility information
+    amenities: Array,      // Available amenities
+    operatingHours: Object, // Operating hours information
+    priceLevel: String,    // Price level indicator
+    lastDataUpdate: String // When enhanced data was last updated
   }
 }
 ```
@@ -235,3 +280,97 @@ Service for fetching rich place details with AI summaries.
    - Cache saved places data for offline access
    - Implement intelligent cache invalidation
    - Prioritize critical data for offline availability
+
+## Dependencies and Extensions
+
+### Dependent Features
+
+- [Custom Lists](../tier-3-enhancement/custom-lists/design.md) - Uses custom list associations for organizing saved places
+- [Google Maps Import/Export](../tier-4-advanced/google-maps-import-export/design.md) - Uses Google Maps integration for exporting saved places
+- [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md) - Uses enhanced place data for rich information display
+- [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md) - Uses caching and synchronization strategies
+
+### Extension Points
+
+#### **Custom List Associations**: Support for Custom Lists (Tier 3)
+- **Used by**: [Custom Lists](../tier-3-enhancement/custom-lists/design.md)
+- **Implementation**: Extended `customLists` object in Saved Place Model
+- **Features**:
+  - List membership tracking and management
+  - User-generated tags and categories
+  - Personal notes and organization system
+  - Primary list designation for default organization
+
+#### **Google Maps Export**: Integration points for Google Maps Import/Export (Tier 4)
+- **Used by**: [Google Maps Import/Export](../tier-4-advanced/google-maps-import-export/design.md)
+- **Implementation**: Enhanced `googleMapsData` object in Saved Place Model
+- **Features**:
+  - Export capability tracking and management
+  - Export history and operation logging
+  - Synchronization status with Google Maps
+  - Google Maps saved places integration
+
+#### **Enhanced Place Data**: Support for rich place information
+- **Used by**: [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md)
+- **Implementation**: Enhanced `enhancedData` object in Saved Place Model
+- **Features**:
+  - Popularity scoring and ranking
+  - Accessibility information integration
+  - Amenities and operating hours data
+  - Price level and data freshness tracking
+
+#### **Performance Optimization**: Place data caching and synchronization
+- **Used by**: [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md)
+- **Implementation**: Caching strategies and performance monitoring
+- **Features**:
+  - Intelligent place data caching with TTL
+  - Synchronization optimization between online/offline
+  - Memory management for large place datasets
+  - Network-efficient data loading strategies
+
+### Migration Considerations
+
+- **Schema version**: 2.0
+- **Migration requirements**:
+  - Add new fields to existing saved place models
+  - Initialize custom list associations with default values
+  - Migrate Google Maps export data from legacy systems
+  - Update enhanced place data with default values
+- **Backward compatibility**: Yes - new fields are optional with sensible defaults
+- **Migration strategy**: Progressive migration during place loading with fallback to cached data
+
+### Developer Tools Integration
+
+- **Testing support**:
+  - Mock saved place data with various states
+  - Custom list simulation for testing
+  - Google Maps export simulation
+  - Enhanced place data testing scenarios
+- **Mock data support**:
+  - Configurable place datasets for testing
+  - Simulated list membership scenarios
+  - Export operation simulation
+  - Performance benchmark datasets
+- **Simulation capabilities**:
+  - Place saving and organization workflow testing
+  - Export to Google Maps simulation
+  - Large dataset performance simulation
+  - Network condition simulation for place synchronization
+
+### Performance Optimization
+
+- **Caching strategy**:
+  - Saved place data caching with intelligent invalidation
+  - Enhanced place data caching with TTL
+  - List membership caching for quick organization
+  - Export status caching for efficient sync
+- **Optimization hooks**:
+  - Lazy loading of place details and enhanced data
+  - Background synchronization of place data
+  - Batch operations for list management
+  - Memory cleanup for unused place data
+- **Performance considerations**:
+  - UI rendering optimization for large place collections
+  - Network usage minimization for place synchronization
+  - Battery impact reduction through efficient data processing
+  - Responsive UI during place loading and organization

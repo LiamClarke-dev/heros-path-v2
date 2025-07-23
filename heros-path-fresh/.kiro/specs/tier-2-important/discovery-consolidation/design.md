@@ -128,6 +128,42 @@ async getConsolidationStats(userId, journeyId)
   sarCount: number,            // Number of SAR results that found this place
   saved: boolean,              // Whether the user has saved this place
   dismissed: boolean,          // Whether the user has dismissed this place
+
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object,          // Extension points for future features
+
+  // NEW: Enhanced place data support
+  enhancedData: {
+    popularity: number,        // Popularity score
+    accessibility: object,     // Accessibility information
+    amenities: array,          // Available amenities
+    operatingHours: object,    // Operating hours information
+    priceLevel: string,        // Price level indicator
+    photos: array              // Enhanced photo URLs and metadata
+  },
+
+  // NEW: Custom consolidation algorithms
+  consolidationData: {
+    algorithm: string,         // Algorithm used for consolidation
+    confidence: number,        // Confidence score for consolidation
+    duplicateIds: array,       // IDs of duplicate places consolidated
+    mergeHistory: array,       // History of merge operations
+    qualityScore: number       // Quality score of consolidated data
+  }
   createdAt: timestamp,        // Creation timestamp
   updatedAt: timestamp         // Last update timestamp
 }
@@ -216,3 +252,52 @@ The consolidation process implements comprehensive error handling to ensure robu
 8. **Social Consolidation**: Merge discoveries with community data.
 9. **Place Enrichment**: Enhance discoveries with additional data sources.
 10. **Consolidation Analytics**: Detailed metrics about consolidation effectiveness.
+
+## Dependencies and Extensions
+
+### Dependent Features
+
+- [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md) - Uses enhanced place data for rich consolidation
+- [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md) - Uses optimization strategies for large dataset processing
+- [Developer Tools (Core)](../tier-2-important/developer-tools-core/design.md) - Uses testing and simulation utilities
+
+### Extension Points
+
+#### **Enhanced Place Data**: Support for rich place information
+- **Used by**: [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md)
+- **Implementation**: Enhanced `enhancedData` object in Consolidated Discovery Model
+- **Features**: Popularity scoring, accessibility information, amenities data, operating hours, price level indicators
+
+#### **Performance Optimization**: Built-in optimization strategies
+- **Used by**: [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md)
+- **Implementation**: Caching strategies and performance monitoring
+- **Features**: Intelligent data caching, batch processing optimization, memory management for large datasets
+
+#### **Custom Algorithms**: Extensible consolidation logic
+- **Used by**: [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md)
+- **Implementation**: Enhanced `consolidationData` object with algorithm tracking
+- **Features**: Configurable consolidation algorithms, confidence scoring, duplicate detection, merge operation history
+
+#### **Developer Tools**: Consolidation testing and simulation
+- **Used by**: [Developer Tools (Core)](../tier-2-important/developer-tools-core/design.md)
+- **Implementation**: Testing utilities and simulation capabilities
+- **Features**: Consolidation workflow simulation, duplicate detection testing, algorithm performance testing
+
+### Migration Considerations
+
+- **Schema version**: 2.0
+- **Migration requirements**: Add new fields to existing consolidated discovery models, initialize enhanced data with default values, update consolidation algorithms with new data structures
+- **Backward compatibility**: Yes - new fields are optional with sensible defaults
+- **Migration strategy**: Progressive migration during consolidation processing with fallback to legacy algorithms
+
+### Developer Tools Integration
+
+- **Testing support**: Mock consolidation scenarios, duplicate detection simulation, algorithm testing utilities
+- **Mock data support**: Configurable discovery datasets, simulated consolidation workflows, performance benchmark scenarios
+- **Simulation capabilities**: Large dataset consolidation simulation, network condition testing, algorithm performance comparison
+
+### Performance Optimization
+
+- **Caching strategy**: Consolidated discovery data caching, algorithm result caching, enhanced place data caching
+- **Optimization hooks**: Lazy loading of enhanced data, background consolidation processing, memory-efficient duplicate detection
+- **Performance considerations**: UI rendering optimization, network usage minimization, battery impact reduction

@@ -78,3 +78,51 @@ The Past Journeys Review feature is a critical user retention component that pro
 3. WHEN a journey is deleted THEN the system SHALL ensure comprehensive cleanup of all associated data.
 4. WHEN displaying journey data THEN the system SHALL ensure consistency between the UI and database state.
 5. WHEN implementing data operations THEN the system SHALL use transactions or batched writes where appropriate to maintain data integrity.
+
+### Requirement 8
+
+**User Story:** As a user, I want social sharing indicators in my past journeys review, so that I can see which journeys I've shared and track engagement from my social network.
+
+#### Acceptance Criteria
+
+1. WHEN viewing past journeys THEN the system SHALL display share count and engagement metrics for each shared journey
+2. WHEN a journey has social interactions THEN the system SHALL show likes, comments, and social engagement indicators
+3. WHEN configuring sharing THEN the system SHALL display privacy level indicators for journey sharing settings
+4. WHEN managing shared journeys THEN the system SHALL provide sharing history tracking and analytics
+5. WHEN organizing journeys THEN the system SHALL support tag-based journey organization for social sharing
+
+### Requirement 9
+
+**User Story:** As a user, I want gamification overlays in my past journeys review, so that I can see my achievements, experience points, and progress tracking across all my journeys.
+
+#### Acceptance Criteria
+
+1. WHEN viewing past journeys THEN the system SHALL display experience points and achievement badges earned during each journey
+2. WHEN reviewing journey achievements THEN the system SHALL show streak contribution indicators and completion bonuses
+3. WHEN analyzing journey value THEN the system SHALL display rarity scoring for unique discoveries made
+4. WHEN tracking progress THEN the system SHALL show progress tracking across multiple journeys and time periods
+5. WHEN gamification data is available THEN the system SHALL integrate achievement unlocks and badge displays
+
+### Requirement 10
+
+**User Story:** As a user, I want enhanced visualization capabilities in my past journeys review, so that I can enjoy rich, detailed displays of my journey data including maps, timelines, and media.
+
+#### Acceptance Criteria
+
+1. WHEN viewing journey details THEN the system SHALL provide custom map styles and route styling options
+2. WHEN exploring journey data THEN the system SHALL support timelapse and elevation profile visualization
+3. WHEN viewing environmental context THEN the system SHALL integrate weather overlay data and photo timeline
+4. WHEN customizing displays THEN the system SHALL provide custom marker styles and importance scoring for discoveries
+5. WHEN optimizing visualizations THEN the system SHALL efficiently handle complex journey visualization rendering
+
+### Requirement 11
+
+**User Story:** As a user, I want past journeys review performance to be optimized for fast loading and smooth interaction, so that I can quickly access and browse through my journey history regardless of size.
+
+#### Acceptance Criteria
+
+1. WHEN loading journey lists THEN the system SHALL implement intelligent caching and pagination optimization
+2. WHEN displaying large datasets THEN the system SHALL use virtual scrolling and memory management for efficient rendering
+3. WHEN accessing journey data THEN the system SHALL provide network-efficient data loading strategies
+4. WHEN interacting with journeys THEN the system SHALL maintain responsive UI during data processing and loading
+5. WHEN managing performance THEN the system SHALL optimize battery usage and minimize resource consumption
