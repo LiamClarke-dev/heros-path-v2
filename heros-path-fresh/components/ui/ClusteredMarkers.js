@@ -25,7 +25,33 @@ import Logger from '../../utils/Logger';
 // Constants for clustering
 const CLUSTER_MAX_ZOOM = 15; // Zoom level at which clustering stops
 const CLUSTER_RADIUS = 50; // Pixel radius to consider for clustering
+const CLUSTER_MIN_SIZE = 2; // Minimum number of markers to form a cluster
 const ZOOM_ANIMATION_DURATION = 300; // ms
+const CLUSTER_GRID_SIZE = 40; // Grid size for clustering algorithm
+const CLUSTER_ZOOM_LEVELS = [10, 12, 14]; // Zoom levels for progressive clustering
+
+// Performance optimization: Memoize cluster calculations
+const useMemoizedClusters = (places, currentZoom) => {
+  const clustersRef = useRef([]);
+  const lastZoom = useRef(currentZoom);
+  const lastPlaces = useRef(places);
+  
+  useEffect(() => {
+    // Only recalculate if places or zoom has changed significantly
+    const shouldRecalculate = 
+      !lastPlaces.current ||
+      lastPlaces.current.length !== places.length ||
+      Math.abs(lastZoom.current - currentZoom) >= 1;
+      
+    if (shouldRecalculate) {
+      calculateClusters();
+      lastPlaces.current = places;
+      lastZoom.current = currentZoom;
+    }
+  }, [places, currentZoom]);
+  
+  return clustersRef;
+};
 
 /**
  * ClusteredMarkers Component
@@ -46,18 +72,10 @@ export default function ClusteredMarkers({
   onMarkerPress,
   currentZoom = 10 // Default zoom level
 }) {
-  const clustersRef = useRef([]);
-  const lastZoom = useRef(currentZoom);
+  const clustersRef = useMemoizedClusters(places, currentZoom);
   
   // Skip rendering if markers shouldn't be visible or there are no places
   if (!visible || !places || places.length === 0) return null;
-  
-  // Calculate clusters based on current places and zoom level
-  useEffect(() => {
-    if (places.length > 0) {
-      calculateClusters();
-    }
-  }, [places, currentZoom]);
   
   /**
    * Calculate clusters based on marker proximity and zoom level
@@ -74,47 +92,82 @@ export default function ClusteredMarkers({
       return;
     }
     
-    // Simple clustering algorithm
+    // Get appropriate cluster radius based on zoom level
+    const getClusterRadius = () => {
+      const baseRadius = CLUSTER_RADIUS;
+      const zoomFactor = Math.max(0, CLUSTER_MAX_ZOOM - currentZoom);
+      return baseRadius * (1 + (zoomFactor * 0.5));
+    };
+    
+    // Use grid-based clustering for better performance
+    const grid = {};
+    const radius = getClusterRadius();
+    const gridSize = CLUSTER_GRID_SIZE;
+    
+    // Assign places to grid cells
+    places.forEach(place => {
+      const cellX = Math.floor(place.latitude * gridSize);
+      const cellY = Math.floor(place.longitude * gridSize);
+      const cellKey = `${cellX}:${cellY}`;
+      
+      if (!grid[cellKey]) {
+        grid[cellKey] = [];
+      }
+      grid[cellKey].push(place);
+    });
+    
     const clusters = [];
     const processed = new Set();
     
-    places.forEach(place => {
-      const placeId = place.id || place.place_id;
-      
-      // Skip already processed places
-      if (processed.has(placeId)) return;
-      processed.add(placeId);
-      
-      // Find nearby places for this place
-      const nearbyPlaces = places.filter(otherPlace => {
-        const otherId = otherPlace.id || otherPlace.place_id;
-        if (processed.has(otherId) && otherId !== placeId) return false;
+    // Process each grid cell
+    Object.values(grid).forEach(cellPlaces => {
+      cellPlaces.forEach(place => {
+        const placeId = place.id || place.place_id;
         
-        // Calculate distance between places
-        const distance = calculateDistance(
-          place.latitude, 
-          place.longitude, 
-          otherPlace.latitude, 
-          otherPlace.longitude
-        );
+        // Skip already processed places
+        if (processed.has(placeId)) return;
+        processed.add(placeId);
         
-        // Adjust clustering radius based on zoom level
-        const adjustedRadius = CLUSTER_RADIUS * (16 - Math.min(currentZoom, 15));
+        // Find nearby places within this and adjacent cells
+        const nearbyPlaces = cellPlaces.filter(otherPlace => {
+          const otherId = otherPlace.id || otherPlace.place_id;
+          if (processed.has(otherId) && otherId !== placeId) return false;
+          
+          const distance = calculateDistance(
+            place.latitude, 
+            place.longitude, 
+            otherPlace.latitude, 
+            otherPlace.longitude
+          );
+          
+          return distance <= radius;
+        });
         
-        return distance <= adjustedRadius;
-      });
-      
-      // Mark all nearby places as processed
-      nearbyPlaces.forEach(nearbyPlace => {
-        processed.add(nearbyPlace.id || nearbyPlace.place_id);
-      });
-      
-      // Create a cluster or individual marker
-      clusters.push({
-        id: nearbyPlaces.length > 1 ? `cluster-${clusters.length}` : placeId,
-        coordinate: { latitude: place.latitude, longitude: place.longitude },
-        places: nearbyPlaces,
-        isCluster: nearbyPlaces.length > 1
+        // Only create a cluster if we have enough places
+        if (nearbyPlaces.length >= CLUSTER_MIN_SIZE) {
+          // Mark all nearby places as processed
+          nearbyPlaces.forEach(nearbyPlace => {
+            processed.add(nearbyPlace.id || nearbyPlace.place_id);
+          });
+          
+          // Calculate cluster center
+          const center = calculateClusterCenter(nearbyPlaces);
+          
+          clusters.push({
+            id: `cluster-${clusters.length}`,
+            coordinate: center,
+            places: nearbyPlaces,
+            isCluster: true
+          });
+        } else if (!processed.has(placeId)) {
+          // Add as individual marker
+          clusters.push({
+            id: placeId,
+            coordinate: { latitude: place.latitude, longitude: place.longitude },
+            places: [place],
+            isCluster: false
+          });
+        }
       });
     });
     
@@ -123,8 +176,23 @@ export default function ClusteredMarkers({
     Logger.debug('ClusteredMarkers: Calculated clusters', { 
       totalPlaces: places.length,
       clusters: clusters.length,
-      clusterCount: clusters.filter(c => c.isCluster).length
+      clusterCount: clusters.filter(c => c.isCluster).length,
+      zoomLevel: currentZoom
     });
+  };
+  
+  /**
+   * Calculate the center point of a cluster
+   */
+  const calculateClusterCenter = (places) => {
+    const total = places.length;
+    const sumLat = places.reduce((sum, p) => sum + p.latitude, 0);
+    const sumLng = places.reduce((sum, p) => sum + p.longitude, 0);
+    
+    return {
+      latitude: sumLat / total,
+      longitude: sumLng / total
+    };
   };
   
   /**
@@ -230,9 +298,37 @@ export default function ClusteredMarkers({
     const dominantType = getDominantPlaceType(cluster.places);
     const clusterColor = getMarkerColorForPlaceType(dominantType);
     
+    // Calculate size based on number of places
+    const size = Math.min(60, Math.max(40, 40 + Math.floor(Math.log2(count)) * 5));
+    const fontSize = Math.min(18, Math.max(14, 14 + Math.floor(Math.log2(count))));
+    
     return (
-      <View style={[styles.clusterContainer, { backgroundColor: clusterColor }]}>
-        <Text style={styles.clusterText}>{count}</Text>
+      <View style={[
+        styles.clusterContainer, 
+        { 
+          backgroundColor: colors.clusterBackground || clusterColor,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderColor: colors.clusterBorder || '#FFFFFF',
+          borderWidth: 2,
+          shadowColor: colors.shadow || '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5
+        }
+      ]}>
+        <Text style={[
+          styles.clusterText, 
+          { 
+            color: colors.clusterText || '#FFFFFF',
+            fontSize: fontSize,
+            fontWeight: 'bold'
+          }
+        ]}>
+          {count}
+        </Text>
       </View>
     );
   };
@@ -245,23 +341,39 @@ export default function ClusteredMarkers({
     const IconComponent = iconConfig.Component;
     
     return (
-      <View style={[styles.markerContainer, { backgroundColor: iconConfig.color }]}>
-        <IconComponent name={iconConfig.name} size={16} color="#FFFFFF" />
+      <View style={[
+        styles.markerContainer, 
+        { 
+          backgroundColor: colors.markerBackground || iconConfig.color,
+          borderColor: colors.markerBorder || '#FFFFFF',
+          shadowColor: colors.shadow || '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5
+        }
+      ]}>
+        <IconComponent 
+          name={iconConfig.name} 
+          size={20} 
+          color={colors.markerIcon || '#FFFFFF'} 
+        />
       </View>
     );
   };
-  
+
   return (
     <>
       {clustersRef.current.map(cluster => (
         <Marker
           key={cluster.id}
           coordinate={cluster.coordinate}
-          tracksViewChanges={false} // Improve performance
+          tracksViewChanges={false}
           onPress={() => cluster.isCluster 
             ? handleClusterPress(cluster) 
             : handleMarkerPress(cluster.places[0])
           }
+          zIndex={cluster.isCluster ? 1 : 0} // Clusters appear above individual markers
         >
           {cluster.isCluster 
             ? renderCluster(cluster) 
@@ -275,36 +387,20 @@ export default function ClusteredMarkers({
 
 const styles = StyleSheet.create({
   markerContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
   },
   clusterContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
   },
   clusterText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 14,
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });

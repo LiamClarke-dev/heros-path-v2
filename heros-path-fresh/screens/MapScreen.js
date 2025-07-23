@@ -45,6 +45,7 @@ import SpriteWithGpsIndicator from '../components/SpriteWithGpsIndicator';
 import Logger from '../utils/Logger';
 import MapProviderHelper from '../utils/MapProviderHelper';
 import { getDirection } from '../utils/geo';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Import UI components
 import JourneyNamingModal from '../components/ui/JourneyNamingModal';
@@ -90,6 +91,9 @@ export default function MapScreen({ navigation, route }) {
   const colors = getCurrentThemeColors() || getFallbackTheme();
   const mapStyleArray = getCurrentMapStyleArray();
   const mapStyleConfig = getCurrentMapStyleConfig();
+  
+  // Add zoom level state
+  const [currentZoom, setCurrentZoom] = useState(15); // Default zoom level
   
   // Determine map provider based on platform and style
   const mapProvider = MapProviderHelper.getMapProvider(currentTheme);
@@ -321,6 +325,15 @@ export default function MapScreen({ navigation, route }) {
     return () => subscription.remove();
   }, []);
 
+  // Add focus effect to reload saved routes when returning to screen
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        loadSavedRoutes();
+      }
+    }, [user])
+  );
+
   // Error boundary for MapView
   function handleMapError(e) {
     console.error('MapScreen: MapView error:', e?.nativeEvent || e);
@@ -377,6 +390,11 @@ export default function MapScreen({ navigation, route }) {
           showsUserLocation={false}
           showsMyLocationButton={false}
           toolbarEnabled={false}
+          onRegionChangeComplete={(region) => {
+            // Calculate zoom level from region
+            const zoom = Math.round(Math.log(360 / region.longitudeDelta) / Math.LN2);
+            setCurrentZoom(zoom);
+          }}
           {...googleMapProperties}
         >
           {/* Saved routes as polylines */}
@@ -426,7 +444,9 @@ export default function MapScreen({ navigation, route }) {
           <SavedPlaces 
             showSavedPlaces={showSavedPlaces} 
             savedPlaces={savedPlaces} 
-            colors={colors} 
+            colors={colors}
+            mapRef={mapRef}
+            currentZoom={currentZoom}
           />
         </MapView>
       ) : (

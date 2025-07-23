@@ -9,7 +9,7 @@ import Logger from '../utils/Logger';
  * Custom hook for managing saved places
  * Provides functionality to load, display, and toggle saved places on the map
  */
-export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesParent }) {
+export default function useSavedPlaces({ user, setSavedPlacesParent }) {
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [showSavedPlaces, setShowSavedPlaces] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,10 @@ export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesPar
    * Enhances basic place data with additional details from Google Places API
    */
   const loadSavedPlaces = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      Logger.debug('useSavedPlaces: No user, skipping load');
+      return;
+    }
     
     try {
       setIsLoading(true);
@@ -49,6 +52,10 @@ export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesPar
                 try {
                   const enhancedDetails = await EnhancedPlacesService.getEnhancedPlaceDetails(place.place_id);
                   if (enhancedDetails.success) {
+                    Logger.debug('useSavedPlaces: Enhanced place details loaded', {
+                      placeId: place.place_id,
+                      name: place.name || enhancedDetails.place.name
+                    });
                     return { ...place, ...enhancedDetails.place };
                   }
                 } catch (enhancedError) {
@@ -62,6 +69,10 @@ export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesPar
                 try {
                   const details = await NewPlacesService.getPlaceDetails(place.place_id);
                   if (details.success) {
+                    Logger.debug('useSavedPlaces: Basic place details loaded', {
+                      placeId: place.place_id,
+                      name: place.name || details.place.name
+                    });
                     return { ...place, ...details.place };
                   }
                 } catch (detailsError) {
@@ -85,7 +96,8 @@ export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesPar
         );
         
         Logger.debug('useSavedPlaces: Successfully enhanced places', { 
-          count: enhancedPlaces.length 
+          count: enhancedPlaces.length,
+          hasCoordinates: enhancedPlaces.filter(p => p.latitude && p.longitude).length
         });
         
         setSavedPlaces(enhancedPlaces);
@@ -124,6 +136,12 @@ export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesPar
   const toggleSavedPlaces = useCallback(() => {
     setShowSavedPlaces(prev => {
       const newValue = !prev;
+      Logger.debug('useSavedPlaces: Toggling saved places visibility', {
+        oldValue: prev,
+        newValue,
+        placesCount: savedPlaces.length,
+        isLoading
+      });
       
       // If turning on and we don't have places yet, load them
       if (newValue && savedPlaces.length === 0 && !isLoading) {
@@ -134,9 +152,14 @@ export default function useSavedPlaces({ user, setSavedPlaces: setSavedPlacesPar
     });
   }, [savedPlaces.length, isLoading, loadSavedPlaces]);
 
-  // Load saved places when user changes
+  // Load saved places when user changes or when visibility is turned on
   useEffect(() => {
     if (user && showSavedPlaces) {
+      Logger.debug('useSavedPlaces: Auto-loading places due to user/visibility change', {
+        hasUser: !!user,
+        showSavedPlaces,
+        currentPlacesCount: savedPlaces.length
+      });
       loadSavedPlaces();
     }
   }, [user, showSavedPlaces, loadSavedPlaces]);

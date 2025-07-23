@@ -40,10 +40,31 @@ export default function SavedPlaces({
       
       Logger.debug('SavedPlaces: Filtered valid places', { 
         total: savedPlaces.length, 
-        valid: filtered.length 
+        valid: filtered.length,
+        showSavedPlaces,
+        hasMapRef: !!mapRef,
+        currentZoom
       });
+
+      // Log the first few places for debugging
+      if (filtered.length > 0) {
+        Logger.debug('SavedPlaces: First valid place example', {
+          place: {
+            id: filtered[0].id,
+            name: filtered[0].name,
+            latitude: filtered[0].latitude,
+            longitude: filtered[0].longitude,
+            types: filtered[0].types
+          }
+        });
+      }
     } else {
       setValidPlaces([]);
+      Logger.debug('SavedPlaces: No places to show', {
+        showSavedPlaces,
+        hasMapRef: !!mapRef,
+        currentZoom
+      });
     }
   }, [savedPlaces]);
 
@@ -67,6 +88,12 @@ export default function SavedPlaces({
     setDetailsVisible(false);
     setSelectedPlace(null);
   };
+
+  // Early return if places shouldn't be shown
+  if (!showSavedPlaces) {
+    Logger.debug('SavedPlaces: Not showing places (disabled)');
+    return null;
+  }
 
   return (
     <>
