@@ -132,7 +132,24 @@ export async function resetDiscoveryPreferences()
   address: String,            // Full address
   shortAddress: String,       // Short address
   formatted_address: String,  // Formatted address
-  attributions: Array         // Data attributions
+  attributions: Array,        // Data attributions
+  
+  // NEW: Migration framework support
+  schemaVersion: Number,      // Schema version for migration tracking
+  lastMigrationAt: String,    // Timestamp of last migration
+  migrationHistory: Array,    // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: Boolean,           // Whether in developer mode
+  mockData: Boolean,          // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: String,        // Last update timestamp
+  cacheKey: String,           // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: Object,           // Extensible metadata
+  extensions: Object          // Extension points for future features
 }
 ```
 
@@ -154,7 +171,24 @@ export async function resetDiscoveryPreferences()
     generativeSummary: Object, // AI-generated summary
     editorialSummary: Object,  // Editorial summary
     topReview: Object          // Top user review
-  }
+  },
+  
+  // NEW: Migration framework support
+  schemaVersion: Number,      // Schema version for migration tracking
+  lastMigrationAt: String,    // Timestamp of last migration
+  migrationHistory: Array,    // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: Boolean,           // Whether in developer mode
+  mockData: Boolean,          // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: String,        // Last update timestamp
+  cacheKey: String,           // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: Object,           // Extensible metadata
+  extensions: Object          // Extension points for future features
 }
 ```
 
@@ -257,6 +291,55 @@ The Enhanced Places Integration will be tested using a comprehensive approach:
 - Test on both iOS and Android devices
 - Verify platform-specific API key selection
 - Test fallback mechanisms on both platforms
+
+## Dependencies and Extensions
+
+### Dependent Features
+- [Custom Lists](../custom-lists/design.md) - Uses enhanced place data for rich list management and detailed place information
+- [Destination Routing](../destination-routing/design.md) - Integrates with enhanced places for route planning and navigation
+- [Journey Completion](../journey-completion/design.md) - Displays rich place data in completion statistics and achievements
+- [Gamification](../gamification/design.md) - Uses place data for exploration achievements and discovery tracking
+
+### Extension Points
+
+#### Rich Place Data
+Comprehensive place information with AI summaries, photos, and enhanced metadata.
+- **Used by**: [Custom Lists](../custom-lists/design.md), [Destination Routing](../destination-routing/design.md)
+- **Implementation**: Unified API interface with enhanced data structures and AI-powered content
+- **Features**: AI summaries, high-quality photos, operational hours, accessibility info, user reviews
+
+#### Recommendation Engine  
+Smart place recommendations based on user preferences and behavior patterns.
+- **Used by**: [Gamification](../gamification/design.md), [Custom Lists](../custom-lists/design.md)
+- **Implementation**: Machine learning algorithms with user preference analysis and contextual recommendations
+- **Features**: Personalized suggestions, contextual recommendations, discovery scoring, trending places
+
+#### Performance Optimization
+Place data caching and loading optimization for smooth user experience.
+- **Used by**: All place-dependent features
+- **Implementation**: Intelligent caching strategies, progressive loading, background updates
+- **Features**: Smart prefetching, offline capability, memory optimization, network efficiency
+
+#### Developer Tools
+Place data simulation and testing utilities for development and testing.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md)
+- **Implementation**: Mock place data generation, API simulation, testing utilities
+- **Features**: Place data mocking, API response simulation, testing scenarios, performance profiling
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: Place data structure updates, enhanced API integration support
+- **Backward Compatibility**: Legacy place data support with automatic migration
+
+### Developer Tools Integration
+- **Testing Support**: Place data simulation, mock API responses, testing utilities
+- **Mock Data Support**: Comprehensive mock place data with configurable characteristics
+- **Simulation Capabilities**: API response simulation, error scenario testing, performance testing
+
+### Performance Optimization
+- **Caching Strategy**: Place data caching, API response optimization, intelligent prefetching
+- **Optimization Hooks**: Background data loading, memory management, network efficiency
+- **Performance Considerations**: Fast place loading, smooth UI interactions, optimized API usage
 
 ## Implementation Considerations
 

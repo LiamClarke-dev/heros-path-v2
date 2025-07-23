@@ -376,6 +376,54 @@ To ensure data security and privacy:
    - Implement proper data deletion when lists are removed
    - Provide clear privacy controls for exported list data
 
+## Dependencies and Extensions
+
+### Dependent Features
+- [Social Sharing](../../tier-4-advanced/social-sharing/design.md) - Uses custom lists for sharing curated place collections
+- [Google Maps Import/Export](../../tier-4-advanced/google-maps-import-export/design.md) - Integrates with custom lists for bulk operations
+- [Enhanced Places Integration](../enhanced-places-integration/design.md) - Provides rich place data for list display
+
+### Extension Points
+
+#### Social Sharing
+List sharing and collaboration capabilities for social media and friend networks.
+- **Used by**: [Social Sharing](../../tier-4-advanced/social-sharing/design.md)
+- **Implementation**: List export functionality, privacy controls, collaborative lists
+- **Features**: Social platform integration, sharing templates, privacy controls, engagement tracking
+
+#### Google Maps Integration  
+Export and synchronization capabilities with Google Maps for seamless integration.
+- **Used by**: [Google Maps Import/Export](../../tier-4-advanced/google-maps-import-export/design.md)
+- **Implementation**: Bidirectional sync, bulk operations, data mapping
+- **Features**: Export to Google Maps, import from Google My Maps, sync management, format conversion
+
+#### Enhanced Features
+Rich list management capabilities with advanced metadata and analytics.
+- **Used by**: All list-dependent features
+- **Implementation**: Advanced filtering, smart suggestions, analytics, templates
+- **Features**: Auto-categorization, smart templates, usage analytics, recommendation engine
+
+#### Performance Optimization
+List data optimization for smooth user experience with large collections.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md)
+- **Implementation**: Intelligent caching, virtual scrolling, background processing
+- **Features**: Fast list loading, memory optimization, background sync, efficient rendering
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: List data structure updates, enhanced metadata support
+- **Backward Compatibility**: Legacy list data support with automatic migration
+
+### Developer Tools Integration
+- **Testing Support**: List data simulation, bulk list creation, testing scenarios
+- **Mock Data Support**: Comprehensive mock list data with various configurations
+- **Simulation Capabilities**: List management simulation, performance testing
+
+### Performance Optimization
+- **Caching Strategy**: List data caching, place data optimization, smart prefetching
+- **Optimization Hooks**: Background loading, memory management, sync optimization
+- **Performance Considerations**: Fast list access, smooth UI interactions, efficient data storage
+
 ## Implementation Phases
 
 The Custom Lists feature will be implemented in phases:
