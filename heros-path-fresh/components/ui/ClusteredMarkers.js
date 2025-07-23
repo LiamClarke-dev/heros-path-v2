@@ -24,34 +24,10 @@ import Logger from '../../utils/Logger';
 
 // Constants for clustering
 const CLUSTER_MAX_ZOOM = 15; // Zoom level at which clustering stops
-const CLUSTER_RADIUS = 50; // Pixel radius to consider for clustering
-const CLUSTER_MIN_SIZE = 2; // Minimum number of markers to form a cluster
+const CLUSTER_RADIUS   = 50; // Pixel radius to consider for clustering
+const CLUSTER_MIN_SIZE = 2;  // Minimum number of markers to form a cluster
 const ZOOM_ANIMATION_DURATION = 300; // ms
 const CLUSTER_GRID_SIZE = 40; // Grid size for clustering algorithm
-const CLUSTER_ZOOM_LEVELS = [10, 12, 14]; // Zoom levels for progressive clustering
-
-// Performance optimization: Memoize cluster calculations
-const useMemoizedClusters = (places, currentZoom) => {
-  const clustersRef = useRef([]);
-  const lastZoom = useRef(currentZoom);
-  const lastPlaces = useRef(places);
-  
-  useEffect(() => {
-    // Only recalculate if places or zoom has changed significantly
-    const shouldRecalculate = 
-      !lastPlaces.current ||
-      lastPlaces.current.length !== places.length ||
-      Math.abs(lastZoom.current - currentZoom) >= 1;
-      
-    if (shouldRecalculate) {
-      calculateClusters();
-      lastPlaces.current = places;
-      lastZoom.current = currentZoom;
-    }
-  }, [places, currentZoom]);
-  
-  return clustersRef;
-};
 
 /**
  * ClusteredMarkers Component
@@ -72,128 +48,117 @@ export default function ClusteredMarkers({
   onMarkerPress,
   currentZoom = 10 // Default zoom level
 }) {
-  const clustersRef = useMemoizedClusters(places, currentZoom);
-  
-  // Skip rendering if markers shouldn't be visible or there are no places
-  if (!visible || !places || places.length === 0) return null;
-  
+  const clustersRef = useRef([]);
+  const lastZoom     = useRef(currentZoom);
+  const lastPlaces   = useRef(places);
+
+  /**
+   * Calculate the center point of a cluster
+   */
+  function calculateClusterCenter(clusterPlaces) {
+    const total   = clusterPlaces.length;
+    const sumLat  = clusterPlaces.reduce((sum, p) => sum + p.latitude, 0);
+    const sumLng  = clusterPlaces.reduce((sum, p) => sum + p.longitude, 0);
+    return {
+      latitude:  sumLat / total,
+      longitude: sumLng / total,
+    };
+  }
+
   /**
    * Calculate clusters based on marker proximity and zoom level
    */
-  const calculateClusters = () => {
+  function calculateClusters() {
     // Skip clustering at high zoom levels
     if (currentZoom >= CLUSTER_MAX_ZOOM) {
       clustersRef.current = places.map(place => ({
         id: place.id || place.place_id,
         coordinate: { latitude: place.latitude, longitude: place.longitude },
         places: [place],
-        isCluster: false
+        isCluster: false,
       }));
       return;
     }
-    
-    // Get appropriate cluster radius based on zoom level
-    const getClusterRadius = () => {
-      const baseRadius = CLUSTER_RADIUS;
-      const zoomFactor = Math.max(0, CLUSTER_MAX_ZOOM - currentZoom);
-      return baseRadius * (1 + (zoomFactor * 0.5));
-    };
-    
-    // Use grid-based clustering for better performance
+
+    // Determine dynamic radius based on zoom level
+    const baseRadius = CLUSTER_RADIUS;
+    const zoomFactor = Math.max(0, CLUSTER_MAX_ZOOM - currentZoom);
+    const radius     = baseRadius * (1 + zoomFactor * 0.5);
+
+    // Grid-based clustering
     const grid = {};
-    const radius = getClusterRadius();
-    const gridSize = CLUSTER_GRID_SIZE;
-    
-    // Assign places to grid cells
-    places.forEach(place => {
-      const cellX = Math.floor(place.latitude * gridSize);
-      const cellY = Math.floor(place.longitude * gridSize);
+    places.forEach((place) => {
+      const cellX   = Math.floor(place.latitude  * CLUSTER_GRID_SIZE);
+      const cellY   = Math.floor(place.longitude * CLUSTER_GRID_SIZE);
       const cellKey = `${cellX}:${cellY}`;
-      
-      if (!grid[cellKey]) {
-        grid[cellKey] = [];
-      }
+      if (!grid[cellKey]) grid[cellKey] = [];
       grid[cellKey].push(place);
     });
-    
-    const clusters = [];
+
+    const clusters  = [];
     const processed = new Set();
-    
-    // Process each grid cell
-    Object.values(grid).forEach(cellPlaces => {
-      cellPlaces.forEach(place => {
+
+    Object.values(grid).forEach((cellPlaces) => {
+      cellPlaces.forEach((place) => {
         const placeId = place.id || place.place_id;
-        
-        // Skip already processed places
         if (processed.has(placeId)) return;
         processed.add(placeId);
-        
-        // Find nearby places within this and adjacent cells
-        const nearbyPlaces = cellPlaces.filter(otherPlace => {
-          const otherId = otherPlace.id || otherPlace.place_id;
+
+        // find nearby in same cell
+        const nearby = cellPlaces.filter((p) => {
+          const otherId = p.id || p.place_id;
           if (processed.has(otherId) && otherId !== placeId) return false;
-          
-          const distance = calculateDistance(
-            place.latitude, 
-            place.longitude, 
-            otherPlace.latitude, 
-            otherPlace.longitude
-          );
-          
-          return distance <= radius;
+          const dist = calculateDistance(place.latitude, place.longitude, p.latitude, p.longitude);
+          return dist <= radius;
         });
-        
-        // Only create a cluster if we have enough places
-        if (nearbyPlaces.length >= CLUSTER_MIN_SIZE) {
-          // Mark all nearby places as processed
-          nearbyPlaces.forEach(nearbyPlace => {
-            processed.add(nearbyPlace.id || nearbyPlace.place_id);
-          });
-          
-          // Calculate cluster center
-          const center = calculateClusterCenter(nearbyPlaces);
-          
+
+        if (nearby.length >= CLUSTER_MIN_SIZE) {
+          nearby.forEach((p) => processed.add(p.id || p.place_id));
           clusters.push({
             id: `cluster-${clusters.length}`,
-            coordinate: center,
-            places: nearbyPlaces,
-            isCluster: true
+            coordinate: calculateClusterCenter(nearby),
+            places: nearby,
+            isCluster: true,
           });
-        } else if (!processed.has(placeId)) {
-          // Add as individual marker
+        } else {
           clusters.push({
             id: placeId,
             coordinate: { latitude: place.latitude, longitude: place.longitude },
             places: [place],
-            isCluster: false
+            isCluster: false,
           });
         }
       });
     });
-    
+
     clustersRef.current = clusters;
-    
-    Logger.debug('ClusteredMarkers: Calculated clusters', { 
+    Logger.debug('ClusteredMarkers: Calculated clusters', {
       totalPlaces: places.length,
       clusters: clusters.length,
-      clusterCount: clusters.filter(c => c.isCluster).length,
-      zoomLevel: currentZoom
+      clusterCount: clusters.filter((c) => c.isCluster).length,
+      zoomLevel: currentZoom,
     });
-  };
-  
-  /**
-   * Calculate the center point of a cluster
-   */
-  const calculateClusterCenter = (places) => {
-    const total = places.length;
-    const sumLat = places.reduce((sum, p) => sum + p.latitude, 0);
-    const sumLng = places.reduce((sum, p) => sum + p.longitude, 0);
-    
-    return {
-      latitude: sumLat / total,
-      longitude: sumLng / total
-    };
-  };
+  }
+
+  // Recalculate clusters when places or zoom change significantly
+  useEffect(() => {
+    const shouldRecalc =
+      !lastPlaces.current ||
+      lastPlaces.current.length !== places.length ||
+      Math.abs(lastZoom.current - currentZoom) >= 1;
+
+    if (visible && places.length > 0 && shouldRecalc) {
+      calculateClusters();
+      lastPlaces.current = places;
+      lastZoom.current   = currentZoom;
+    }
+    if (!visible) {
+      clustersRef.current = [];
+    }
+  }, [places, currentZoom, visible]);
+ 
+  // Skip rendering if markers shouldn't be visible or there are no places
+  if (!visible || clustersRef.current.length === 0) return null;
   
   /**
    * Calculate distance between two coordinates in meters
