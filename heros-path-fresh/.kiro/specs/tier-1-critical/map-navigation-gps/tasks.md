@@ -47,13 +47,6 @@
   - _Requirements: 3.1, 3.2, 3.5, 3.6_
 
 - [x] 3. Implement journey tracking and route visualization
-
-
-
-
-
-
-
   - Create state for tracking status and current journey
   - Implement toggleTracking function for start/stop
   - Add Polyline component for route visualization
@@ -61,19 +54,6 @@
   - _Requirements: 2.1, 2.2_
 
 - [x] 3.1 Implement journey saving workflow
-
-
-
-
-
-
-
-
-
-
-
-
-
   - Create journey naming modal
   - Implement saveJourney function with error handling
   - Add distance calculation algorithm

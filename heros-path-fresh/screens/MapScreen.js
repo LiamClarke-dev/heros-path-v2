@@ -116,6 +116,7 @@ export default function MapScreen({ navigation, route }) {
   const [previewRoadCoords, setPreviewRoadCoords] = useState([]);
   const [savedRoutes, setSavedRoutes] = useState([]);
   const [showSavedRoutes, setShowSavedRoutes] = useState(true);
+  const [isLoadingSavedRoutes, setIsLoadingSavedRoutes] = useState(false);
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [showSavedPlaces, setShowSavedPlaces] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -317,12 +318,22 @@ export default function MapScreen({ navigation, route }) {
     if (!user) return;
     
     try {
+      setIsLoadingSavedRoutes(true);
+      Logger.debug('MapScreen: Loading saved routes');
+      
       const result = await JourneyService.getUserJourneys(user.uid);
       if (result.success) {
         setSavedRoutes(result.journeys);
+        Logger.debug(`MapScreen: Successfully loaded ${result.journeys.length} saved routes`);
+      } else {
+        Logger.warn('MapScreen: Failed to load saved routes', result.error);
+        Alert.alert('Error', 'Failed to load your saved routes. Please try again.');
       }
     } catch (error) {
-      console.error('Error loading saved routes:', error);
+      Logger.error('MapScreen: Error loading saved routes', error);
+      Alert.alert('Error', 'Failed to load your saved routes. Please try again.');
+    } finally {
+      setIsLoadingSavedRoutes(false);
     }
   };
 
@@ -383,8 +394,30 @@ export default function MapScreen({ navigation, route }) {
   };
   
   const toggleSavedRoutes = () => {
-    setShowSavedRoutes(!showSavedRoutes);
-    Logger.debug('Toggled saved routes visibility:', { showSavedRoutes: !showSavedRoutes });
+    const newValue = !showSavedRoutes;
+    setShowSavedRoutes(newValue);
+    Logger.debug('Toggled saved routes visibility:', { showSavedRoutes: newValue });
+    
+    // If turning on saved routes and we don't have any loaded yet, load them
+    if (newValue && savedRoutes.length === 0 && user) {
+      loadSavedRoutes();
+    }
+  };
+  
+  // Function to render saved routes with proper styling
+  const renderSavedRoutes = () => {
+    if (!showSavedRoutes || savedRoutes.length === 0) return null;
+    
+    return savedRoutes.map(journey => (
+      <Polyline
+        key={journey.id}
+        coordinates={journey.route}
+        strokeColor={colors.routeLine}
+        strokeWidth={3}
+        strokeOpacity={0.6}
+        lineDashPattern={[1, 2]}
+      />
+    ));
   };
 
   const saveJourney = async (rawCoords, name) => {
@@ -728,14 +761,7 @@ export default function MapScreen({ navigation, route }) {
           {...googleMapProperties}
         >
           {/* Saved routes as polylines */}
-          {showSavedRoutes && savedRoutes.map(journey => (
-            <Polyline
-              key={journey.id}
-              coordinates={journey.route}
-              strokeColor={colors.routeLine}
-              strokeWidth={3}
-            />
-          ))}
+          {renderSavedRoutes()}
           {/* Preview route polyline */}
           {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
             <Polyline
@@ -817,12 +843,25 @@ export default function MapScreen({ navigation, route }) {
             { backgroundColor: showSavedRoutes ? colors.buttonPrimary : colors.buttonSecondary }
           ]} 
           onPress={toggleSavedRoutes}
+          disabled={isLoadingSavedRoutes}
         >
           <MaterialIcons 
             name="timeline" 
             size={24} 
             color={showSavedRoutes ? colors.buttonText : colors.primary} 
           />
+          {isLoadingSavedRoutes && (
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="small" color={showSavedRoutes ? colors.buttonText : colors.primary} />
+            </View>
+          )}
+          {showSavedRoutes && savedRoutes.length > 0 && (
+            <View style={[styles.routeCountBadge, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.routeCountText, { color: colors.buttonText }]}>
+                {savedRoutes.length}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
         
         {/* Toggle saved places button */}
