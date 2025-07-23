@@ -97,15 +97,70 @@ The Data Migration feature is an advanced system maintenance capability that ens
 5. WHEN a migration involves critical user data THEN the system SHALL create a backup before migration.
 6. WHEN data relationships exist THEN the system SHALL maintain referential integrity during migration.
 
-### 8. Performance Optimization
+### Requirement 8: Complex Transformations
 
-**User Story:** As a developer, I want migrations to be efficient and performant, so that users don't experience long delays during app updates.
+**User Story:** As a developer, I want advanced data transformation capabilities, so that I can handle sophisticated migration scenarios and schema evolution requirements.
 
 #### Acceptance Criteria
 
-1. WHEN migrating large datasets THEN the system SHALL use batched operations to minimize memory usage.
-2. WHEN a migration is expected to be time-consuming THEN the system SHALL perform it in the background when possible.
-3. WHEN multiple migrations are needed THEN the system SHALL prioritize critical data paths first.
-4. WHEN network operations are required THEN the system SHALL handle offline scenarios gracefully.
-5. WHEN a migration involves many small operations THEN the system SHALL optimize by batching requests.
-6. WHEN a migration is in progress THEN the system SHALL minimize impact on app responsiveness.
+1. WHEN performing complex schema evolution THEN the system SHALL support multi-step transformation pipelines.
+2. WHEN migrating between different data structures THEN the system SHALL provide flexible data mapping capabilities.
+3. WHEN handling cross-system migrations THEN the system SHALL support heterogeneous data source transformations.
+4. WHEN data requires advanced processing THEN the system SHALL provide custom transformation engine support.
+5. WHEN transformations involve business logic THEN the system SHALL support rule-based transformation execution.
+6. WHEN handling nested data structures THEN the system SHALL provide recursive transformation capabilities.
+7. WHEN data types need conversion THEN the system SHALL support comprehensive type transformation.
+8. WHEN transformation requires external data THEN the system SHALL support lookup and enrichment operations.
+9. WHEN transformations are complex THEN the system SHALL provide transformation debugging and validation tools.
+10. WHEN transformation fails THEN the system SHALL provide detailed error reporting and recovery options.
+
+### Requirement 9: Security Updates
+
+**User Story:** As a developer, I want security-aware migration capabilities, so that I can ensure data protection and compliance during all migration operations.
+
+#### Acceptance Criteria
+
+1. WHEN migrating sensitive data THEN the system SHALL use encrypted migration channels and secure data handling.
+2. WHEN security models change THEN the system SHALL migrate user permissions and access controls appropriately.
+3. WHEN encryption requirements change THEN the system SHALL re-encrypt data with updated security standards.
+4. WHEN privacy regulations change THEN the system SHALL update data handling to maintain compliance.
+5. WHEN audit requirements change THEN the system SHALL migrate audit trails and compliance data.
+6. WHEN security vulnerabilities are discovered THEN the system SHALL provide emergency migration capabilities.
+7. WHEN user consent models change THEN the system SHALL update consent records and preferences.
+8. WHEN data classification changes THEN the system SHALL update data security labels and handling.
+9. WHEN security validation is required THEN the system SHALL verify data security compliance post-migration.
+10. WHEN security breaches occur THEN the system SHALL support secure data recovery and restoration.
+
+### Requirement 10: Performance Optimization
+
+**User Story:** As a developer, I want optimized migration performance, so that users experience minimal disruption during app updates and data operations.
+
+#### Acceptance Criteria
+
+1. WHEN migrating large datasets THEN the system SHALL use intelligent batching and parallel processing.
+2. WHEN background migration is possible THEN the system SHALL perform non-critical migrations without blocking the UI.
+3. WHEN resource constraints exist THEN the system SHALL adapt migration strategies to available resources.
+4. WHEN network conditions are poor THEN the system SHALL optimize data transfer and implement smart retry mechanisms.
+5. WHEN migration progress tracking is needed THEN the system SHALL provide accurate progress estimation and monitoring.
+6. WHEN migration performance degrades THEN the system SHALL automatically optimize processing strategies.
+7. WHEN multiple migrations compete for resources THEN the system SHALL prioritize based on criticality and dependencies.
+8. WHEN memory usage is constrained THEN the system SHALL implement memory-efficient streaming and processing.
+9. WHEN migration interruption occurs THEN the system SHALL support efficient resumption from checkpoints.
+10. WHEN performance monitoring is required THEN the system SHALL provide comprehensive migration analytics and metrics.
+
+### Requirement 11: Rollback Support
+
+**User Story:** As a developer, I want comprehensive rollback capabilities, so that I can safely recover from migration failures and ensure data integrity.
+
+#### Acceptance Criteria
+
+1. WHEN migration failures occur THEN the system SHALL provide atomic rollback to pre-migration state.
+2. WHEN partial migration success occurs THEN the system SHALL support selective rollback of failed components.
+3. WHEN data integrity is compromised THEN the system SHALL restore data from secure backup points.
+4. WHEN rollback operations are needed THEN the system SHALL maintain transaction consistency and referential integrity.
+5. WHEN rollback affects dependencies THEN the system SHALL handle cascading rollback operations appropriately.
+6. WHEN rollback validation is required THEN the system SHALL verify data integrity and consistency post-rollback.
+7. WHEN emergency rollback is needed THEN the system SHALL provide rapid rollback capabilities for critical failures.
+8. WHEN rollback history is important THEN the system SHALL maintain comprehensive rollback audit trails.
+9. WHEN rollback testing is required THEN the system SHALL provide rollback simulation and validation tools.
+10. WHEN rollback prevention is needed THEN the system SHALL identify and prevent rollbacks that would cause data loss.
