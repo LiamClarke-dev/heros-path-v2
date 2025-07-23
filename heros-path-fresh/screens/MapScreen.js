@@ -115,6 +115,7 @@ export default function MapScreen({ navigation, route }) {
   const [previewRoute, setPreviewRoute] = useState([]);
   const [previewRoadCoords, setPreviewRoadCoords] = useState([]);
   const [savedRoutes, setSavedRoutes] = useState([]);
+  const [showSavedRoutes, setShowSavedRoutes] = useState(true);
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [showSavedPlaces, setShowSavedPlaces] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -380,6 +381,11 @@ export default function MapScreen({ navigation, route }) {
   const toggleSavedPlaces = async () => {
     setShowSavedPlaces(!showSavedPlaces);
   };
+  
+  const toggleSavedRoutes = () => {
+    setShowSavedRoutes(!showSavedRoutes);
+    Logger.debug('Toggled saved routes visibility:', { showSavedRoutes: !showSavedRoutes });
+  };
 
   const saveJourney = async (rawCoords, name) => {
     if (!user || rawCoords.length === 0) return;
@@ -390,6 +396,35 @@ export default function MapScreen({ navigation, route }) {
         routePoints: rawCoords.length 
       });
 
+      // Calculate distance first to check if journey is too short
+      const distance = calculateTotalDistance(rawCoords);
+      
+      // Requirement 2.6: Warn if journey is less than 50 meters
+      if (distance < 50) {
+        Alert.alert(
+          'Short Journey Warning',
+          `Your journey is only ${Math.round(distance)}m long. This may be too short to be meaningful. Do you still want to save it?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Save Anyway', 
+              onPress: () => proceedWithSave(rawCoords, name, distance)
+            }
+          ]
+        );
+        return;
+      }
+      
+      // Proceed with normal save
+      await proceedWithSave(rawCoords, name, distance);
+    } catch (error) {
+      Logger.error('MAP_SCREEN', 'Error saving journey', error);
+      Alert.alert('Error', 'Failed to save your walk. Please try again.');
+    }
+  };
+
+  const proceedWithSave = async (rawCoords, name, distance) => {
+    try {
       // Create journey data
       const journeyData = {
         userId: user.uid,
@@ -401,7 +436,7 @@ export default function MapScreen({ navigation, route }) {
           longitude: coord.longitude,
           timestamp: coord.timestamp,
         })),
-        distance: calculateTotalDistance(rawCoords),
+        distance: distance,
         duration: rawCoords[rawCoords.length - 1].timestamp - rawCoords[0].timestamp,
         status: 'completed',
       };
@@ -693,7 +728,7 @@ export default function MapScreen({ navigation, route }) {
           {...googleMapProperties}
         >
           {/* Saved routes as polylines */}
-          {savedRoutes.map(journey => (
+          {showSavedRoutes && savedRoutes.map(journey => (
             <Polyline
               key={journey.id}
               coordinates={journey.route}
@@ -774,6 +809,21 @@ export default function MapScreen({ navigation, route }) {
           hasError={locationError}
           style={styles.locateButton}
         />
+        
+        {/* Toggle saved routes button */}
+        <TouchableOpacity 
+          style={[
+            styles.toggleButton, 
+            { backgroundColor: showSavedRoutes ? colors.buttonPrimary : colors.buttonSecondary }
+          ]} 
+          onPress={toggleSavedRoutes}
+        >
+          <MaterialIcons 
+            name="timeline" 
+            size={24} 
+            color={showSavedRoutes ? colors.buttonText : colors.primary} 
+          />
+        </TouchableOpacity>
         
         {/* Toggle saved places button */}
         <TouchableOpacity 

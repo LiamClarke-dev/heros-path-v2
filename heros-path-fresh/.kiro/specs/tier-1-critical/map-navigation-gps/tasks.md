@@ -46,14 +46,34 @@
   - Test background tracking on both iOS and Android
   - _Requirements: 3.1, 3.2, 3.5, 3.6_
 
-- [ ] 3. Implement journey tracking and route visualization
+- [x] 3. Implement journey tracking and route visualization
+
+
+
+
+
+
+
   - Create state for tracking status and current journey
   - Implement toggleTracking function for start/stop
   - Add Polyline component for route visualization
   - Create path rendering logic with styling
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.1 Implement journey saving workflow
+- [x] 3.1 Implement journey saving workflow
+
+
+
+
+
+
+
+
+
+
+
+
+
   - Create journey naming modal
   - Implement saveJourney function with error handling
   - Add distance calculation algorithm
