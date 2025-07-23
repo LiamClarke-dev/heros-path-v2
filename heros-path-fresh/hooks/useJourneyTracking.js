@@ -3,6 +3,8 @@ import { Alert } from 'react-native';
 import { calculateTotalDistance } from '../utils/geo';
 import JourneyService from '../services/JourneyService';
 import Logger from '../utils/Logger';
+import BackgroundLocationService from '../services/BackgroundLocationService';
+import React from 'react';
 
 // Developer mode flag - set to true to enable developer options
 const DEVELOPER_MODE = true;
@@ -62,6 +64,24 @@ export default function useJourneyTracking({
   const [pendingJourneyData, setPendingJourneyData] = useState(null);
   const [devMode, setDevMode] = useState(DEVELOPER_MODE);
   const [isSaving, setIsSaving] = useState(false); // Add loading state for saving
+  const [currentJourneyId, setCurrentJourneyId] = useState(null);
+
+  // Add effect to start/stop GPS tracking when tracking state changes
+  React.useEffect(() => {
+    const manageTracking = async () => {
+      if (tracking) {
+        // Start GPS tracking with current journey ID
+        if (user && currentJourneyId) {
+          await BackgroundLocationService.startTracking(currentJourneyId);
+        }
+      } else {
+        // Stop GPS tracking
+        await BackgroundLocationService.stopTracking();
+      }
+    };
+    manageTracking();
+    // Only run when tracking or currentJourneyId changes
+  }, [tracking, currentJourneyId, user]);
 
   const saveJourney = async (rawCoords, name) => {
     if (!user) {
@@ -227,13 +247,19 @@ export default function useJourneyTracking({
         {
           text: "Don't Save",
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             Logger.debug('User chose not to save journey');
             setShowNamingModal(false);
             setPendingJourneyData(null);
             setJourneyName('');
             setOriginalDefaultName('');
             setTracking(false);
+            setCurrentJourneyId(null);
+            setPathToRender([]);
+            setPreviewRoute([]);
+            setPreviewRoadCoords([]);
+            // Stop GPS tracking
+            await BackgroundLocationService.stopTracking();
           }
         },
         {
@@ -323,7 +349,8 @@ export default function useJourneyTracking({
       setPathToRender([]);
       setPreviewRoute([]);
       setPreviewRoadCoords([]);
-      setCurrentJourneyId(Date.now().toString()); // Set unique journey ID
+      // Generate a unique journey ID and set it
+      setCurrentJourneyId(Date.now().toString());
     }
   };
 
