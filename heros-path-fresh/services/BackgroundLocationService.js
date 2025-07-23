@@ -166,7 +166,31 @@ class BackgroundLocationService {
     Logger.info('App foregrounded - checking location tracking state');
     
     if (this.isTracking) {
-      // Restart GPS warm-up to get accurate location quickly
+      // Calculate time spent in background
+      const backgroundDuration = this.backgroundStartTime ? Date.now() - this.backgroundStartTime : 0;
+      Logger.debug(`App was in background for ${backgroundDuration / 1000} seconds`);
+      
+      // Add a foreground transition marker to the journey if tracking
+      if (this.currentJourney && this.currentJourney.isActive) {
+        // Initialize backgroundSegments array if it doesn't exist
+        if (!this.currentJourney.backgroundSegments) {
+          this.currentJourney.backgroundSegments = [];
+        }
+        
+        // Add transition marker with duration
+        if (this.backgroundStartTime) {
+          this.currentJourney.backgroundSegments.push({
+            timestamp: Date.now(),
+            duration: backgroundDuration,
+            type: 'foreground_transition'
+          });
+        }
+      }
+      
+      // Reset background start time
+      this.backgroundStartTime = null;
+      
+      // Restart GPS warm-up to get accurate location quickly after background
       this.startGPSWarmup();
     }
   }
@@ -174,7 +198,25 @@ class BackgroundLocationService {
   // Handle app going to background
   handleAppBackground() {
     Logger.info('App backgrounded - maintaining location tracking');
+    
+    // Record when the app went to background
     this.backgroundStartTime = Date.now();
+    
+    // Add a background transition marker to the journey if tracking
+    if (this.isTracking && this.currentJourney && this.currentJourney.isActive) {
+      // Initialize backgroundSegments array if it doesn't exist
+      if (!this.currentJourney.backgroundSegments) {
+        this.currentJourney.backgroundSegments = [];
+      }
+      
+      // Add transition marker
+      this.currentJourney.backgroundSegments.push({
+        timestamp: Date.now(),
+        type: 'background_transition'
+      });
+      
+      Logger.debug('Added background transition marker to journey');
+    }
   }
 
   // Start GPS warm-up for better accuracy recovery
@@ -492,7 +534,7 @@ class BackgroundLocationService {
     }
 
     try {
-      // Request permissions
+      // Request permissions with enhanced error handling
       const foregroundStatus = await Location.requestForegroundPermissionsAsync();
       const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
       
@@ -504,7 +546,11 @@ class BackgroundLocationService {
       if (backgroundStatus.status !== 'granted') {
         Alert.alert(
           'Background Permission Required',
-          'Hero\'s Path needs "Always" location access to track your walks even when the screen is locked. Please grant this permission in your device settings.',
+          'Hero\'s Path needs "Always" location access to track your walks even when the screen is locked or the app is in the background. This ensures your journey is recorded accurately.\n\n' +
+          '🔒 Privacy Promise:\n' +
+          '• Location tracking only during active walks\n' +
+          '• Tracking stops immediately when walk ends\n' +
+          '• Your location is never shared without your consent',
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Open Settings', onPress: () => this.openDeviceSettings() }
@@ -518,7 +564,8 @@ class BackgroundLocationService {
         id: journeyId,
         startTime: Date.now(),
         coordinates: [],
-        isActive: true
+        isActive: true,
+        backgroundSegments: [] // Track segments recorded in background
       };
 
       // Reset recent locations for smoothing
@@ -527,33 +574,57 @@ class BackgroundLocationService {
       // Start GPS warm-up first for better initial accuracy
       await this.startGPSWarmup();
 
+      // Configure background notification settings
+      const notificationConfig = {
+        // Common notification settings
+        notificationTitle: "Hero's Path - Adventure in Progress",
+        notificationBody: "Recording your journey. Tap to open app.",
+        notificationColor: "#007AFF", // Using primary theme color
+      };
+
       // Start location tracking with optimized settings
       this.locationSubscriber = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: 1000, // Faster updates for better accuracy
           distanceInterval: 2, // Smaller distance for more precise tracking
+          
           // Background task configuration for foreground service
           foregroundService: {
-            notificationTitle: "Hero's Path - Adventure in Progress",
-            notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#007AFF", // Using primary theme color
-            killServiceOnDestroy: false, // Keep service alive
+            ...notificationConfig,
+            killServiceOnDestroy: false, // Keep service alive when app is killed
           },
+          
           // iOS-specific optimizations
           activityType: Location.ActivityType.Fitness,
-          showsBackgroundLocationIndicator: true,
+          showsBackgroundLocationIndicator: true, // Show indicator in status bar
           pausesLocationUpdatesAutomatically: false, // Keep tracking even when stationary
+          
           // Android-specific optimizations
           android: {
-            notificationTitle: "Hero's Path - Adventure in Progress",
-            notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#007AFF", // Using primary theme color
+            ...notificationConfig,
             notificationIcon: null, // Use app icon
             enableHighAccuracy: true,
+            sticky: true, // Keep the service running in background
+            // Ensure service stays alive in background
+            foregroundServiceType: ['location'],
           }
         },
         (location) => {
+          // Track if this update happened in background
+          const isBackgroundUpdate = this.appState.match(/inactive|background/);
+          if (isBackgroundUpdate && this.backgroundStartTime) {
+            // Add metadata about background state
+            location.isBackgroundUpdate = true;
+            location.backgroundDuration = Date.now() - this.backgroundStartTime;
+            
+            // Track this segment for analytics
+            this.currentJourney.backgroundSegments.push({
+              timestamp: Date.now(),
+              duration: location.backgroundDuration
+            });
+          }
+          
           this.handleLocationUpdate(location);
         }
       );
@@ -692,35 +763,66 @@ class BackgroundLocationService {
       // Start GPS warm-up for better accuracy after pause
       await this.startGPSWarmup();
 
+      // Configure background notification settings
+      const notificationConfig = {
+        // Common notification settings
+        notificationTitle: "Hero's Path - Adventure in Progress",
+        notificationBody: "Recording your journey. Tap to open app.",
+        notificationColor: "#007AFF", // Using primary theme color
+      };
+
       this.locationSubscriber = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: 1000,
           distanceInterval: 2,
+          
+          // Background task configuration for foreground service
           foregroundService: {
-            notificationTitle: "Hero's Path - Adventure in Progress",
-            notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#007AFF", // Using primary theme color
-            killServiceOnDestroy: false,
+            ...notificationConfig,
+            killServiceOnDestroy: false, // Keep service alive when app is killed
           },
+          
+          // iOS-specific optimizations
           activityType: Location.ActivityType.Fitness,
-          showsBackgroundLocationIndicator: true,
-          pausesLocationUpdatesAutomatically: false,
+          showsBackgroundLocationIndicator: true, // Show indicator in status bar
+          pausesLocationUpdatesAutomatically: false, // Keep tracking even when stationary
+          
+          // Android-specific optimizations
           android: {
-            notificationTitle: "Hero's Path - Adventure in Progress",
-            notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#007AFF", // Using primary theme color
-            notificationIcon: null,
+            ...notificationConfig,
+            notificationIcon: null, // Use app icon
             enableHighAccuracy: true,
+            sticky: true, // Keep the service running in background
+            // Ensure service stays alive in background
+            foregroundServiceType: ['location'],
           }
         },
         (location) => {
+          // Track if this update happened in background
+          const isBackgroundUpdate = this.appState.match(/inactive|background/);
+          if (isBackgroundUpdate && this.backgroundStartTime) {
+            // Add metadata about background state
+            location.isBackgroundUpdate = true;
+            location.backgroundDuration = Date.now() - this.backgroundStartTime;
+            
+            // Track this segment for analytics
+            if (!this.currentJourney.backgroundSegments) {
+              this.currentJourney.backgroundSegments = [];
+            }
+            
+            this.currentJourney.backgroundSegments.push({
+              timestamp: Date.now(),
+              duration: location.backgroundDuration
+            });
+          }
+          
           this.handleLocationUpdate(location);
         }
       );
 
       this.currentJourney.isPaused = false;
-      Logger.info('Location tracking resumed with GPS warm-up');
+      Logger.info('Location tracking resumed with GPS warm-up and background support');
       return true;
 
     } catch (error) {
