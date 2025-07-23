@@ -227,10 +227,76 @@ function buildMarkers({ currentPosition, spriteColor, showSavedPlaces, savedPlac
   return markers;
 }
 
+// Helper to convert theme map styles to expo-maps properties
+function getMapProperties(mapStyleConfig, currentTheme) {
+  if (!mapStyleConfig) return {};
+  
+  // For GoogleMaps (Android)
+  const googleMapsProperties = {
+    mapType: 'NORMAL', // Default
+    isTrafficEnabled: false,
+    selectionEnabled: true,
+  };
+  
+  // For AppleMaps (iOS)  
+  const appleMapsProperties = {
+    mapType: 'STANDARD', // Default
+    isTrafficEnabled: false,
+    selectionEnabled: true,
+  };
+  
+  // Map theme styles to expo-maps mapType
+  switch(mapStyleConfig.name) {
+    case 'Satellite':
+      googleMapsProperties.mapType = 'SATELLITE';
+      appleMapsProperties.mapType = 'IMAGERY';
+      break;
+    case 'Terrain':
+      googleMapsProperties.mapType = 'TERRAIN';
+      appleMapsProperties.mapType = 'STANDARD'; // iOS doesn't have terrain, fallback to standard
+      break;
+    case 'Night':
+    case 'Adventure':
+      // Custom styles not supported in expo-maps, use standard with appropriate color scheme
+      googleMapsProperties.mapType = 'NORMAL';
+      appleMapsProperties.mapType = 'STANDARD';
+      break;
+    default:
+      // Standard and other styles
+      googleMapsProperties.mapType = 'NORMAL';
+      appleMapsProperties.mapType = 'STANDARD';
+  }
+  
+  return {
+    googleMaps: googleMapsProperties,
+    appleMaps: appleMapsProperties,
+  };
+}
+
+// Helper to get color scheme for expo-maps
+function getColorScheme(mapStyleConfig, currentTheme) {
+  if (!mapStyleConfig) return 'FOLLOW_SYSTEM';
+  
+  // Map theme styles to color scheme (GoogleMaps only)
+  switch(mapStyleConfig.name) {
+    case 'Night':
+      return 'DARK';
+    case 'Adventure':
+      return 'LIGHT'; // Adventure theme uses warm colors, closer to light
+    default:
+      return 'FOLLOW_SYSTEM';
+  }
+}
+
 export default function MapScreen({ navigation, route }) {
-  const { getCurrentThemeColors, getCurrentMapStyleArray } = useTheme();
+  const { getCurrentThemeColors, getCurrentMapStyleArray, getCurrentMapStyleConfig, currentTheme } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();
   const mapStyleArray = getCurrentMapStyleArray();
+  const mapStyleConfig = getCurrentMapStyleConfig();
+  
+  // Get expo-maps compatible properties
+  const mapProperties = getMapProperties(mapStyleConfig, currentTheme);
+  const colorScheme = getColorScheme(mapStyleConfig, currentTheme);
   
   const { user } = useUser();
   const { setCurrentJourney } = useExploration();
@@ -785,9 +851,12 @@ export default function MapScreen({ navigation, route }) {
     Logger.debug('Map error details:', {
       errorCode,
       errorMessage,
-      mapStyle: mapStyleArray ? 'custom' : 'default',
+      mapStyleConfig: mapStyleConfig?.name || 'default',
+      mapProperties: Platform.OS === 'ios' ? mapProperties.appleMaps : mapProperties.googleMaps,
+      colorScheme: Platform.OS === 'android' ? colorScheme : 'N/A (iOS)',
       platform: Platform.OS,
-      hasApiKey: !!GOOGLE_MAPS_API_KEY_IOS
+      hasApiKey: !!GOOGLE_MAPS_API_KEY_IOS,
+      usingExpoMaps: true
     });
   }
 
@@ -854,6 +923,7 @@ export default function MapScreen({ navigation, route }) {
             }}
             markers={buildMarkers({ currentPosition, spriteColor, showSavedPlaces, savedPlaces, colors })}
             polylines={buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors })}
+            properties={mapProperties.appleMaps}
             onError={handleMapError}
           />
         ) : (
@@ -866,6 +936,8 @@ export default function MapScreen({ navigation, route }) {
             }}
             markers={buildMarkers({ currentPosition, spriteColor, showSavedPlaces, savedPlaces, colors })}
             polylines={buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors })}
+            properties={mapProperties.googleMaps}
+            colorScheme={colorScheme}
             onError={handleMapError}
           />
         )
