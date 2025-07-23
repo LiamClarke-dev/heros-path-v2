@@ -79,3 +79,39 @@ The Saved Places feature is a core user organization capability that allows user
 4. WHEN fetching place details THEN the system SHALL use field masking for optimized performance
 5. WHEN displaying place photos THEN the system SHALL optimize image loading for performance
 6. WHEN a user performs actions on saved places THEN the system SHALL provide visual feedback
+
+### Requirement 8: Custom List Associations
+**User Story:** As a user, I want to organize my saved places into custom lists, so that I can group related places and add personal notes for better organization.
+#### Acceptance Criteria
+1. WHEN saving places THEN the system SHALL support custom list associations and user-generated tags
+2. WHEN organizing places THEN the system SHALL provide personal notes and category assignment capabilities
+3. WHEN managing lists THEN the system SHALL allow primary list designation for default organization
+4. WHEN viewing places THEN the system SHALL display list membership and organization information
+5. WHEN customizing organization THEN the system SHALL support flexible categorization and tagging systems
+
+### Requirement 9: Google Maps Export Integration
+**User Story:** As a user, I want to export my saved places to Google Maps, so that I can access them across different platforms and services.
+#### Acceptance Criteria
+1. WHEN exporting places THEN the system SHALL support Google Maps export capability tracking
+2. WHEN managing exports THEN the system SHALL provide export history and operation logging
+3. WHEN synchronizing data THEN the system SHALL maintain synchronization status with Google Maps
+4. WHEN integrating platforms THEN the system SHALL support Google Maps saved places integration
+5. WHEN tracking operations THEN the system SHALL provide comprehensive export management
+
+### Requirement 10: Enhanced Place Data Support
+**User Story:** As a user, I want rich place information including popularity, accessibility, and amenities, so that I can make informed decisions about places to visit.
+#### Acceptance Criteria
+1. WHEN viewing places THEN the system SHALL display popularity scoring and ranking information
+2. WHEN accessing place details THEN the system SHALL provide accessibility information integration
+3. WHEN planning visits THEN the system SHALL show amenities and operating hours data
+4. WHEN evaluating places THEN the system SHALL display price level and data freshness indicators
+5. WHEN updating information THEN the system SHALL maintain current and accurate enhanced place data
+
+### Requirement 11: Performance Optimization
+**User Story:** As a user, I want saved places to load quickly and synchronize efficiently, so that I can access my places without delays.
+#### Acceptance Criteria
+1. WHEN loading places THEN the system SHALL implement intelligent caching with TTL for fast access
+2. WHEN managing large collections THEN the system SHALL use memory management and lazy loading strategies
+3. WHEN synchronizing data THEN the system SHALL optimize network usage and battery consumption
+4. WHEN accessing places THEN the system SHALL provide responsive UI during data loading and organization
+5. WHEN operating offline THEN the system SHALL efficiently manage data synchronization when reconnected

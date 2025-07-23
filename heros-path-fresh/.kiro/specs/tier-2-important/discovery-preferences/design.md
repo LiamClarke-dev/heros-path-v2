@@ -139,6 +139,47 @@ interface UserPreferences {
   placeTypes: Record<string, boolean>; // Map of place type keys to enabled state
   minRating: number; // Minimum rating threshold (1.0 to 5.0)
   lastUpdated: Timestamp; // When preferences were last modified
+
+  // NEW: Migration framework support
+  schemaVersion: Number; // Schema version for migration tracking
+  lastMigrationAt: String; // Timestamp of last migration
+  migrationHistory: Array; // Array of migration records
+
+  // NEW: Developer tools support
+  devMode: Boolean; // Whether in developer mode
+  mockData: Boolean; // Whether using mock data
+
+  // NEW: Performance optimization
+  cacheKey: String; // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object; // Extensible metadata
+  extensions: Object; // Extension points for future features
+
+  // NEW: Theme-based discovery preferences
+  themePreferences: {
+    mapStyle: String; // Preferred map style for discovery
+    visualTheme: String; // Visual theme preference
+    colorScheme: String; // Color scheme for place categories
+    iconStyle: String; // Icon style preference
+  };
+
+  // NEW: Destination routing preferences
+  routingPreferences: {
+    preferredTransportMode: String; // Walking, cycling, etc.
+    avoidHighways: Boolean; // Avoid highways in routing
+    maxDetourDistance: Number; // Maximum detour distance for discoveries
+    preferScenicRoutes: Boolean; // Prefer scenic routes
+  };
+
+  // NEW: Enhanced place data preferences
+  enhancedDataPreferences: {
+    includePhotos: Boolean; // Include place photos
+    includeReviews: Boolean; // Include place reviews
+    includeOperatingHours: Boolean; // Include operating hours
+    includeAccessibility: Boolean; // Include accessibility info
+    dataCacheExpiry: Number; // Cache expiry time for enhanced data
+  };
 }
 ```
 
@@ -148,6 +189,37 @@ interface UserPreferences {
 interface PlaceType {
   key: string; // Must match Google Places API type exactly
   label: string; // User-friendly display name
+
+  // NEW: Migration framework support
+  schemaVersion: Number; // Schema version for migration tracking
+  lastMigrationAt: String; // Timestamp of last migration
+
+  // NEW: Developer tools support
+  devMode: Boolean; // Whether in developer mode
+  mockData: Boolean; // Whether using mock data
+
+  // NEW: Extension points for future features
+  metadata: Object; // Extensible metadata
+  extensions: Object; // Extension points for future features
+
+  // NEW: Enhanced place type data
+  enhancedData: {
+    description: String; // Detailed description of place type
+    popularity: Number; // Popularity score among users
+    averageRating: Number; // Average rating for this place type
+    icon: String; // Enhanced icon identifier
+    color: String; // Associated color for theming
+    category: String; // Parent category identifier
+  };
+
+  // NEW: UI framework extensions
+  uiExtensions: {
+    customIcon: String; // Custom icon URL or identifier
+    displayOrder: Number; // Custom display order
+    grouping: String; // Custom grouping identifier
+    visibility: Boolean; // Whether visible in UI
+    advanced: Boolean; // Whether it's an advanced option
+  };
 }
 ```
 
@@ -158,6 +230,43 @@ interface PlaceCategory {
   title: string; // Category name
   icon: string; // Icon identifier
   types: string[]; // Array of place type keys in this category
+
+  // NEW: Migration framework support
+  schemaVersion: Number; // Schema version for migration tracking
+  lastMigrationAt: String; // Timestamp of last migration
+
+  // NEW: Developer tools support
+  devMode: Boolean; // Whether in developer mode
+  mockData: Boolean; // Whether using mock data
+
+  // NEW: Extension points for future features
+  metadata: Object; // Extensible metadata
+  extensions: Object; // Extension points for future features
+
+  // NEW: Extensible UI framework
+  uiFramework: {
+    expandable: Boolean; // Whether category is expandable
+    collapsible: Boolean; // Whether category can be collapsed
+    sortable: Boolean; // Whether types can be reordered
+    customizable: Boolean; // Whether users can customize
+    theme: String; // Theme variant for this category
+  };
+
+  // NEW: Performance optimization
+  performance: {
+    loadPriority: Number; // Loading priority (1-10)
+    cacheStrategy: String; // Caching strategy for this category
+    preloadTypes: Boolean; // Whether to preload place types
+    batchSize: Number; // Batch size for loading types
+  };
+
+  // NEW: Enhanced category data
+  enhancedData: {
+    description: String; // Category description
+    examples: Array; // Example place names
+    averagePopularity: Number; // Average popularity in category
+    userEngagement: Number; // User engagement score
+  };
 }
 ```
 
@@ -267,3 +376,97 @@ The default preferences will be set as follows:
    - Filter preferences before API calls to reduce data transfer
    - Cache filtered results when appropriate
    - Implement batch updates for cloud synchronization
+
+## Dependencies and Extensions
+
+### Dependent Features
+
+- [Destination Routing](../tier-3-enhancement/destination-routing/design.md) - Uses routing preferences for route planning
+- [Theme & Map Style](../tier-3-enhancement/theme-map-style/design.md) - Uses theme preferences for visual customization
+- [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md) - Uses enhanced data preferences for rich place information
+- [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md) - Uses preference caching and optimization strategies
+
+### Extension Points
+
+#### **Theme-Based Discovery**: Support for destination routing preferences
+- **Used by**: [Destination Routing](../tier-3-enhancement/destination-routing/design.md), [Theme & Map Style](../tier-3-enhancement/theme-map-style/design.md)
+- **Implementation**: Extended `themePreferences` and `routingPreferences` objects in UserPreferences Model
+- **Features**:
+  - Map style preferences for discovery visualization
+  - Transport mode preferences for routing integration
+  - Visual theme and color scheme customization
+  - Scenic route preferences and detour distance limits
+
+#### **Extensible UI**: Framework for additional preference types
+- **Used by**: [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md)
+- **Implementation**: Enhanced `uiFramework` object in PlaceCategory Model and `uiExtensions` in PlaceType Model
+- **Features**:
+  - Expandable and collapsible category management
+  - Sortable and customizable place type ordering
+  - Custom icon and grouping support
+  - Advanced preference visibility controls
+
+#### **Enhanced Places**: Integration with enhanced place data
+- **Used by**: [Enhanced Places Integration](../tier-3-enhancement/enhanced-places-integration/design.md)
+- **Implementation**: Enhanced `enhancedDataPreferences` object in UserPreferences Model
+- **Features**:
+  - Photo, review, and operating hours preferences
+  - Accessibility information preferences
+  - Configurable data cache expiry settings
+  - Rich place metadata support
+
+#### **Performance Optimization**: Preference caching and optimization
+- **Used by**: [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md)
+- **Implementation**: Performance optimization fields and caching strategies
+- **Features**:
+  - Intelligent preference caching with configurable expiry
+  - Load priority and batch processing for categories
+  - Memory optimization for large preference sets
+  - Network-efficient preference synchronization
+
+### Migration Considerations
+
+- **Schema version**: 2.0
+- **Migration requirements**:
+  - Add new preference fields to existing user preferences
+  - Initialize theme preferences with sensible defaults
+  - Migrate routing preferences from legacy settings
+  - Update place type and category models with enhanced data
+- **Backward compatibility**: Yes - new preference fields are optional with default values
+- **Migration strategy**: Progressive migration during user preference updates with fallback to defaults
+
+### Developer Tools Integration
+
+- **Testing support**:
+  - Mock preference data for different user scenarios
+  - Preference validation and constraint testing
+  - Theme and routing preference simulation
+  - Performance testing with large preference sets
+- **Mock data support**:
+  - Configurable place type and category data
+  - Simulated user preference profiles
+  - Theme variation testing data
+  - Performance benchmark scenarios
+- **Simulation capabilities**:
+  - Preference loading and saving simulation
+  - Theme switching and routing preference testing
+  - Enhanced place data preference simulation
+  - Network condition simulation for preference sync
+
+### Performance Optimization
+
+- **Caching strategy**:
+  - Preference data caching with intelligent invalidation
+  - Place type and category metadata caching
+  - Theme asset preloading and caching
+  - Routing preference optimization for quick access
+- **Optimization hooks**:
+  - Lazy loading of preference UI components
+  - Batch processing for preference updates
+  - Debounced preference saving to reduce I/O
+  - Memory-efficient preference data structures
+- **Performance considerations**:
+  - UI rendering optimization for large preference lists
+  - Network usage minimization for preference sync
+  - Battery impact reduction through efficient caching
+  - Responsive UI during preference loading and saving

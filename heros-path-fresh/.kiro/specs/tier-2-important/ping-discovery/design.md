@@ -151,7 +151,38 @@ PingStats.propTypes = {
   lastPingTime: Number, // Timestamp of last ping
   creditsRemaining: Number, // Number of credits remaining
   lastCreditReset: Timestamp, // Timestamp of last credit reset
-  totalPingsUsed: Number // Total number of pings used
+  totalPingsUsed: Number, // Total number of pings used
+
+  // NEW: Migration framework support
+  schemaVersion: Number, // Schema version for migration tracking
+  lastMigrationAt: String, // Timestamp of last migration
+  migrationHistory: Array, // Array of migration records
+
+  // NEW: Developer tools support
+  devMode: Boolean, // Whether in developer mode
+  mockData: Boolean, // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: String, // Last update timestamp
+  cacheKey: String, // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object, // Extensible metadata for gamification
+  extensions: Object, // Extension points for future features
+
+  // NEW: Enhanced animations support
+  animationPreferences: {
+    enabled: Boolean, // Whether animations are enabled
+    intensity: String, // Animation intensity (low/medium/high)
+    customAnimations: Array // Custom animation configurations
+  },
+
+  // NEW: Credit system enhancements
+  gamificationCredits: {
+    bonusCredits: Number, // Bonus credits from achievements
+    streakMultiplier: Number, // Credit multiplier from streaks
+    achievementBonuses: Array // Achievement-based credit bonuses
+  }
 }
 ```
 
@@ -170,7 +201,40 @@ PingStats.propTypes = {
     timestamp: Number
   },
   timestamp: Timestamp, // Timestamp of the ping
-  placesCount: Number // Number of places found
+  placesCount: Number, // Number of places found
+
+  // NEW: Migration framework support
+  schemaVersion: Number, // Schema version for migration tracking
+  lastMigrationAt: String, // Timestamp of last migration
+  migrationHistory: Array, // Array of migration records
+
+  // NEW: Developer tools support
+  devMode: Boolean, // Whether in developer mode
+  mockData: Boolean, // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: String, // Last update timestamp
+  cacheKey: String, // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object, // Extensible metadata
+  extensions: Object, // Extension points for future features
+
+  // NEW: Enhanced animation data
+  animationData: {
+    animationType: String, // Type of animation used
+    duration: Number, // Animation duration
+    intensity: String, // Animation intensity level
+    customEffects: Array // Custom animation effects applied
+  },
+
+  // NEW: Gamification integration
+  gamificationData: {
+    creditsUsed: Number, // Credits used for this ping
+    bonusApplied: Boolean, // Whether bonus was applied
+    achievementTriggers: Array, // Achievement triggers from this ping
+    experienceGained: Number // Experience points gained
+  }
 }
 ```
 
@@ -189,7 +253,41 @@ PingStats.propTypes = {
   types: Array, // Array of place types
   primaryType: String, // Primary place type
   source: String, // Source of the place (ping)
-  pingTimestamp: Number // Timestamp of the ping
+  pingTimestamp: Number, // Timestamp of the ping
+
+  // NEW: Migration framework support
+  schemaVersion: Number, // Schema version for migration tracking
+  lastMigrationAt: String, // Timestamp of last migration
+
+  // NEW: Developer tools support
+  devMode: Boolean, // Whether in developer mode
+  mockData: Boolean, // Whether using mock data
+
+  // NEW: Performance optimization
+  lastUpdated: String, // Last update timestamp
+  cacheKey: String, // Cache key for optimization
+
+  // NEW: Extension points for future features
+  metadata: Object, // Extensible metadata
+  extensions: Object, // Extension points for future features
+
+  // NEW: Enhanced place data support
+  enhancedData: {
+    popularity: Number, // Popularity score
+    accessibility: Object, // Accessibility information
+    amenities: Array, // Available amenities
+    operatingHours: Object, // Operating hours information
+    priceLevel: String, // Price level indicator
+    photos: Array // Photo URLs and metadata
+  },
+
+  // NEW: Social sharing support
+  socialData: {
+    shareCount: Number, // Number of times shared
+    likes: Number, // Number of likes
+    userComments: Array, // User comments and reviews
+    tags: Array // User-generated tags
+  }
 }
 ```
 
@@ -419,10 +517,104 @@ The ping feature integrates with the discovery preferences system, which allows 
 2. **User Consent**: Users are informed about data collection through privacy policy.
 3. **Data Retention**: Ping data is archived or deleted after a reasonable period.
 
+## Dependencies and Extensions
+
+### Dependent Features
+
+- [Gamification](../tier-3-enhancement/gamification/design.md) - Uses ping data for experience points and achievements
+- [Enhanced Ping Animations](../tier-3-enhancement/enhanced-ping-animations/design.md) - Extends ping animations with advanced visual effects
+- [Social Sharing](../tier-4-advanced/social-sharing/design.md) - Shares ping discoveries and achievements
+- [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md) - Optimizes ping performance and caching
+
+### Extension Points
+
+#### **Enhanced Animations**: Support for advanced animation systems
+- **Used by**: [Enhanced Ping Animations](../tier-3-enhancement/enhanced-ping-animations/design.md)
+- **Implementation**: Extended `animationData` object in Ping Result Model
+- **Features**: 
+  - Custom animation types and intensities
+  - Advanced visual effects and particle systems
+  - Performance-optimized animation rendering
+  - User-configurable animation preferences
+
+#### **Credit System**: Integration with gamification credit system
+- **Used by**: [Gamification](../tier-3-enhancement/gamification/design.md)
+- **Implementation**: Enhanced `gamificationCredits` object in Ping Data Model
+- **Features**:
+  - Bonus credits from achievements and streaks
+  - Credit multipliers based on user level
+  - Achievement-triggered credit bonuses
+  - Social sharing credit rewards
+
+#### **Performance Optimization**: Animation performance and caching
+- **Used by**: [Performance Optimization](../tier-3-enhancement/performance-optimization/design.md)
+- **Implementation**: Caching strategies and performance monitoring
+- **Features**:
+  - Intelligent ping result caching
+  - Animation performance optimization
+  - Batch processing for multiple pings
+  - Memory management for large datasets
+
+#### **Developer Tools**: Ping simulation and testing utilities
+- **Used by**: [Developer Tools (Core)](../tier-2-important/developer-tools-core/design.md)
+- **Implementation**: Developer tools integration with mock data support
+- **Features**:
+  - Ping simulation without API calls
+  - Mock place data generation
+  - Credit system testing utilities
+  - Animation testing and preview
+
+### Migration Considerations
+
+- **Schema version**: 2.0
+- **Migration requirements**: 
+  - Add new fields to existing ping data models
+  - Migrate animation preferences from user settings
+  - Initialize gamification credit data for existing users
+  - Update place data with enhanced metadata structure
+- **Backward compatibility**: Yes - new fields are optional and default to appropriate values
+- **Migration strategy**: Gradual migration during user sessions with fallback to default values
+
+### Developer Tools Integration
+
+- **Testing support**: 
+  - Mock ping responses for testing scenarios
+  - Simulated credit deductions and resets
+  - Animation testing without triggering actual pings
+- **Mock data support**: 
+  - Configurable mock place data with various scenarios
+  - Credit system simulation for different user states
+  - Animation testing with different intensities and types
+- **Simulation capabilities**: 
+  - Network condition simulation (slow/fast/offline)
+  - API rate limiting simulation
+  - Credit exhaustion scenarios
+  - Error condition testing
+
+### Performance Optimization
+
+- **Caching strategy**: 
+  - Ping result caching by location and timestamp
+  - Place data caching with TTL (time-to-live)
+  - Animation asset preloading and caching
+  - Credit data local caching with sync
+- **Optimization hooks**: 
+  - Lazy loading of animation assets
+  - Batch API calls when possible
+  - Debounced ping requests to prevent spam
+  - Memory cleanup for completed animations
+- **Performance considerations**: 
+  - Animation frame rate optimization
+  - Large dataset handling with pagination
+  - Battery impact minimization
+  - Network usage optimization
+
 ## Conclusion
 
 The Ping Discovery feature is a core interactive element of Hero's Path that enhances the user experience by allowing real-time discovery of nearby points of interest. This design document provides a comprehensive blueprint for implementing the feature, ensuring it meets all requirements while maintaining performance, reliability, and user experience standards.
 
 The feature's architecture, with clear separation of concerns and well-defined interfaces, ensures maintainability and extensibility. The robust error handling and testing strategy ensure reliability and resilience. The integration with other app systems ensures a cohesive user experience.
+
+The newly added extension points enable seamless integration with gamification, enhanced animations, social sharing, and performance optimization features. The migration framework ensures smooth updates and backward compatibility as the feature evolves.
 
 Future enhancements, as outlined in the Enhanced Ping Animation spec and additional enhancement ideas, will further improve the feature and provide even more value to users.
