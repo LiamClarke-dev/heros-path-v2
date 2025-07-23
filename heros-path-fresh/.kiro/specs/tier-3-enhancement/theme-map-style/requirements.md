@@ -82,13 +82,14 @@ The Theme & Map Style feature provides a comprehensive theming system for the He
 
 #### Acceptance Criteria
 
-1. WHEN the app runs on iOS THEN the system SHALL apply custom map styles correctly using the PROVIDER_GOOGLE parameter.
-2. WHEN the app runs on Android THEN the system SHALL apply custom map styles correctly.
+1. **UPDATED**: WHEN the app runs on iOS THEN the system SHALL apply custom map styles correctly using the `AppleMaps` component from expo-maps.
+2. **UPDATED**: WHEN the app runs on Android THEN the system SHALL apply custom map styles correctly using the `GoogleMaps` component from expo-maps.
 3. WHEN UI components render on any platform THEN the system SHALL adapt to platform-specific styling requirements.
 4. WHEN theme colors are applied THEN the system SHALL ensure appropriate contrast ratios for accessibility on all platforms.
 5. WHEN the app runs on different screen sizes THEN the system SHALL maintain consistent theme appearance.
 6. WHEN the app runs on older devices THEN the system SHALL gracefully handle theme application with fallbacks if necessary.
 7. WHEN the app runs on any platform THEN the system SHALL ensure theme changes do not cause performance issues.
+8. **NEW**: WHEN map library migrations occur THEN the system SHALL validate configuration consistency between app.json and component imports.
 
 ### Requirement 8: Dynamic Theme System
 
@@ -157,3 +158,20 @@ The Theme & Map Style feature provides a comprehensive theming system for the He
 8. WHEN exporting themes THEN the system SHALL provide developer-friendly export formats for testing.
 9. WHEN logging is enabled THEN the system SHALL provide detailed logs for theme operations and state changes.
 10. WHEN integration testing THEN the system SHALL support automated testing of theme functionality.
+
+### Requirement 12: Library Migration Support (NEW - 23 July 2025)
+
+**User Story:** As a developer, I want robust migration support for map libraries, so that I can safely upgrade or change mapping dependencies without breaking functionality.
+
+#### Acceptance Criteria
+
+1. WHEN migrating map libraries THEN the system SHALL validate configuration consistency between app.json plugins and component imports.
+2. WHEN detecting API mismatches THEN the system SHALL provide clear error messages indicating the specific incompatibility.
+3. WHEN using expo-maps THEN the system SHALL not require manual provider configuration (automatic platform detection).
+4. WHEN migration issues occur THEN the system SHALL provide debugging guidance for white screen or rendering failures.
+5. WHEN testing migrations THEN the system SHALL validate that all map styles work correctly with the new library.
+6. WHEN upgrading libraries THEN the system SHALL maintain backward compatibility for existing theme configurations.
+7. WHEN migration is complete THEN the system SHALL remove any legacy configuration or dependencies.
+8. WHEN debugging map issues THEN the system SHALL log sufficient information to identify library API mismatches.
+9. WHEN using different map libraries THEN the system SHALL adapt theme application accordingly.
+10. WHEN validating migrations THEN the system SHALL test map rendering on both iOS and Android platforms.

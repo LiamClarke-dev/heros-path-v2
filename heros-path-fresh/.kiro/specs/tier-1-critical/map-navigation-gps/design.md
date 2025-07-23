@@ -6,6 +6,19 @@ The Map Navigation & GPS feature is the central experience of Hero's Path, combi
 
 The feature transforms ordinary walks into adventures by displaying an animated Link sprite that moves and changes direction as the user walks, drawing a glowing path behind them, and enabling discovery of interesting places along their route. It handles complex challenges like GPS accuracy, background tracking, battery optimization, and cross-platform compatibility.
 
+## ⚠️ Critical Migration Note (23 July 2025)
+
+**RESOLVED ISSUE**: A critical bug was discovered where the app was configured for `expo-maps` but the MapScreen component was using `react-native-maps` API, causing white screen issues. The migration from react-native-maps to expo-maps was incomplete.
+
+**Solution Implemented**: Updated MapScreen.js to use expo-maps API (`AppleMaps` for iOS, `GoogleMaps` for Android) with platform-specific components and data-driven marker/polyline rendering instead of JSX children.
+
+**Key Changes Made**:
+- Import: `import { AppleMaps, GoogleMaps } from 'expo-maps'` instead of `import MapView from 'react-native-maps'`
+- Platform-specific components: iOS uses `AppleMaps`, Android uses `GoogleMaps`
+- Data-driven rendering: Markers and polylines passed as props, not JSX children
+- Camera positioning: `cameraPosition` instead of `initialRegion`
+- Removed provider logic: expo-maps handles providers automatically
+
 ## Architecture
 
 The Map Navigation & GPS feature follows a layered architecture pattern:
@@ -322,9 +335,10 @@ The Map Navigation & GPS feature implements comprehensive error handling to ensu
    - Automatic retry mechanisms
 
 3. **Map Rendering Errors**:
-   - Error boundary for MapView component
+   - Error boundary for map components (AppleMaps/GoogleMaps)
    - Fallback UI when map fails to load
    - Detailed error logging for debugging
+   - **CRITICAL**: Library API mismatch detection (expo-maps vs react-native-maps)
 
 4. **Background Tracking Issues**:
    - Detection of tracking interruptions
@@ -335,6 +349,11 @@ The Map Navigation & GPS feature implements comprehensive error handling to ensu
    - Validation of Google Maps API key
    - Clear error messages for API key problems
    - Instructions for fixing configuration issues
+
+6. **Migration Issues** (NEW):
+   - Detection of incomplete library migrations
+   - White screen debugging when map fails to render
+   - API compatibility validation between app.json config and component imports
 
 ## Testing Strategy
 
@@ -371,16 +390,25 @@ The testing strategy for the Map Navigation & GPS feature includes:
 ## Platform-Specific Considerations
 
 ### iOS:
+- **NEW**: Uses `AppleMaps` component from expo-maps (not react-native-maps)
 - Uses Apple Maps by default for standard style
 - Requires specific permission request workflow
 - Background location indicator in status bar
 - Higher accuracy GPS in general
 
 ### Android:
+- **NEW**: Uses `GoogleMaps` component from expo-maps (not react-native-maps)
 - Uses Google Maps for all styles
 - Different permission model (runtime permissions)
 - Foreground service notification required
 - More aggressive battery optimization
+
+### Library Migration Considerations:
+- **CRITICAL**: Ensure app.json plugins and component imports are consistent
+- expo-maps: Uses platform-specific components (`AppleMaps`/`GoogleMaps`)
+- react-native-maps: Uses single `MapView` with provider prop
+- Data rendering: expo-maps uses props, react-native-maps uses JSX children
+- Camera control: expo-maps uses `cameraPosition`, react-native-maps uses `initialRegion`
 
 ## Dependencies and Extensions
 
@@ -388,6 +416,49 @@ The testing strategy for the Map Navigation & GPS feature includes:
 - [Theme & Map Style](../tier-3-enhancement/theme-map-style/) - Requires theme integration and dynamic map styling
 - [Destination Routing](../tier-3-enhancement/destination-routing/) - Requires modular map controls and route visualization
 - [Gamification](../tier-3-enhancement/gamification/) - Requires custom overlays and achievement display
+
+## Lessons Learned & Migration Best Practices
+
+### Library Migration Checklist
+
+When migrating between map libraries (learned from react-native-maps → expo-maps migration):
+
+1. **Configuration Consistency**:
+   - ✅ Verify app.json plugins match component imports
+   - ✅ Update package.json dependencies
+   - ✅ Remove conflicting dependencies
+
+2. **API Compatibility**:
+   - ✅ Update import statements (`react-native-maps` → `expo-maps`)
+   - ✅ Change component usage (`MapView` → `AppleMaps`/`GoogleMaps`)
+   - ✅ Update data rendering (JSX children → props)
+   - ✅ Update camera control (`initialRegion` → `cameraPosition`)
+
+3. **Provider Logic**:
+   - ✅ Remove manual provider configuration (expo-maps handles automatically)
+   - ✅ Update platform-specific logic
+   - ✅ Remove PROVIDER_GOOGLE references
+
+4. **Testing Protocol**:
+   - ✅ Test map rendering on both platforms
+   - ✅ Verify API keys work with new library
+   - ✅ Test custom styling and themes
+   - ✅ Validate marker and polyline rendering
+
+### Common Migration Pitfalls
+
+1. **Incomplete Migration**: Updating configuration but not component code
+2. **API Mismatch**: Using old API patterns with new libraries
+3. **Provider Confusion**: Manual provider logic when library handles it automatically
+4. **Testing Gaps**: Not testing both platforms after migration
+
+### White Screen Debugging
+
+If maps show white screen with only Google logo:
+1. Check app.json plugins vs component imports consistency
+2. Verify API keys are correctly configured
+3. Check for library API mismatches
+4. Validate error boundaries and logging
 - [Journey Tracking](../tier-1-critical/journey-tracking/) - Provides route data for visualization
 - [Background Location](../tier-1-critical/background-location/) - Provides location data for tracking
 

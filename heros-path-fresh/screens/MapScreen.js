@@ -106,7 +106,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { AppleMaps, GoogleMaps } from 'expo-maps';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -168,11 +168,135 @@ function getDirection([prev, curr]) {
   }
 }
 
+// Helper to build polylines for expo-maps API
+function buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors }) {
+  const polylines = [];
+  
+  // Saved routes
+  if (savedRoutes && savedRoutes.length > 0) {
+    for (const journey of savedRoutes) {
+      polylines.push({
+        id: journey.id,
+        coordinates: journey.route,
+        color: colors.routeLine,
+        width: 3,
+        opacity: 0.6,
+      });
+    }
+  }
+  
+  // Preview route
+  if ((previewRoadCoords && previewRoadCoords.length > 0) || (previewRoute && previewRoute.length > 0)) {
+    polylines.push({
+      id: 'preview',
+      coordinates: previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute,
+      color: colors.routePreview,
+      width: 4,
+    });
+  }
+  
+  // Current path
+  if (pathToRender && pathToRender.length > 0) {
+    polylines.push({
+      id: 'current',
+      coordinates: pathToRender,
+      color: colors.routeLine,
+      width: 6,
+    });
+  }
+  
+  return polylines;
+}
+
+// Helper to build markers for expo-maps API
+function buildMarkers({ currentPosition, spriteColor, showSavedPlaces, savedPlaces, colors }) {
+  const markers = [];
+  
+  // Saved places markers only (Link sprite will be handled as overlay)
+  if (showSavedPlaces && savedPlaces && savedPlaces.length > 0) {
+    for (const place of savedPlaces) {
+      markers.push({
+        id: place.id,
+        coordinates: { latitude: place.latitude, longitude: place.longitude },
+        title: place.name,
+        description: place.vicinity,
+      });
+    }
+  }
+  
+  return markers;
+}
+
+// Helper to convert theme map styles to expo-maps properties
+function getMapProperties(mapStyleConfig, currentTheme) {
+  if (!mapStyleConfig) return {};
+  
+  // For GoogleMaps (Android)
+  const googleMapsProperties = {
+    mapType: 'NORMAL', // Default
+    isTrafficEnabled: false,
+    selectionEnabled: true,
+  };
+  
+  // For AppleMaps (iOS)  
+  const appleMapsProperties = {
+    mapType: 'STANDARD', // Default
+    isTrafficEnabled: false,
+    selectionEnabled: true,
+  };
+  
+  // Map theme styles to expo-maps mapType
+  switch(mapStyleConfig.name) {
+    case 'Satellite':
+      googleMapsProperties.mapType = 'SATELLITE';
+      appleMapsProperties.mapType = 'IMAGERY';
+      break;
+    case 'Terrain':
+      googleMapsProperties.mapType = 'TERRAIN';
+      appleMapsProperties.mapType = 'STANDARD'; // iOS doesn't have terrain, fallback to standard
+      break;
+    case 'Night':
+    case 'Adventure':
+      // Custom styles not supported in expo-maps, use standard with appropriate color scheme
+      googleMapsProperties.mapType = 'NORMAL';
+      appleMapsProperties.mapType = 'STANDARD';
+      break;
+    default:
+      // Standard and other styles
+      googleMapsProperties.mapType = 'NORMAL';
+      appleMapsProperties.mapType = 'STANDARD';
+  }
+  
+  return {
+    googleMaps: googleMapsProperties,
+    appleMaps: appleMapsProperties,
+  };
+}
+
+// Helper to get color scheme for expo-maps
+function getColorScheme(mapStyleConfig, currentTheme) {
+  if (!mapStyleConfig) return 'FOLLOW_SYSTEM';
+  
+  // Map theme styles to color scheme (GoogleMaps only)
+  switch(mapStyleConfig.name) {
+    case 'Night':
+      return 'DARK';
+    case 'Adventure':
+      return 'LIGHT'; // Adventure theme uses warm colors, closer to light
+    default:
+      return 'FOLLOW_SYSTEM';
+  }
+}
+
 export default function MapScreen({ navigation, route }) {
-  const { getCurrentThemeColors, getCurrentMapStyleArray, getCurrentMapProvider } = useTheme();
+  const { getCurrentThemeColors, getCurrentMapStyleArray, getCurrentMapStyleConfig, currentTheme } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();
   const mapStyleArray = getCurrentMapStyleArray();
-  const mapProvider = getCurrentMapProvider();
+  const mapStyleConfig = getCurrentMapStyleConfig();
+  
+  // Get expo-maps compatible properties
+  const mapProperties = getMapProperties(mapStyleConfig, currentTheme);
+  const colorScheme = getColorScheme(mapStyleConfig, currentTheme);
   
   const { user } = useUser();
   const { setCurrentJourney } = useExploration();
@@ -379,17 +503,7 @@ export default function MapScreen({ navigation, route }) {
   }, [pathToRender]);
 
   const spriteColor = SPRITE_COLORS[spriteState];
-  
-  // Determine map provider based on platform and style
-  const getMapProvider = () => {
-    if (mapProvider === 'google') {
-      return PROVIDER_GOOGLE;
-    } else if (mapProvider === 'default') {
-      // Use Apple Maps on iOS for standard style, Google Maps on Android
-      return Platform.OS === 'ios' ? undefined : PROVIDER_GOOGLE;
-    }
-    return undefined; // Default to Apple Maps on iOS, Google Maps on Android
-  };
+
   
   // Debug sprite state
   useEffect(() => {
@@ -724,36 +838,7 @@ export default function MapScreen({ navigation, route }) {
     }
   };
 
-  const renderSavedRoutes = () =>
-    savedRoutes.map(journey => (
-      <Polyline
-        key={journey.id}
-        coordinates={journey.route}
-        strokeColor={colors.routeLine}
-        strokeWidth={3}
-        opacity={0.6}
-      />
-    ));
 
-  const renderSavedPlaces = () => {
-    if (!showSavedPlaces) return null;
-    
-    return savedPlaces.map(place => (
-      <Marker
-        key={place.id}
-        coordinate={{
-          latitude: place.latitude,
-          longitude: place.longitude,
-        }}
-        title={place.name}
-        description={place.vicinity}
-      >
-        <View style={[styles.savedPlaceMarker, { backgroundColor: colors.primary }]}>
-          <MaterialIcons name="favorite" size={16} color={colors.buttonText} />
-        </View>
-      </Marker>
-    ));
-  };
 
   // Error boundary for MapView
   function handleMapError(e) {
@@ -766,10 +851,12 @@ export default function MapScreen({ navigation, route }) {
     Logger.debug('Map error details:', {
       errorCode,
       errorMessage,
-      mapProvider: getMapProvider(),
-      mapStyle: mapStyleArray ? 'custom' : 'default',
+      mapStyleConfig: mapStyleConfig?.name || 'default',
+      mapProperties: Platform.OS === 'ios' ? mapProperties.appleMaps : mapProperties.googleMaps,
+      colorScheme: Platform.OS === 'android' ? colorScheme : 'N/A (iOS)',
       platform: Platform.OS,
-      hasApiKey: !!GOOGLE_MAPS_API_KEY_IOS
+      hasApiKey: !!GOOGLE_MAPS_API_KEY_IOS,
+      usingExpoMaps: true
     });
   }
 
@@ -783,15 +870,7 @@ export default function MapScreen({ navigation, route }) {
     );
   }
 
-  // Helper: region for MapView
-  const region = currentPosition
-    ? {
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      }
-    : null;
+
 
   return (
     <View style={styles.container}>
@@ -834,82 +913,61 @@ export default function MapScreen({ navigation, route }) {
       )}
 
       {currentPosition ? (
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={region}
-          customMapStyle={mapStyleArray}
-          onError={handleMapError}
-          showsUserLocation={false}
-          showsMyLocationButton={false}
-          toolbarEnabled={false}
-          provider={getMapProvider()}
-        >
-          {/* Saved routes as polylines */}
-          {savedRoutes.map(journey => (
-            <Polyline
-              key={journey.id}
-              coordinates={journey.route}
-              strokeColor={colors.routeLine}
-              strokeWidth={3}
-            />
-          ))}
-          {/* Preview route polyline */}
-          {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
-            <Polyline
-              coordinates={previewRoadCoords.length > 0 ? previewRoadCoords : previewRoute}
-              strokeColor={colors.routePreview}
-              strokeWidth={4}
-            />
-          )}
-          {/* Current path polyline */}
-          {pathToRender.length > 0 && (
-            <Polyline
-              coordinates={pathToRender}
-              strokeColor={colors.routeLine}
-              strokeWidth={6}
-            />
-          )}
-          {/* Current position marker (sprite) */}
-          {currentPosition && (
-            <Marker
-              coordinate={currentPosition}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-              onPress={() => Logger.debug('Link sprite pressed', currentPosition)}
-            >
-              <View style={styles.spriteContainer}>
-                {/* Main Link sprite - colored rectangle */}
-                <View style={[styles.linkSprite, { backgroundColor: spriteColor }]} />
-                
-                {/* Sprite status indicator */}
-                <View style={[styles.spriteStatusIndicator, { backgroundColor: colors.success }]} />
-                
-                <Text style={[styles.spriteDebugText, { color: colors.buttonText }]}>
-                  Link
-                </Text>
-              </View>
-            </Marker>
-          )}
-          
-
-          {/* Saved places markers */}
-          {showSavedPlaces && savedPlaces.map(place => (
-            <Marker
-              key={place.id}
-              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
-              title={place.name}
-              description={place.vicinity}
-            >
-              <View style={[styles.savedPlaceMarker, { backgroundColor: colors.primary }]}> 
-                <MaterialIcons name="favorite" size={16} color={colors.buttonText} />
-              </View>
-            </Marker>
-          ))}
-        </MapView>
+        Platform.OS === 'ios' ? (
+          <AppleMaps
+            ref={mapRef}
+            style={styles.map}
+            cameraPosition={{
+              coordinates: currentPosition,
+              zoom: 15,
+            }}
+            markers={buildMarkers({ currentPosition, spriteColor, showSavedPlaces, savedPlaces, colors })}
+            polylines={buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors })}
+            properties={mapProperties.appleMaps}
+            onError={handleMapError}
+          />
+        ) : (
+          <GoogleMaps
+            ref={mapRef}
+            style={styles.map}
+            cameraPosition={{
+              coordinates: currentPosition,
+              zoom: 15,
+            }}
+            markers={buildMarkers({ currentPosition, spriteColor, showSavedPlaces, savedPlaces, colors })}
+            polylines={buildPolylines({ savedRoutes, previewRoadCoords, previewRoute, pathToRender, colors })}
+            properties={mapProperties.googleMaps}
+            colorScheme={colorScheme}
+            onError={handleMapError}
+          />
+        )
       ) : (
         <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
           <Text style={[styles.loadingText, { color: colors.text }]}>Loading your location…</Text>
+        </View>
+      )}
+
+      {/* Custom Link Sprite Overlay */}
+      {currentPosition && (
+        <View style={[styles.spriteOverlay, {
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          marginLeft: -24,
+          marginTop: -32,
+          zIndex: 1000,
+        }]}>
+          <View style={styles.spriteContainer}>
+            {/* Main Link sprite - colored rectangle */}
+            <View style={[styles.linkSprite, { backgroundColor: spriteColor }]} />
+            
+            {/* Sprite status indicator */}
+            <View style={[styles.spriteStatusIndicator, { backgroundColor: colors.success }]} />
+            
+            <Text style={[styles.spriteDebugText, { color: colors.buttonText }]}>
+              Link
+            </Text>
+          </View>
         </View>
       )}
       
