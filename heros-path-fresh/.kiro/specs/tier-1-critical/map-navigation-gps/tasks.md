@@ -81,17 +81,21 @@
   - Create smooth transitions between sprite states
   - _Requirements: 1.4, 5.4_
 
-- [ ] 5. Implement saved places functionality
+- [ ] 5. Implement saved places with Google Places integration
   - Create loadSavedPlaces function to fetch user's saved places
-  - Add renderSavedPlaces function with custom markers
-  - Implement toggle for showing/hiding saved places
-  - Add interaction handling for place markers
-  - _Requirements: 6.1, 6.2, 6.3, 6.4_
+  - Implement renderSavedPlaces function with Google Place Icons
+  - Create placeTypeToIcon mapping for appropriate icon selection
+  - Add toggle for showing/hiding saved places
+  - Implement Google Places UI Kit for place detail display
+  - Create theme-aware styling for place details
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 5.1 Implement marker clustering for performance
-  - Add marker clustering library integration
+- [ ] 5.1 Implement Google Marker Clustering
+  - Add Google Maps Marker Clustering library integration
   - Configure clustering thresholds and appearance
-  - Optimize rendering for large numbers of places
+  - Create theme-aware cluster styling
+  - Implement zoom-based cluster expansion
+  - Add performance optimization for large numbers of markers
   - _Requirements: 6.5_
 
 - [ ] 6. Implement map styling system

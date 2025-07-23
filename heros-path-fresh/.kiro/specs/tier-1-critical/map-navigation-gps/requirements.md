@@ -72,15 +72,17 @@ The Map Navigation & GPS feature is the core functionality of Hero's Path, provi
 
 ### Requirement 6
 
-**User Story:** As a user, I want to see saved places and past journeys on my map, so that I can remember and revisit interesting locations.
+**User Story:** As a user, I want to see saved places and past journeys on my map with rich place information and appropriate icons, so that I can remember and revisit interesting locations.
 
 #### Acceptance Criteria
 
 1. WHEN the map is displayed THEN the system SHALL provide an option to show/hide saved places.
-2. WHEN saved places are enabled THEN the system SHALL display markers for all saved locations.
-3. WHEN a saved place marker is tapped THEN the system SHALL display details about that place.
+2. WHEN saved places are enabled THEN the system SHALL display markers for all saved locations using Google Place Icons appropriate to the place type.
+3. WHEN a saved place marker is tapped THEN the system SHALL display detailed information using Google Places UI Kit.
 4. WHEN past journeys are displayed THEN the system SHALL use a visual style that doesn't interfere with the current journey tracking.
-5. WHEN the user has many saved places THEN the system SHALL implement clustering for better performance.
+5. WHEN the user has many saved places THEN the system SHALL implement Google's Marker Clustering for better performance.
+6. WHEN the app theme changes THEN the system SHALL adapt marker and place detail styling to match the theme.
+7. WHEN a place detail is displayed THEN the system SHALL provide options for navigation, saving, and sharing.
 
 ### Requirement 8
 
