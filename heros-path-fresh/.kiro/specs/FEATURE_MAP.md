@@ -7,6 +7,7 @@
 - **✅ 48 Extension Points**: Ready-to-implement extension framework
 - **✅ Migration Framework**: Data evolution support across all features
 - **✅ Implementation Ready**: All specifications validated and development-ready
+- **🆕 MapScreen Modularization:** The main MapScreen has been refactored into modular components and hooks for improved maintainability and performance (2025).
 
 This document provides a visual overview of all features in the Hero's Path application and their relationships, based on our **COMPLETE** specification system.
 
@@ -189,6 +190,7 @@ flowchart TD
 | --------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
 | User Authentication         | Firebase                                                    | Social profiles, Third-party auth              |
 | Map Navigation & GPS        | Google Maps API, Location Permissions                       | Custom overlays, Multiple visualization modes  |
+|                             |                                                             | **🆕 Modularized MapScreen for maintainability and performance** |
 | Journey Tracking            | Background Location Service, User Context                   | Metadata extensions, Social attributes         |
 | Background Location         | Platform Location Permissions                               | Multiple tracking modes, Accuracy levels       |
 | Search Along Route (SAR)    | Google Places API, Journey Tracking                         | Enhanced filtering, AI recommendations         |
@@ -203,6 +205,7 @@ flowchart TD
 | Journey Completion          | Journey Tracking, User Interface                            | Enhanced metadata, Social sharing              |
 | Enhanced Places Integration | Google Places API, API Keys                                 | Additional data sources, AI enhancements       |
 | Performance Optimization    | Database Optimization, Caching Strategy                     | Predictive caching, Analytics                  |
+|                             |                                                             | **🆕 MapScreen modularization for performance** |
 | Custom Lists                | Saved Places Management                                     | Sharing, Templates, Tags                       |
 | Destination Routing         | Map Navigation, Journey Tracking                            | Additional routing modes, Waypoints            |
 | Gamification               | Journey Tracking, Saved Places                              | Achievements, Levels, Challenges               |
