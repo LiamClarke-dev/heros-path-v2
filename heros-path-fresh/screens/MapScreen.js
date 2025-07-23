@@ -49,6 +49,7 @@ import PingButton from '../components/PingButton';
 import PingStats from '../components/PingStats';
 import PingAnimation from '../components/PingAnimation';
 import LocateMeButton from '../components/LocateMeButton';
+import SpriteWithGpsIndicator from '../components/SpriteWithGpsIndicator';
 import JourneyService from '../services/JourneyService';
 import DiscoveryService from '../services/DiscoveryService';
 import BackgroundLocationService from '../services/BackgroundLocationService';
@@ -68,27 +69,81 @@ const SPRITE_STATES = {
   WALK_UP: 'walk_up',
   WALK_LEFT: 'walk_left',
   WALK_RIGHT: 'walk_right',
+  GPS_WEAK: 'gps_weak',    // New state for weak GPS signal
+  GPS_LOST: 'gps_lost',    // New state for lost GPS signal
 };
 
+// Sprite animation sources with fallbacks for better cross-platform compatibility
 const SPRITE_SOURCES = {
   [SPRITE_STATES.IDLE]: require('../assets/link_sprites/link_idle.gif'),
   [SPRITE_STATES.WALK_DOWN]: require('../assets/link_sprites/link_walk_down.gif'),
   [SPRITE_STATES.WALK_UP]: require('../assets/link_sprites/link_walk_up.gif'),
   [SPRITE_STATES.WALK_LEFT]: require('../assets/link_sprites/link_walk_left.gif'),
   [SPRITE_STATES.WALK_RIGHT]: require('../assets/link_sprites/link_walk_right.gif'),
+  // For GPS states, we'll use the idle sprite with different styling
+  [SPRITE_STATES.GPS_WEAK]: require('../assets/link_sprites/link_idle.gif'),
+  [SPRITE_STATES.GPS_LOST]: require('../assets/link_sprites/link_idle.gif'),
 };
 
-function getDirection([prev, curr]) {
+// Minimum movement threshold in meters to consider actual movement (not GPS jitter)
+const MOVEMENT_THRESHOLD = 2.0;
+
+/**
+ * Calculate the direction of movement based on previous and current coordinates
+ * Enhanced with movement threshold to avoid jitter and better direction detection
+ * 
+ * @param {Array} points - Array containing [previous, current] location coordinates
+ * @param {number} accuracy - Current GPS accuracy in meters
+ * @return {string} The sprite state to display
+ */
+function getDirection([prev, curr], accuracy = null) {
+  // Handle missing or invalid coordinates
   if (!prev || !curr) return SPRITE_STATES.IDLE;
+  
+  // Check if GPS signal is weak or lost
+  if (accuracy !== null) {
+    if (accuracy > 50) return SPRITE_STATES.GPS_LOST;
+    if (accuracy > 15) return SPRITE_STATES.GPS_WEAK;
+  }
+  
+  // Calculate movement distance to filter out GPS jitter
+  const distance = calculateDistance(prev, curr);
+  if (distance < MOVEMENT_THRESHOLD) {
+    return SPRITE_STATES.IDLE; // Not enough movement, stay idle
+  }
   
   const dx = curr.longitude - prev.longitude;
   const dy = curr.latitude - prev.latitude;
   
+  // Determine primary direction of movement
   if (Math.abs(dx) > Math.abs(dy)) {
     return dx > 0 ? SPRITE_STATES.WALK_RIGHT : SPRITE_STATES.WALK_LEFT;
   } else {
     return dy > 0 ? SPRITE_STATES.WALK_DOWN : SPRITE_STATES.WALK_UP;
   }
+}
+
+/**
+ * Calculate distance between two coordinates in meters
+ * Uses the Haversine formula for accurate earth distance calculation
+ * 
+ * @param {Object} coord1 - First coordinate with latitude and longitude
+ * @param {Object} coord2 - Second coordinate with latitude and longitude
+ * @return {number} Distance in meters
+ */
+function calculateDistance(coord1, coord2) {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = coord1.latitude * Math.PI / 180;
+  const φ2 = coord2.latitude * Math.PI / 180;
+  const Δφ = (coord2.latitude - coord1.latitude) * Math.PI / 180;
+  const Δλ = (coord2.longitude - coord1.longitude) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // Distance in meters
 }
 
 export default function MapScreen({ navigation, route }) {
@@ -296,23 +351,58 @@ export default function MapScreen({ navigation, route }) {
     return () => subscription.remove();
   }, [appState]);
 
-  // Update sprite state based on movement
+  // Update sprite state based on movement and GPS accuracy
   useEffect(() => {
-    if (pathToRender.length >= 2) {
-      const direction = getDirection(pathToRender.slice(-2));
-      Logger.debug('Sprite direction calculated:', { 
-        pathLength: pathToRender.length, 
-        direction, 
-        lastTwoPoints: pathToRender.slice(-2).map(p => ({ lat: p.latitude, lng: p.longitude }))
-      });
-      setSpriteState(direction);
-    } else {
-      Logger.debug('Setting sprite to idle state - no path data');
+    try {
+      if (pathToRender.length >= 2) {
+        // Pass the location accuracy to getDirection to determine GPS-based states
+        const direction = getDirection(pathToRender.slice(-2), locationAccuracy);
+        Logger.debug('Sprite direction calculated:', { 
+          pathLength: pathToRender.length, 
+          direction, 
+          lastTwoPoints: pathToRender.slice(-2).map(p => ({ lat: p.latitude, lng: p.longitude })),
+          accuracy: locationAccuracy,
+          platform: Platform.OS
+        });
+        setSpriteState(direction);
+      } else {
+        // If no path data but we have accuracy info, we can still show GPS state
+        if (locationAccuracy !== null) {
+          if (locationAccuracy > 50) {
+            Logger.debug('Setting sprite to GPS_LOST state - poor accuracy', { 
+              accuracy: locationAccuracy,
+              platform: Platform.OS
+            });
+            setSpriteState(SPRITE_STATES.GPS_LOST);
+          } else if (locationAccuracy > 15) {
+            Logger.debug('Setting sprite to GPS_WEAK state - mediocre accuracy', { 
+              accuracy: locationAccuracy,
+              platform: Platform.OS
+            });
+            setSpriteState(SPRITE_STATES.GPS_WEAK);
+          } else {
+            Logger.debug('Setting sprite to idle state - no path data but good accuracy', { 
+              accuracy: locationAccuracy,
+              platform: Platform.OS
+            });
+            setSpriteState(SPRITE_STATES.IDLE);
+          }
+        } else {
+          Logger.debug('Setting sprite to idle state - no path data');
+          setSpriteState(SPRITE_STATES.IDLE);
+        }
+      }
+    } catch (error) {
+      // Fallback to IDLE state if there's any error in sprite state calculation
+      Logger.error('Error calculating sprite state:', error);
       setSpriteState(SPRITE_STATES.IDLE);
     }
-  }, [pathToRender]);
+  }, [pathToRender, locationAccuracy]);
 
+  // Get sprite source and determine if we need to apply special styling for GPS states
   const spriteSource = SPRITE_SOURCES[spriteState];
+  const isGpsWeakState = spriteState === SPRITE_STATES.GPS_WEAK;
+  const isGpsLostState = spriteState === SPRITE_STATES.GPS_LOST;
 
   const loadSavedRoutes = async () => {
     if (!user) return;
@@ -778,14 +868,21 @@ export default function MapScreen({ navigation, route }) {
               strokeWidth={6}
             />
           )}
-          {/* Current position marker (sprite) */}
+          {/* Current position marker (sprite) with GPS indicator */}
           {currentPosition && (
             <Marker
               coordinate={currentPosition}
               anchor={{ x: 0.5, y: 0.9 }}
-              tracksViewChanges={false}
+              tracksViewChanges={Platform.OS === 'ios'} // Set to false on Android, true on iOS for better performance
             >
-              <Image source={spriteSource} style={{ width: 16, height: 32 }} resizeMode="contain" />
+              <SpriteWithGpsIndicator 
+                spriteSource={spriteSource}
+                gpsAccuracy={locationAccuracy}
+                isMoving={spriteState !== SPRITE_STATES.IDLE && 
+                         spriteState !== SPRITE_STATES.GPS_WEAK && 
+                         spriteState !== SPRITE_STATES.GPS_LOST}
+                size={32}
+              />
             </Marker>
           )}
           {/* Saved places markers */}
@@ -973,6 +1070,42 @@ export default function MapScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { 
     flex: 1 
+  },
+  spriteContainer: {
+    position: 'relative',
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spriteImage: {
+    width: 16,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  spriteImageGpsWeak: {
+    opacity: 0.7,
+    tintColor: '#FFA500', // Orange tint for weak GPS
+  },
+  spriteImageGpsLost: {
+    opacity: 0.5,
+    tintColor: '#FF0000', // Red tint for lost GPS
+  },
+  gpsIndicator: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    elevation: 3,
   },
   map: { 
     flex: 1 

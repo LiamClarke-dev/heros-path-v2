@@ -60,20 +60,22 @@
   - Create journey data structure with metadata
   - _Requirements: 2.3, 2.4, 2.6_
 
-- [ ] 3.2 Implement saved routes display
+- [x] 3.2 Implement saved routes display
   - Create loadSavedRoutes function to fetch user journeys
   - Add renderSavedRoutes function with styling
   - Implement toggle for showing/hiding past routes
   - _Requirements: 2.5_
 
-- [ ] 4. Implement animated sprite for user movement
+- [x] 4. Implement animated sprite for user movement
+
   - Create sprite state constants and direction logic
   - Implement getDirection function for movement analysis
   - Add sprite rendering with appropriate styling
   - Create sprite animation based on movement direction
+  - Sprite should render on Android & iOS in both production and development (see: docs\ARCHIVE\BUG_FIXES_SUMMARY.md)
   - _Requirements: 1.2, 1.3_
 
-- [ ] 4.1 Enhance sprite with visual feedback for GPS states
+- [x] 4.1 Enhance sprite with visual feedback for GPS states
   - Add visual indicators for GPS signal strength
   - Implement sprite state for GPS signal loss
   - Create smooth transitions between sprite states
