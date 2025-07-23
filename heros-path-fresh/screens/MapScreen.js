@@ -59,6 +59,16 @@ import SectionHeader from '../components/ui/SectionHeader';
 import AppButton from '../components/ui/AppButton';
 import Constants from 'expo-constants';
 import { GOOGLE_MAPS_API_KEY_IOS } from '../config';
+import { calculateDistance, calculateTotalDistance, getDirection } from '../utils/geo';
+import JourneyNamingModal from '../components/ui/JourneyNamingModal';
+import AccuracyIndicator from '../components/ui/AccuracyIndicator';
+import SavedRoutes from '../components/ui/SavedRoutes';
+import SavedPlaces from '../components/ui/SavedPlaces';
+import ControlButtons from '../components/ui/ControlButtons';
+import PingControls from '../components/ui/PingControls';
+import useJourneyTracking from '../hooks/useJourneyTracking';
+import useLocation from '../hooks/useLocation';
+import useSavedPlaces from '../hooks/useSavedPlaces';
 
 const { width, height } = Dimensions.get('window');
 
@@ -88,64 +98,6 @@ const SPRITE_SOURCES = {
 // Minimum movement threshold in meters to consider actual movement (not GPS jitter)
 const MOVEMENT_THRESHOLD = 2.0;
 
-/**
- * Calculate the direction of movement based on previous and current coordinates
- * Enhanced with movement threshold to avoid jitter and better direction detection
- * 
- * @param {Array} points - Array containing [previous, current] location coordinates
- * @param {number} accuracy - Current GPS accuracy in meters
- * @return {string} The sprite state to display
- */
-function getDirection([prev, curr], accuracy = null) {
-  // Handle missing or invalid coordinates
-  if (!prev || !curr) return SPRITE_STATES.IDLE;
-  
-  // Check if GPS signal is weak or lost
-  if (accuracy !== null) {
-    if (accuracy > 50) return SPRITE_STATES.GPS_LOST;
-    if (accuracy > 15) return SPRITE_STATES.GPS_WEAK;
-  }
-  
-  // Calculate movement distance to filter out GPS jitter
-  const distance = calculateDistance(prev, curr);
-  if (distance < MOVEMENT_THRESHOLD) {
-    return SPRITE_STATES.IDLE; // Not enough movement, stay idle
-  }
-  
-  const dx = curr.longitude - prev.longitude;
-  const dy = curr.latitude - prev.latitude;
-  
-  // Determine primary direction of movement
-  if (Math.abs(dx) > Math.abs(dy)) {
-    return dx > 0 ? SPRITE_STATES.WALK_RIGHT : SPRITE_STATES.WALK_LEFT;
-  } else {
-    return dy > 0 ? SPRITE_STATES.WALK_DOWN : SPRITE_STATES.WALK_UP;
-  }
-}
-
-/**
- * Calculate distance between two coordinates in meters
- * Uses the Haversine formula for accurate earth distance calculation
- * 
- * @param {Object} coord1 - First coordinate with latitude and longitude
- * @param {Object} coord2 - Second coordinate with latitude and longitude
- * @return {number} Distance in meters
- */
-function calculateDistance(coord1, coord2) {
-  const R = 6371e3; // Earth's radius in meters
-  const φ1 = coord1.latitude * Math.PI / 180;
-  const φ2 = coord2.latitude * Math.PI / 180;
-  const Δφ = (coord2.latitude - coord1.latitude) * Math.PI / 180;
-  const Δλ = (coord2.longitude - coord1.longitude) * Math.PI / 180;
-
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-  return R * c; // Distance in meters
-}
-
 export default function MapScreen({ navigation, route }) {
   const { getCurrentThemeColors, getCurrentMapStyleArray, getCurrentMapStyleConfig, currentTheme } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();
@@ -163,66 +115,72 @@ export default function MapScreen({ navigation, route }) {
   
   const mapRef = useRef(null);
   
-  const [currentPosition, setCurrentPosition] = useState(null);
-  const [tracking, setTracking] = useState(false);
-  const [currentJourneyId, setCurrentJourneyId] = useState(null);
   const [pathToRender, setPathToRender] = useState([]);
   const [previewRoute, setPreviewRoute] = useState([]);
   const [previewRoadCoords, setPreviewRoadCoords] = useState([]);
   const [savedRoutes, setSavedRoutes] = useState([]);
   const [showSavedRoutes, setShowSavedRoutes] = useState(true);
   const [isLoadingSavedRoutes, setIsLoadingSavedRoutes] = useState(false);
-  const [savedPlaces, setSavedPlaces] = useState([]);
-  const [showSavedPlaces, setShowSavedPlaces] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [locationError, setLocationError] = useState(false);
   const [pingUsed, setPingUsed] = useState(0);
   const [showPingAnimation, setShowPingAnimation] = useState(false);
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
-  const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
-  const [mapError, setMapError] = useState(null);
   const [appState, setAppState] = useState(AppState.currentState);
-  const [locationAccuracy, setLocationAccuracy] = useState(null);
   
-  // Journey naming modal state
-  const [showNamingModal, setShowNamingModal] = useState(false);
-  const [journeyName, setJourneyName] = useState('');
-  const [originalDefaultName, setOriginalDefaultName] = useState('');
-  const [pendingJourneyData, setPendingJourneyData] = useState(null);
+  // Replace journey tracking state and handlers with useJourneyTracking
+  const journeyTracking = useJourneyTracking({
+    user,
+    loadSavedRoutes,
+    setPathToRender,
+    setPreviewRoute,
+    setPreviewRoadCoords,
+    setCurrentJourneyId,
+  });
+  const {
+    tracking,
+    setTracking,
+    showNamingModal,
+    setShowNamingModal,
+    journeyName,
+    setJourneyName,
+    originalDefaultName,
+    setOriginalDefaultName,
+    pendingJourneyData,
+    setPendingJourneyData,
+    saveJourney,
+    handleSaveJourneyWithName,
+    handleCancelNaming,
+  } = journeyTracking;
 
-  // Check background location permissions
-  const checkBackgroundPermissions = async () => {
-    try {
-      const { status } = await Location.getBackgroundPermissionsAsync();
-      if (status !== 'granted') {
-        setBackgroundPermissionWarning(true);
-      } else {
-        setBackgroundPermissionWarning(false);
-      }
-    } catch (error) {
-      console.error('Error checking background permissions:', error);
-    }
-  };
+  // Replace location state and handlers with useLocation
+  const location = useLocation({
+    setPathToRender,
+    setLocationAccuracy,
+    setCurrentPosition,
+    setLocationError,
+    setBackgroundPermissionWarning,
+    loadSavedRoutes,
+    loadSavedPlaces,
+  });
+  const {
+    currentPosition,
+    locationAccuracy,
+    locationError,
+    backgroundPermissionWarning,
+    checkBackgroundPermissions,
+    showBackgroundPermissionWarning,
+  } = location;
 
-  const showBackgroundPermissionWarning = () => {
-    Alert.alert(
-      'Background Location Permission Required',
-      'Hero\'s Path needs "Always" location access to track your walks even when the app is in the background. This allows you to record your complete journey.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Open Settings',
-          onPress: () => {
-            if (Platform.OS === 'ios') {
-              Linking.openURL('app-settings:');
-            } else {
-              Linking.openSettings();
-            }
-          }
-        }
-      ]
-    );
-  };
+  // Replace saved places state and handlers with useSavedPlaces
+  const savedPlacesHook = useSavedPlaces({ user, setSavedPlaces });
+  const {
+    savedPlaces,
+    setSavedPlaces: setSavedPlacesHook,
+    showSavedPlaces,
+    setShowSavedPlaces: setShowSavedPlacesHook,
+    loadSavedPlaces,
+    toggleSavedPlaces,
+  } = savedPlacesHook;
 
   // Initialize BackgroundLocationService and load data on mount
   useEffect(() => {
@@ -427,18 +385,6 @@ export default function MapScreen({ navigation, route }) {
     }
   };
 
-  const loadSavedPlaces = async () => {
-    if (!user) return;
-    
-    try {
-      const result = await DiscoveryService.getSavedPlaces(user.uid);
-      const places = result.success ? result.discoveries : [];
-      setSavedPlaces(places);
-    } catch (error) {
-      console.error('Error loading saved places:', error);
-    }
-  };
-
   const locateMe = async () => {
     setIsLocating(true);
     setLocationError(false);
@@ -479,21 +425,6 @@ export default function MapScreen({ navigation, route }) {
     }
   };
 
-  const toggleSavedPlaces = async () => {
-    setShowSavedPlaces(!showSavedPlaces);
-  };
-  
-  const toggleSavedRoutes = () => {
-    const newValue = !showSavedRoutes;
-    setShowSavedRoutes(newValue);
-    Logger.debug('Toggled saved routes visibility:', { showSavedRoutes: newValue });
-    
-    // If turning on saved routes and we don't have any loaded yet, load them
-    if (newValue && savedRoutes.length === 0 && user) {
-      loadSavedRoutes();
-    }
-  };
-  
   // Function to render saved routes with proper styling
   const renderSavedRoutes = () => {
     if (!showSavedRoutes || savedRoutes.length === 0) return null;
@@ -508,161 +439,6 @@ export default function MapScreen({ navigation, route }) {
         lineDashPattern={[1, 2]}
       />
     ));
-  };
-
-  const saveJourney = async (rawCoords, name) => {
-    if (!user || rawCoords.length === 0) return;
-
-    try {
-      Logger.info('MAP_SCREEN', 'Saving journey...', { 
-        userId: user.uid, 
-        routePoints: rawCoords.length 
-      });
-
-      // Calculate distance first to check if journey is too short
-      const distance = calculateTotalDistance(rawCoords);
-      
-      // Requirement 2.6: Warn if journey is less than 50 meters
-      if (distance < 50) {
-        Alert.alert(
-          'Short Journey Warning',
-          `Your journey is only ${Math.round(distance)}m long. This may be too short to be meaningful. Do you still want to save it?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Save Anyway', 
-              onPress: () => proceedWithSave(rawCoords, name, distance)
-            }
-          ]
-        );
-        return;
-      }
-      
-      // Proceed with normal save
-      await proceedWithSave(rawCoords, name, distance);
-    } catch (error) {
-      Logger.error('MAP_SCREEN', 'Error saving journey', error);
-      Alert.alert('Error', 'Failed to save your walk. Please try again.');
-    }
-  };
-
-  const proceedWithSave = async (rawCoords, name, distance) => {
-    try {
-      // Create journey data
-      const journeyData = {
-        userId: user.uid,
-        name: name || `Walk on ${new Date().toLocaleDateString()}`,
-        startTime: rawCoords[0].timestamp,
-        endTime: rawCoords[rawCoords.length - 1].timestamp,
-        route: rawCoords.map(coord => ({
-          latitude: coord.latitude,
-          longitude: coord.longitude,
-          timestamp: coord.timestamp,
-        })),
-        distance: distance,
-        duration: rawCoords[rawCoords.length - 1].timestamp - rawCoords[0].timestamp,
-        status: 'completed',
-      };
-
-      // Save journey
-      const result = await JourneyService.createJourney(user.uid, journeyData);
-      
-      if (result.success) {
-        Logger.info('MAP_SCREEN', 'Journey saved successfully', { 
-          journeyId: result.journey.id 
-        });
-
-        // Trigger discovery process
-        try {
-          await JourneyService.consolidateJourneyDiscoveries(
-            user.uid, 
-            result.journey.id, 
-            journeyData.route
-          );
-          Logger.info('MAP_SCREEN', 'Discovery process completed');
-        } catch (discoveryError) {
-          Logger.error('MAP_SCREEN', 'Discovery process failed', discoveryError);
-        }
-
-        // Update local state
-        setCurrentJourneyId(null);
-        setPathToRender([]);
-        setPreviewRoute([]);
-        setPreviewRoadCoords([]);
-        
-        // Reload saved routes
-        await loadSavedRoutes();
-        
-        Alert.alert(
-          'Walk Saved! 🎉',
-          `Your ${Math.round(journeyData.distance)}m walk has been saved. Check your discoveries for new places found along your route!`
-        );
-      } else {
-        throw new Error(result.error || 'Failed to save journey');
-      }
-    } catch (error) {
-      Logger.error('MAP_SCREEN', 'Error saving journey', error);
-      Alert.alert('Error', 'Failed to save your walk. Please try again.');
-    }
-  };
-
-  // Journey naming modal handlers
-  const handleSaveJourneyWithName = async () => {
-    if (!pendingJourneyData) return;
-    
-    try {
-      setShowNamingModal(false);
-      
-      // Save the journey with the custom name
-      const finalName = journeyName.trim() || originalDefaultName;
-      await saveJourney(pendingJourneyData.coordinates, finalName);
-      
-      // Clear modal state
-      setPendingJourneyData(null);
-      setJourneyName('');
-      setOriginalDefaultName('');
-      
-      Alert.alert('Journey Saved! 🎉', `Your walk "${finalName}" has been saved successfully.`);
-    } catch (error) {
-      Logger.error('Error saving named journey:', error);
-      Alert.alert('Error', 'Failed to save your journey. Please try again.');
-    }
-  };
-
-  const handleCancelNaming = () => {
-    // Still save the journey with default name
-    Alert.alert(
-      'Save Journey?',
-      'Do you want to save this journey with the default name?',
-      [
-        { 
-          text: 'Don\'t Save', 
-          style: 'destructive',
-          onPress: () => {
-            setShowNamingModal(false);
-            setPendingJourneyData(null);
-            setJourneyName('');
-            setOriginalDefaultName('');
-          }
-        },
-        { 
-          text: 'Save with Default Name', 
-          onPress: async () => {
-            try {
-              setShowNamingModal(false);
-              await saveJourney(pendingJourneyData.coordinates, originalDefaultName);
-              setPendingJourneyData(null);
-              setJourneyName('');
-              setOriginalDefaultName('');
-              Alert.alert('Journey Saved!', `Your walk "${originalDefaultName}" has been saved with the default name.`);
-            } catch (error) {
-              Logger.error('Error saving journey with default name:', error);
-              Alert.alert('Error', 'Failed to save your journey.');
-            }
-          }
-        }
-      ]
-    );
   };
 
   const calculateTotalDistance = (coords) => {
@@ -688,88 +464,6 @@ export default function MapScreen({ navigation, route }) {
     }
     
     return totalDistance;
-  };
-
-  const toggleTracking = async () => {
-    if (tracking) {
-      // Stop tracking using BackgroundLocationService
-      try {
-        const journeyData = await BackgroundLocationService.stopTracking();
-        setTracking(false);
-        
-        // Save the journey if we have data - show naming modal first
-        if (journeyData && journeyData.coordinates.length > 0) {
-          // Generate default name with date and starting location
-          const date = new Date().toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: '2-digit'
-          }).replace(',', '');
-          const time = new Date().toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          });
-          
-          // Try to get starting location name for better default
-          let defaultName = `Walk - ${date} ${time}`;
-          if (journeyData.startLocation) {
-            defaultName = `Walk - ${date} ${time}`;
-          }
-          
-          setJourneyName(defaultName);
-          setOriginalDefaultName(defaultName); // Store the original default name
-          setPendingJourneyData(journeyData);
-          setShowNamingModal(true);
-        } else {
-          Logger.warn('No journey data to save');
-          Alert.alert('No Data', 'No route data was recorded. Make sure location permissions are enabled.');
-        }
-        
-        // Reset UI state
-        setCurrentJourneyId(null);
-        setPathToRender([]);
-        setPreviewRoute([]);
-        setPreviewRoadCoords([]);
-        
-      } catch (error) {
-        Logger.error('Error stopping tracking:', error);
-        Alert.alert('Error', 'Failed to stop tracking. Your data may not have been saved.');
-        setTracking(false);
-      }
-    } else {
-      // Start tracking using BackgroundLocationService
-      try {
-        // Create new journey ID
-        const journeyId = Date.now().toString();
-        
-        // Reset UI state
-        setCurrentJourneyId(journeyId);
-        setPathToRender([]);
-        setPreviewRoute([]);
-        setPreviewRoadCoords([]);
-        setPingUsed(0);
-
-        // Start tracking with the enhanced service
-        const success = await BackgroundLocationService.startTracking(journeyId);
-        
-        if (success) {
-          setTracking(true);
-          Logger.info('Started enhanced GPS tracking with background support', { journeyId });
-          
-          // Show success message
-          Alert.alert(
-            'Walk Started! 🚶‍♂️',
-            'Your walk is now being tracked. You can put your phone in your pocket and the app will continue recording your route in the background.'
-          );
-        } else {
-          throw new Error('Failed to start tracking');
-        }
-      } catch (error) {
-        Logger.error('Error starting tracking:', error);
-        Alert.alert('Error', 'Failed to start tracking. Please check your location permissions and try again.');
-      }
-    }
   };
 
   // Error boundary for MapView
@@ -813,29 +507,7 @@ export default function MapScreen({ navigation, route }) {
 
       {/* GPS Accuracy Indicator */}
       {tracking && locationAccuracy && (
-        <View style={[styles.accuracyIndicator, { backgroundColor: colors.cardBackground }]}>
-          <MaterialIcons 
-            name="gps-fixed" 
-            size={16} 
-            color={
-              locationAccuracy <= 5 ? colors.success :
-              locationAccuracy <= 15 ? colors.warning :
-              colors.error
-            } 
-          />
-          <Text style={[styles.accuracyText, { color: colors.textSecondary }]}>
-            GPS: {Math.round(locationAccuracy)}m
-          </Text>
-          <Text style={[styles.accuracyStatus, { 
-            color: locationAccuracy <= 5 ? colors.success :
-                   locationAccuracy <= 15 ? colors.warning :
-                   colors.error
-          }]}>
-            {locationAccuracy <= 5 ? 'Excellent' :
-             locationAccuracy <= 15 ? 'Good' :
-             locationAccuracy <= 50 ? 'Fair' : 'Poor'}
-          </Text>
-        </View>
+        <AccuracyIndicator tracking={tracking} locationAccuracy={locationAccuracy} colors={colors} />
       )}
 
       {currentPosition ? (
@@ -851,7 +523,7 @@ export default function MapScreen({ navigation, route }) {
           {...googleMapProperties}
         >
           {/* Saved routes as polylines */}
-          {renderSavedRoutes()}
+          <SavedRoutes showSavedRoutes={showSavedRoutes} savedRoutes={savedRoutes} colors={colors} />
           {/* Preview route polyline */}
           {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
             <Polyline
@@ -886,18 +558,7 @@ export default function MapScreen({ navigation, route }) {
             </Marker>
           )}
           {/* Saved places markers */}
-          {showSavedPlaces && savedPlaces.map(place => (
-            <Marker
-              key={place.id}
-              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
-              title={place.name}
-              description={place.vicinity}
-            >
-              <View style={[styles.savedPlaceMarker, { backgroundColor: colors.primary }]}> 
-                <MaterialIcons name="favorite" size={16} color={colors.buttonText} />
-              </View>
-            </Marker>
-          ))}
+          <SavedPlaces showSavedPlaces={showSavedPlaces} savedPlaces={savedPlaces} colors={colors} />
         </MapView>
       ) : (
         <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
@@ -916,92 +577,29 @@ export default function MapScreen({ navigation, route }) {
       )}
       
       {/* Control buttons */}
-      <View style={styles.buttonContainer}>
-        {/* Discovery preferences button */}
-        <TouchableOpacity 
-          style={[styles.preferencesButton, { backgroundColor: colors.buttonSecondary }]} 
-          onPress={() => navigation.navigate('DiscoveryPreferences')}
-        >
-          <MaterialIcons name="tune" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        
-        {/* Locate me button */}
-        <LocateMeButton 
-          onPress={locateMe}
-          isLocating={isLocating}
-          hasError={locationError}
-          style={styles.locateButton}
-        />
-        
-        {/* Toggle saved routes button */}
-        <TouchableOpacity 
-          style={[
-            styles.toggleButton, 
-            { backgroundColor: showSavedRoutes ? colors.buttonPrimary : colors.buttonSecondary }
-          ]} 
-          onPress={toggleSavedRoutes}
-          disabled={isLoadingSavedRoutes}
-        >
-          <MaterialIcons 
-            name="timeline" 
-            size={24} 
-            color={showSavedRoutes ? colors.buttonText : colors.primary} 
-          />
-          {isLoadingSavedRoutes && (
-            <View style={styles.loadingIndicator}>
-              <ActivityIndicator size="small" color={showSavedRoutes ? colors.buttonText : colors.primary} />
-            </View>
-          )}
-          {showSavedRoutes && savedRoutes.length > 0 && (
-            <View style={[styles.routeCountBadge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.routeCountText, { color: colors.buttonText }]}>
-                {savedRoutes.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        
-        {/* Toggle saved places button */}
-        <TouchableOpacity 
-          style={[
-            styles.toggleButton, 
-            { backgroundColor: showSavedPlaces ? colors.buttonPrimary : colors.buttonSecondary }
-          ]} 
-          onPress={toggleSavedPlaces}
-        >
-          <MaterialIcons 
-            name="place" 
-            size={24} 
-            color={showSavedPlaces ? colors.buttonText : colors.primary} 
-          />
-        </TouchableOpacity>
-      </View>
+      <ControlButtons
+        colors={colors}
+        navigation={navigation}
+        locateMe={locateMe}
+        isLocating={isLocating}
+        locationError={locationError}
+        showSavedRoutes={showSavedRoutes}
+        toggleSavedRoutes={toggleSavedRoutes}
+        isLoadingSavedRoutes={isLoadingSavedRoutes}
+        savedRoutes={savedRoutes}
+        showSavedPlaces={showSavedPlaces}
+        toggleSavedPlaces={toggleSavedPlaces}
+      />
 
       {/* Ping components - only show when tracking */}
-      {tracking && currentPosition && currentJourneyId && (
-        <View style={styles.pingContainer}>
-          <PingStats 
-            style={styles.pingStats} 
-            onPingUsed={pingUsed}
-          />
-          <PingButton
-            currentLocation={currentPosition}
-            journeyId={currentJourneyId}
-            onPingStart={() => {
-              // Animation scaffolding
-            }}
-            onPingSuccess={(result) => {
-              Logger.debug('Ping successful:', result);
-              setPingUsed(prev => prev + 1);
-            }}
-            onPingError={(error) => {
-              Logger.error('Ping error:', error);
-            }}
-            style={styles.pingButton}
-            disabled={!tracking}
-          />
-        </View>
-      )}
+      <PingControls
+        tracking={tracking}
+        currentPosition={currentPosition}
+        currentJourneyId={journeyTracking.currentJourneyId}
+        pingUsed={pingUsed}
+        setPingUsed={setPingUsed}
+        style={styles.pingContainer}
+      />
       
       <View style={styles.trackButtonContainer}>
         <TouchableOpacity
@@ -1009,58 +607,22 @@ export default function MapScreen({ navigation, route }) {
             styles.trackButton, 
             { backgroundColor: tracking ? colors.error : colors.buttonPrimary }
           ]}
-          onPress={toggleTracking}
+          onPress={journeyTracking.toggleTracking}
         >
           <Text style={[styles.trackButtonText, { color: colors.buttonText }]}> {tracking ? 'Stop & Save Walk' : 'Start Walk'} </Text>
         </TouchableOpacity>
       </View>
 
       {/* Journey naming modal */}
-      <Modal
+      <JourneyNamingModal
         visible={showNamingModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleCancelNaming}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.modalBackground }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Name Your Journey</Text>
-            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Give your walk a memorable name</Text>
-            
-            <TextInput
-              style={[
-                styles.input,
-                { 
-                  backgroundColor: colors.inputBackground,
-                  borderColor: colors.inputBorder,
-                  color: colors.inputText
-                }
-              ]}
-              value={journeyName}
-              onChangeText={setJourneyName}
-              placeholder="Enter journey name"
-              placeholderTextColor={colors.placeholder}
-              autoFocus={true}
-            />
-            
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton, { borderColor: colors.border }]}
-                onPress={handleCancelNaming}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.buttonPrimary }]}
-                onPress={handleSaveJourneyWithName}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.buttonText }]}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        journeyName={journeyName}
+        setJourneyName={setJourneyName}
+        onSave={handleSaveJourneyWithName}
+        onCancel={handleCancelNaming}
+        colors={colors}
+        originalDefaultName={originalDefaultName}
+      />
 
       <StatusBar style="auto" />
     </View>
