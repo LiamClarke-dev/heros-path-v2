@@ -54,7 +54,6 @@ export default function useJourneyTracking({
   setPathToRender,
   setPreviewRoute,
   setPreviewRoadCoords,
-  setCurrentJourneyId,
   pathToRender,
 }) {
   const [tracking, setTracking] = useState(false);
