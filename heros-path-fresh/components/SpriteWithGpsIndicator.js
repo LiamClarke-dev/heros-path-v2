@@ -36,14 +36,6 @@ const SpriteWithGpsIndicator = ({
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors();
   
-  // Log component initialization for debugging
-  Logger.debug('SpriteWithGpsIndicator initialized', {
-    platform: Platform.OS,
-    accuracy: gpsAccuracy,
-    isMoving,
-    spriteSourceValid: !!spriteSource
-  });
-  
   // Animation values for smooth transitions
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -61,14 +53,6 @@ const SpriteWithGpsIndicator = ({
   
   // Handle animations when GPS state or movement changes
   useEffect(() => {
-    // Log animation state changes for debugging
-    Logger.debug('SpriteWithGpsIndicator animation update', {
-      platform: Platform.OS,
-      gpsState,
-      isMoving,
-      accuracy: gpsAccuracy
-    });
-    
     // Reset animations
     Animated.parallel([
       Animated.timing(opacityAnim, {
@@ -162,9 +146,9 @@ const SpriteWithGpsIndicator = ({
   const getTintColor = () => {
     switch (gpsState) {
       case GPS_STATE.WEAK:
-        return colors.warning || '#FFA500'; // Orange for weak GPS
+        return colors?.warning || '#FFA500'; // Orange for weak GPS
       case GPS_STATE.LOST:
-        return colors.error || '#FF0000'; // Red for lost GPS
+        return colors?.error || '#FF0000'; // Red for lost GPS
       default:
         return null; // No tint for good GPS
     }
@@ -176,12 +160,12 @@ const SpriteWithGpsIndicator = ({
       case GPS_STATE.WEAK:
         return {
           name: 'gps-not-fixed',
-          color: colors.warning || '#FFA500'
+          color: colors?.warning || '#FFA500'
         };
       case GPS_STATE.LOST:
         return {
           name: 'gps-off',
-          color: colors.error || '#FF0000'
+          color: colors?.error || '#FF0000'
         };
       default:
         return null; // No indicator for good GPS
@@ -197,6 +181,14 @@ const SpriteWithGpsIndicator = ({
     outputRange: [1, 1.2]
   });
   
+  // Debug the sprite rendering
+  Logger.debug('Rendering sprite with source:', {
+    hasSource: !!spriteSource,
+    gpsState,
+    accuracy: gpsAccuracy,
+    isMoving
+  });
+  
   return (
     <View style={styles.container}>
       {/* Animated sprite */}
@@ -209,17 +201,19 @@ const SpriteWithGpsIndicator = ({
           }
         ]}
       >
-        <Image
-          source={spriteSource}
-          style={[
-            styles.spriteImage,
-            { width: size / 2, height: size },
-            tintColor ? { tintColor } : null
-          ]}
-          resizeMode="contain"
-          // Force GIF rendering in production builds
-          fadeDuration={0}
-        />
+        {spriteSource && (
+          <Image
+            source={spriteSource}
+            style={[
+              styles.spriteImage,
+              { width: size / 2, height: size },
+              tintColor ? { tintColor } : null
+            ]}
+            resizeMode="contain"
+            // Force GIF rendering in production builds
+            fadeDuration={0}
+          />
+        )}
       </Animated.View>
       
       {/* GPS indicator (only shown for weak or lost GPS) */}
@@ -229,7 +223,7 @@ const SpriteWithGpsIndicator = ({
             styles.gpsIndicator,
             {
               transform: [{ scale: indicatorScale }],
-              backgroundColor: colors.cardBackground || '#FFFFFF'
+              backgroundColor: colors?.cardBackground || '#FFFFFF'
             }
           ]}
         >

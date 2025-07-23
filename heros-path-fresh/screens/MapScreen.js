@@ -29,48 +29,35 @@ import {
   TouchableOpacity,
   Alert,
   StatusBar,
-  Image,
   Dimensions,
   Platform,
-  Linking,
   AppState,
-  Modal,
-  TextInput,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 import { useUser } from '../contexts/UserContext';
 import { useExploration } from '../contexts/ExplorationContext';
 import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
-import PingButton from '../components/PingButton';
-import PingStats from '../components/PingStats';
 import PingAnimation from '../components/PingAnimation';
-import LocateMeButton from '../components/LocateMeButton';
 import SpriteWithGpsIndicator from '../components/SpriteWithGpsIndicator';
-import JourneyService from '../services/JourneyService';
-import DiscoveryService from '../services/DiscoveryService';
-import BackgroundLocationService from '../services/BackgroundLocationService';
 import Logger from '../utils/Logger';
 import MapProviderHelper from '../utils/MapProviderHelper';
-import SectionHeader from '../components/ui/SectionHeader';
-import AppButton from '../components/ui/AppButton';
-import Constants from 'expo-constants';
-import { GOOGLE_MAPS_API_KEY_IOS } from '../config';
-import { calculateDistance, calculateTotalDistance, getDirection } from '../utils/geo';
+import { getDirection } from '../utils/geo';
+
+// Import UI components
 import JourneyNamingModal from '../components/ui/JourneyNamingModal';
 import AccuracyIndicator from '../components/ui/AccuracyIndicator';
 import SavedRoutes from '../components/ui/SavedRoutes';
 import SavedPlaces from '../components/ui/SavedPlaces';
 import ControlButtons from '../components/ui/ControlButtons';
 import PingControls from '../components/ui/PingControls';
+
+// Import custom hooks
 import useJourneyTracking from '../hooks/useJourneyTracking';
 import useLocation from '../hooks/useLocation';
 import useSavedPlaces from '../hooks/useSavedPlaces';
-
-const { width, height } = Dimensions.get('window');
 
 // Sprite animation states
 const SPRITE_STATES = {
@@ -115,6 +102,8 @@ export default function MapScreen({ navigation, route }) {
   
   const mapRef = useRef(null);
   
+  // State declarations
+  const [mapError, setMapError] = useState(null);
   const [pathToRender, setPathToRender] = useState([]);
   const [previewRoute, setPreviewRoute] = useState([]);
   const [previewRoadCoords, setPreviewRoadCoords] = useState([]);
@@ -126,8 +115,42 @@ export default function MapScreen({ navigation, route }) {
   const [showPingAnimation, setShowPingAnimation] = useState(false);
   const [spriteState, setSpriteState] = useState(SPRITE_STATES.IDLE);
   const [appState, setAppState] = useState(AppState.currentState);
+  const [currentJourneyId, setCurrentJourneyId] = useState(null);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [locationError, setLocationError] = useState(false);
+  const [backgroundPermissionWarning, setBackgroundPermissionWarning] = useState(false);
+  const [savedPlaces, setSavedPlaces] = useState([]);
   
-  // Replace journey tracking state and handlers with useJourneyTracking
+  // Load saved routes function
+  const loadSavedRoutes = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoadingSavedRoutes(true);
+      Logger.debug('MapScreen: Loading saved routes');
+      
+      const JourneyService = require('../services/JourneyService').default;
+      const result = await JourneyService.getUserJourneys(user.uid);
+      if (result.success) {
+        setSavedRoutes(result.journeys);
+        Logger.debug(`MapScreen: Successfully loaded ${result.journeys.length} saved routes`);
+      } else {
+        Logger.warn('MapScreen: Failed to load saved routes', result.error);
+        Alert.alert('Error', 'Failed to load your saved routes. Please try again.');
+      }
+    } catch (error) {
+      Logger.error('MapScreen: Error loading saved routes', error);
+      Alert.alert('Error', 'Failed to load your saved routes. Please try again.');
+    } finally {
+      setIsLoadingSavedRoutes(false);
+    }
+  };
+  
+  // Toggle saved routes function
+  const toggleSavedRoutes = () => setShowSavedRoutes((prev) => !prev);
+
+  // Use journey tracking hook
   const journeyTracking = useJourneyTracking({
     user,
     loadSavedRoutes,
@@ -135,7 +158,9 @@ export default function MapScreen({ navigation, route }) {
     setPreviewRoute,
     setPreviewRoadCoords,
     setCurrentJourneyId,
+    pathToRender,
   });
+  
   const {
     tracking,
     setTracking,
@@ -150,9 +175,13 @@ export default function MapScreen({ navigation, route }) {
     saveJourney,
     handleSaveJourneyWithName,
     handleCancelNaming,
+    toggleTracking,
+    devMode,
+    toggleDevMode,
+    isSaving,
   } = journeyTracking;
 
-  // Replace location state and handlers with useLocation
+  // Use location hook
   const location = useLocation({
     setPathToRender,
     setLocationAccuracy,
@@ -162,159 +191,37 @@ export default function MapScreen({ navigation, route }) {
     loadSavedRoutes,
     loadSavedPlaces,
   });
+  
   const {
-    currentPosition,
-    locationAccuracy,
-    locationError,
-    backgroundPermissionWarning,
     checkBackgroundPermissions,
     showBackgroundPermissionWarning,
   } = location;
 
-  // Replace saved places state and handlers with useSavedPlaces
-  const savedPlacesHook = useSavedPlaces({ user, setSavedPlaces });
+  // Use saved places hook
+  const savedPlacesHook = useSavedPlaces({ 
+    user, 
+    setSavedPlaces 
+  });
+  
   const {
-    savedPlaces,
-    setSavedPlaces: setSavedPlacesHook,
     showSavedPlaces,
-    setShowSavedPlaces: setShowSavedPlacesHook,
+    setShowSavedPlaces,
     loadSavedPlaces,
     toggleSavedPlaces,
   } = savedPlacesHook;
-
-  // Initialize BackgroundLocationService and load data on mount
-  useEffect(() => {
-    const initializeLocation = async () => {
-      try {
-        // HOTFIX: Reset any stuck tracking state from previous app sessions
-        // This prevents the service from being stuck in tracking mode after app reload
-        await BackgroundLocationService.cleanup();
-        Logger.info('MapScreen: Reset location service state on initialization');
-        
-        // Initialize the background location service
-        const initialized = await BackgroundLocationService.initialize();
-        if (!initialized) {
-          Alert.alert('Location Setup Failed', 'Please enable location permissions in your device settings.');
-          return;
-        }
-
-        // Set up location update callback
-        BackgroundLocationService.setLocationUpdateCallback((coords, journey) => {
-          // Update current position
-          setCurrentPosition({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            timestamp: coords.timestamp,
-          });
-          
-          // Update location accuracy indicator
-          setLocationAccuracy(coords.accuracy);
-          
-          // Update path for rendering
-          setPathToRender(journey.coordinates);
-          
-          Logger.debug('Location updated:', {
-            lat: coords.latitude.toFixed(6),
-            lng: coords.longitude.toFixed(6),
-            accuracy: coords.accuracy,
-            points: journey.coordinates.length
-          });
-        });
-
-        // Get initial location with enhanced error handling and fallback
-        try {
-          Logger.debug('MapScreen: Attempting to get initial location for sprite');
-          const coords = await BackgroundLocationService.getCurrentLocation();
-          
-          if (coords && coords.latitude && coords.longitude) {
-            const initialPosition = {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              timestamp: Date.now(),
-            };
-            setCurrentPosition(initialPosition);
-            setLocationAccuracy(coords.accuracy);
-            Logger.debug('MapScreen: Initial position set for Link sprite', initialPosition);
-          } else {
-            Logger.warn('MapScreen: Invalid coordinates received from getCurrentLocation');
-            throw new Error('Invalid coordinates');
-          }
-        } catch (error) {
-          Logger.warn('MapScreen: Could not get initial location, trying fallback', error);
-          
-          // HOTFIX: Try to get location using Expo Location as fallback
-          try {
-            const { status } = await Location.getForegroundPermissionsAsync();
-            if (status === 'granted') {
-              const fallbackLocation = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-                maximumAge: 10000,
-              });
-              
-              if (fallbackLocation?.coords) {
-                const fallbackPosition = {
-                  latitude: fallbackLocation.coords.latitude,
-                  longitude: fallbackLocation.coords.longitude,
-                  timestamp: Date.now(),
-                };
-                setCurrentPosition(fallbackPosition);
-                setLocationAccuracy(fallbackLocation.coords.accuracy);
-                Logger.info('MapScreen: Fallback position set for Link sprite', fallbackPosition);
-              }
-            }
-          } catch (fallbackError) {
-            Logger.error('MapScreen: Both initial location and fallback failed', fallbackError);
-            setLocationError(true);
-          }
-        }
-
-      } catch (error) {
-        Logger.error('Error initializing location service:', error);
-        Alert.alert('Location Error', 'Failed to initialize location services. Please check your permissions.');
-        setLocationError(true);
-      }
-    };
-
-    initializeLocation();
-    loadSavedRoutes();
-    loadSavedPlaces();
-    checkBackgroundPermissions();
-
-    // Cleanup on unmount
-    return () => {
-      BackgroundLocationService.setLocationUpdateCallback(null);
-    };
-  }, []);
-
-  // Debug useEffect to monitor Link sprite position state
-  useEffect(() => {
-    if (currentPosition) {
-      Logger.debug('MapScreen: Link sprite position updated:', {
-        lat: currentPosition.latitude,
-        lng: currentPosition.longitude,
-        timestamp: currentPosition.timestamp
-      });
-    } else {
-      Logger.debug('MapScreen: Link sprite position is null - sprite will not render');
-    }
-  }, [currentPosition]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        checkBackgroundPermissions();
-      }
-      setAppState(nextAppState);
-    });
-    return () => subscription.remove();
-  }, [appState]);
 
   // Update sprite state based on movement and GPS accuracy
   useEffect(() => {
     try {
       if (pathToRender.length >= 2) {
         // Pass the location accuracy to getDirection to determine GPS-based states
-        const direction = getDirection(pathToRender.slice(-2), locationAccuracy);
+        const direction = getDirection(
+          pathToRender.slice(-2), 
+          locationAccuracy,
+          SPRITE_STATES,
+          MOVEMENT_THRESHOLD
+        );
+        
         Logger.debug('Sprite direction calculated:', { 
           pathLength: pathToRender.length, 
           direction, 
@@ -322,6 +229,7 @@ export default function MapScreen({ navigation, route }) {
           accuracy: locationAccuracy,
           platform: Platform.OS
         });
+        
         setSpriteState(direction);
       } else {
         // If no path data but we have accuracy info, we can still show GPS state
@@ -357,40 +265,17 @@ export default function MapScreen({ navigation, route }) {
     }
   }, [pathToRender, locationAccuracy]);
 
-  // Get sprite source and determine if we need to apply special styling for GPS states
+  // Get sprite source
   const spriteSource = SPRITE_SOURCES[spriteState];
-  const isGpsWeakState = spriteState === SPRITE_STATES.GPS_WEAK;
-  const isGpsLostState = spriteState === SPRITE_STATES.GPS_LOST;
 
-  const loadSavedRoutes = async () => {
-    if (!user) return;
-    
-    try {
-      setIsLoadingSavedRoutes(true);
-      Logger.debug('MapScreen: Loading saved routes');
-      
-      const result = await JourneyService.getUserJourneys(user.uid);
-      if (result.success) {
-        setSavedRoutes(result.journeys);
-        Logger.debug(`MapScreen: Successfully loaded ${result.journeys.length} saved routes`);
-      } else {
-        Logger.warn('MapScreen: Failed to load saved routes', result.error);
-        Alert.alert('Error', 'Failed to load your saved routes. Please try again.');
-      }
-    } catch (error) {
-      Logger.error('MapScreen: Error loading saved routes', error);
-      Alert.alert('Error', 'Failed to load your saved routes. Please try again.');
-    } finally {
-      setIsLoadingSavedRoutes(false);
-    }
-  };
-
+  // Locate me function
   const locateMe = async () => {
     setIsLocating(true);
     setLocationError(false);
     
     try {
       // Get fresh location from the service
+      const BackgroundLocationService = require('../services/BackgroundLocationService').default;
       const coords = await BackgroundLocationService.getCurrentLocation();
       
       const newPosition = {
@@ -425,46 +310,16 @@ export default function MapScreen({ navigation, route }) {
     }
   };
 
-  // Function to render saved routes with proper styling
-  const renderSavedRoutes = () => {
-    if (!showSavedRoutes || savedRoutes.length === 0) return null;
-    
-    return savedRoutes.map(journey => (
-      <Polyline
-        key={journey.id}
-        coordinates={journey.route}
-        strokeColor={colors.routeLine}
-        strokeWidth={3}
-        strokeOpacity={0.6}
-        lineDashPattern={[1, 2]}
-      />
-    ));
-  };
-
-  const calculateTotalDistance = (coords) => {
-    if (coords.length < 2) return 0;
-    
-    let totalDistance = 0;
-    for (let i = 1; i < coords.length; i++) {
-      const prev = coords[i - 1];
-      const curr = coords[i];
-      
-      const R = 6371e3; // Earth's radius in meters
-      const φ1 = prev.latitude * Math.PI / 180;
-      const φ2 = curr.latitude * Math.PI / 180;
-      const Δφ = (curr.latitude - prev.latitude) * Math.PI / 180;
-      const Δλ = (curr.longitude - prev.longitude) * Math.PI / 180;
-
-      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ/2) * Math.sin(Δλ/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-      totalDistance += R * c;
-    }
-    
-    return totalDistance;
-  };
+  // Monitor app state changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      setAppState(nextAppState);
+      if (nextAppState === 'active') {
+        checkBackgroundPermissions();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   // Error boundary for MapView
   function handleMapError(e) {
@@ -506,9 +361,11 @@ export default function MapScreen({ navigation, route }) {
       )}
 
       {/* GPS Accuracy Indicator */}
-      {tracking && locationAccuracy && (
-        <AccuracyIndicator tracking={tracking} locationAccuracy={locationAccuracy} colors={colors} />
-      )}
+      <AccuracyIndicator 
+        tracking={tracking} 
+        locationAccuracy={locationAccuracy} 
+        colors={colors} 
+      />
 
       {currentPosition ? (
         <MapView
@@ -523,7 +380,12 @@ export default function MapScreen({ navigation, route }) {
           {...googleMapProperties}
         >
           {/* Saved routes as polylines */}
-          <SavedRoutes showSavedRoutes={showSavedRoutes} savedRoutes={savedRoutes} colors={colors} />
+          <SavedRoutes 
+            showSavedRoutes={showSavedRoutes} 
+            savedRoutes={savedRoutes} 
+            colors={colors} 
+          />
+          
           {/* Preview route polyline */}
           {(previewRoadCoords.length > 0 || previewRoute.length > 0) && (
             <Polyline
@@ -532,6 +394,7 @@ export default function MapScreen({ navigation, route }) {
               strokeWidth={4}
             />
           )}
+          
           {/* Current path polyline */}
           {pathToRender.length > 0 && (
             <Polyline
@@ -540,6 +403,7 @@ export default function MapScreen({ navigation, route }) {
               strokeWidth={6}
             />
           )}
+          
           {/* Current position marker (sprite) with GPS indicator */}
           {currentPosition && (
             <Marker
@@ -557,8 +421,13 @@ export default function MapScreen({ navigation, route }) {
               />
             </Marker>
           )}
+          
           {/* Saved places markers */}
-          <SavedPlaces showSavedPlaces={showSavedPlaces} savedPlaces={savedPlaces} colors={colors} />
+          <SavedPlaces 
+            showSavedPlaces={showSavedPlaces} 
+            savedPlaces={savedPlaces} 
+            colors={colors} 
+          />
         </MapView>
       ) : (
         <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}> 
@@ -595,7 +464,7 @@ export default function MapScreen({ navigation, route }) {
       <PingControls
         tracking={tracking}
         currentPosition={currentPosition}
-        currentJourneyId={journeyTracking.currentJourneyId}
+        currentJourneyId={currentJourneyId}
         pingUsed={pingUsed}
         setPingUsed={setPingUsed}
         style={styles.pingContainer}
@@ -607,9 +476,19 @@ export default function MapScreen({ navigation, route }) {
             styles.trackButton, 
             { backgroundColor: tracking ? colors.error : colors.buttonPrimary }
           ]}
-          onPress={journeyTracking.toggleTracking}
+          onPress={toggleTracking}
         >
           <Text style={[styles.trackButtonText, { color: colors.buttonText }]}> {tracking ? 'Stop & Save Walk' : 'Start Walk'} </Text>
+        </TouchableOpacity>
+        
+        {/* Hidden developer mode toggle - triple tap to activate */}
+        <TouchableOpacity
+          style={styles.devModeButton}
+          onPress={toggleDevMode}
+        >
+          <Text style={[styles.devModeText, { color: devMode ? colors.success : 'transparent' }]}>
+            {devMode ? 'DEV MODE ON' : '.'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -622,6 +501,7 @@ export default function MapScreen({ navigation, route }) {
         onCancel={handleCancelNaming}
         colors={colors}
         originalDefaultName={originalDefaultName}
+        isSaving={isSaving}
       />
 
       <StatusBar style="auto" />
@@ -633,48 +513,8 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1 
   },
-  spriteContainer: {
-    position: 'relative',
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spriteImage: {
-    width: 16,
-    height: 32,
-    resizeMode: 'contain',
-  },
-  spriteImageGpsWeak: {
-    opacity: 0.7,
-    tintColor: '#FFA500', // Orange tint for weak GPS
-  },
-  spriteImageGpsLost: {
-    opacity: 0.5,
-    tintColor: '#FF0000', // Red tint for lost GPS
-  },
-  gpsIndicator: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
-  },
   map: { 
     flex: 1 
-  },
-  sprite: { 
-    width: 16, 
-    height: 32 
   },
   buttonContainer: {
     position: 'absolute',
@@ -718,17 +558,21 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontWeight: '600',
   },
+  devModeButton: {
+    position: 'absolute',
+    bottom: -20,
+    alignSelf: 'center',
+    padding: 5,
+  },
+  devModeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
   pingContainer: {
     position: 'absolute',
     left: Spacing.md,
     bottom: 120,
     alignItems: 'center',
-  },
-  pingStats: {
-    marginBottom: Spacing.sm,
-  },
-  pingButton: {
-    ...Shadows.medium,
   },
   pingAnimation: {
     position: 'absolute',
@@ -758,84 +602,5 @@ const styles = StyleSheet.create({
   loadingText: {
     ...Typography.body,
     marginTop: Spacing.md,
-  },
-  savedPlaceMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Shadows.small,
-  },
-  accuracyIndicator: {
-    position: 'absolute',
-    top: 60,
-    right: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: Layout.borderRadius,
-    ...Shadows.small,
-  },
-  accuracyText: {
-    ...Typography.caption,
-    marginLeft: 4,
-  },
-  accuracyStatus: {
-    ...Typography.caption,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    width: '80%',
-    borderRadius: Layout.borderRadius,
-    padding: Spacing.lg,
-    ...Shadows.large,
-  },
-  modalTitle: {
-    ...Typography.h3,
-    marginBottom: Spacing.xs,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    ...Typography.caption,
-    marginBottom: Spacing.md,
-    textAlign: 'center',
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: Layout.borderRadius,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: Layout.borderRadius,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: Spacing.xs,
-  },
-  cancelButton: {
-    borderWidth: 1,
-  },
-  saveButton: {
-    ...Shadows.small,
-  },
-  modalButtonText: {
-    ...Typography.body,
-    fontWeight: '600',
   },
 });
