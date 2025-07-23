@@ -257,7 +257,24 @@ Services
     leaderboardOptIn: boolean,
     sharingEnabled: boolean,
     visualEffectsLevel: string // "high", "medium", "low"
-  }
+  },
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
 }
 ```
 
@@ -277,7 +294,24 @@ Services
   metadata: {
     totalLength: number,       // Total length of all segments
     lastUpdated: timestamp     // Last time routes were updated
-  }
+  },
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
 }
 ```
 
@@ -294,7 +328,24 @@ Services
     totalLength: number,       // Total length of all streets
     city: string,              // City
     region: string             // State/province/region
-  }
+  },
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
 }
 ```
 ### Neighborhood Progress
@@ -337,7 +388,24 @@ Services
   },
   duration: number,            // Time limit in hours (0 = no limit)
   startDate: timestamp,        // When quest becomes available
-  endDate: timestamp           // When quest expires
+  endDate: timestamp,          // When quest expires
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
 }
 ```
 
@@ -352,7 +420,24 @@ Services
   currentValue: number,        // Current value toward target
   acceptedAt: timestamp,       // When quest was accepted
   completedAt: timestamp,      // When quest was completed (if applicable)
-  rewardsCollected: boolean    // Whether rewards were collected
+  rewardsCollected: boolean,   // Whether rewards were collected
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
 }
 ```
 
@@ -377,6 +462,24 @@ Services
   rewards: {                   // Rewards for earning
     xp: number,                // Experience points
     customizations: string[]   // Customization IDs (if any)
+  },
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
   }
 }
 ```
@@ -470,7 +573,24 @@ Services
     xp: number,                // Experience points
     badges: string[],          // Badge IDs
     customizations: string[]   // Customization IDs
-  }
+  },
+  
+  // NEW: Migration framework support
+  schemaVersion: number,       // Schema version for migration tracking
+  lastMigrationAt: string,     // Timestamp of last migration
+  migrationHistory: array,     // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode: boolean,            // Whether in developer mode
+  mockData: boolean,           // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated: string,         // Last update timestamp
+  cacheKey: string,            // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata: object,            // Extensible metadata
+  extensions: object           // Extension points for future features
 }
 ```
 
@@ -1006,3 +1126,51 @@ To ensure a smooth transition for existing users:
    - Implement versioning for achievement criteria
    - Create migration paths for future data structure changes
    - Document data dependencies for maintainability
+
+## Dependencies and Extensions
+
+### Dependent Features
+- [Journey Completion](../journey-completion/design.md) - Uses gamification achievements for completion celebrations
+- [Destination Routing](../destination-routing/design.md) - Awards experience points and achievements for route completion
+- [Theme & Map Style](../theme-map-style/design.md) - Unlocks customization options through achievement system
+
+### Extension Points
+
+#### Achievement System
+Comprehensive achievement framework with badges, experience points, and progression tracking for all user activities.
+- **Used by**: [Journey Completion](../journey-completion/design.md), [Destination Routing](../destination-routing/design.md)
+- **Implementation**: Multi-tier achievement system with real-time tracking and retroactive calculation
+- **Features**: Badge collections, experience points, level progression, milestone rewards, secret achievements
+
+#### Social Features
+Social sharing and competition capabilities with leaderboards, friend comparisons, and achievement sharing.
+- **Used by**: [Custom Lists](../custom-lists/design.md), [Journey Completion](../journey-completion/design.md)
+- **Implementation**: Privacy-controlled social platform with friend networks and competitive elements
+- **Features**: Weekly leaderboards, achievement sharing, friend challenges, global rankings, privacy controls
+
+#### Progress Tracking
+Detailed progress monitoring with visual route tracking, neighborhood completion, and exploration statistics.
+- **Used by**: [Enhanced Places Integration](../enhanced-places-integration/design.md), [Performance Optimization](../performance-optimization/design.md)
+- **Implementation**: Real-time progress calculation with visual overlays and statistical analysis
+- **Features**: Painted routes, neighborhood completion, discovery collections, streak tracking, detailed analytics
+
+#### Performance Optimization
+Gamification data optimization with intelligent caching, efficient rendering, and battery-conscious updates.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md), [Theme & Map Style](../theme-map-style/design.md)
+- **Implementation**: Multi-layer caching with background processing and progressive enhancement
+- **Features**: Achievement calculation optimization, visual overlay rendering efficiency, data synchronization
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: Gamification data structure updates, achievement system migration, social features setup
+- **Backward Compatibility**: Legacy achievement format support with automatic conversion to new framework
+
+### Developer Tools Integration
+- **Testing Support**: Achievement simulation tools, progress tracking testing, social feature validation
+- **Mock Data Support**: Mock achievement data, simulated user progress, test leaderboard scenarios
+- **Simulation Capabilities**: Achievement earning simulation, progress visualization testing, performance profiling
+
+### Performance Optimization
+- **Caching Strategy**: Achievement data caching, visual overlay optimization, social data synchronization
+- **Optimization Hooks**: Real-time progress calculation efficiency, map rendering performance, data processing optimization
+- **Performance Considerations**: Battery usage during tracking, memory management for large datasets, network efficiency for social features

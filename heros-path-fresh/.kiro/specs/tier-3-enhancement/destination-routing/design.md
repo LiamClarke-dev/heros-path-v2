@@ -278,6 +278,23 @@ class Route {
   poiAlongRoute;     // Points of interest along the route
   accessibility;     // Accessibility information
   
+  // NEW: Migration framework support
+  schemaVersion;     // Schema version for migration tracking
+  lastMigrationAt;   // Timestamp of last migration
+  migrationHistory;  // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode;           // Whether in developer mode
+  mockData;          // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated;       // Last update timestamp
+  cacheKey;          // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata;          // Extensible metadata
+  extensions;        // Extension points for future features
+  
   // Methods
   getSegment(startIndex, endIndex) { /* ... */ }
   getRemainingSteps(currentPosition) { /* ... */ }
@@ -301,6 +318,23 @@ class NavigationStep {
   maneuver;          // Type of maneuver (turn-right, turn-left, etc.)
   polyline;          // Encoded polyline for this step
   landmarks;         // Notable landmarks for this step
+  
+  // NEW: Migration framework support
+  schemaVersion;     // Schema version for migration tracking
+  lastMigrationAt;   // Timestamp of last migration
+  migrationHistory;  // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode;           // Whether in developer mode
+  mockData;          // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated;       // Last update timestamp
+  cacheKey;          // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata;          // Extensible metadata
+  extensions;        // Extension points for future features
 }
 ```
 
@@ -318,6 +352,23 @@ class RoutePreferences {
   avoidFeatures;     // Features to avoid (stairs, hills, etc.)
   timeConstraint;    // Time available for journey (minutes)
   travelMode;        // 'walking', 'cycling', etc.
+  
+  // NEW: Migration framework support
+  schemaVersion;     // Schema version for migration tracking
+  lastMigrationAt;   // Timestamp of last migration
+  migrationHistory;  // Array of migration records
+  
+  // NEW: Developer tools support
+  devMode;           // Whether in developer mode
+  mockData;          // Whether using mock data
+  
+  // NEW: Performance optimization
+  lastUpdated;       // Last update timestamp
+  cacheKey;          // Cache key for optimization
+  
+  // NEW: Extension points for future features
+  metadata;          // Extensible metadata
+  extensions;        // Extension points for future features
 }
 ```
 
@@ -443,3 +494,51 @@ Integration with discovery-related services will include:
 3. **High Contrast Mode**: Support high contrast mode for map and navigation UI
 4. **Customizable Text Size**: Allow users to adjust text size for navigation instructions
 5. **Accessible Route Options**: Provide routes that avoid stairs, steep inclines, and other barriers
+
+## Dependencies and Extensions
+
+### Dependent Features
+- [Gamification](../gamification/design.md) - Uses route completion for achievement tracking and experience points
+- [Journey Completion](../journey-completion/design.md) - Tracks guided navigation as completed journeys
+- [Enhanced Places Integration](../enhanced-places-integration/design.md) - Incorporates place data into route planning
+
+### Extension Points
+
+#### Route Planning
+Advanced route planning algorithms with multiple optimization strategies and intelligent waypoint selection.
+- **Used by**: [Gamification](../gamification/design.md), [Enhanced Places Integration](../enhanced-places-integration/design.md)
+- **Implementation**: Multi-objective optimization engine with exploration, discovery, and efficiency modes
+- **Features**: Dynamic re-routing, traffic avoidance, scenic route options, accessibility-aware planning
+
+#### Navigation Integration  
+Turn-by-turn navigation with voice guidance and visual indicators for seamless user experience.
+- **Used by**: [Journey Completion](../journey-completion/design.md), [Theme & Map Style](../theme-map-style/design.md)
+- **Implementation**: Real-time location tracking with geofenced instruction triggers and voice synthesis
+- **Features**: Voice guidance, visual turn indicators, landmark-based instructions, offline navigation
+
+#### Performance Optimization
+Route calculation optimization with intelligent caching and background processing for responsive user experience.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md), [Gamification](../gamification/design.md)
+- **Implementation**: Multi-threaded route calculation with predictive caching and progressive enhancement
+- **Features**: Background processing, route caching, incremental updates, battery optimization
+
+#### Developer Tools
+Route simulation and testing utilities for development, debugging, and quality assurance.
+- **Used by**: [Performance Optimization](../performance-optimization/design.md)
+- **Implementation**: Route simulation framework with mock location data and testing scenarios
+- **Features**: Route playback, GPS simulation, performance profiling, accessibility testing
+
+### Migration Considerations
+- **Schema Version**: 2.0
+- **Migration Requirements**: Route data structure updates, navigation preference migration, cache invalidation
+- **Backward Compatibility**: Legacy route format support with automatic conversion to new schema
+
+### Developer Tools Integration
+- **Testing Support**: Route simulation tools, navigation testing framework, accessibility validation
+- **Mock Data Support**: Mock route data, simulated GPS locations, test destination scenarios
+- **Simulation Capabilities**: Route playback, navigation simulation, performance testing scenarios
+
+### Performance Optimization
+- **Caching Strategy**: Route calculation caching, navigation instruction preloading, map tile optimization
+- **Optimization Hooks**: Route processing optimization, real-time location tracking efficiency, UI rendering performance
+- **Performance Considerations**: Battery usage during navigation, memory management for route data, network efficiency
