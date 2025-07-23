@@ -541,6 +541,30 @@ class PingService {
       };
     }
   }
+
+  /**
+   * Refund ping credits to a user (increments credits, up to max)
+   * @param {string} userId
+   * @param {number} creditsToRefund
+   * @returns {Promise<void>}
+   */
+  async refundCredits(userId, creditsToRefund) {
+    if (!userId || !creditsToRefund || creditsToRefund <= 0) return;
+    try {
+      const pingDataRef = doc(db, 'users', userId, 'pingData', 'current');
+      const pingDataSnap = await getDoc(pingDataRef);
+      let currentCredits = this.maxCreditsPerMonth;
+      if (pingDataSnap.exists()) {
+        const data = pingDataSnap.data();
+        currentCredits = typeof data.creditsRemaining === 'number' ? data.creditsRemaining : this.maxCreditsPerMonth;
+      }
+      const newCredits = Math.min(this.maxCreditsPerMonth, currentCredits + creditsToRefund);
+      await updateDoc(pingDataRef, { creditsRemaining: newCredits });
+      Logger.info('PING_SERVICE', 'Refunded ping credits', { userId, creditsToRefund, newCredits });
+    } catch (error) {
+      Logger.error('PING_SERVICE', 'Failed to refund ping credits', error);
+    }
+  }
 }
 
 // Export singleton instance

@@ -86,7 +86,7 @@ const THEME_STORAGE_KEY = '@user_ui_theme';
 const MAP_STYLE_STORAGE_KEY = '@user_map_style';
 
 // Default values
-const DEFAULT_THEME = THEME_TYPES.LIGHT;
+const DEFAULT_THEME = THEME_TYPES.ADVENTURE; // Set to 'adventure' for brand alignment
 const DEFAULT_MAP_STYLE = MAP_STYLES.STANDARD;
 
 // Create context
@@ -184,6 +184,12 @@ export const ThemeProvider = ({ children }) => {
     return config?.style || null;
   };
 
+  // Get current map provider
+  const getCurrentMapProvider = () => {
+    const config = getCurrentMapStyleConfig();
+    return config?.provider || 'default';
+  };
+
   // Reset to defaults
   const resetToDefaults = async () => {
     try {
@@ -259,6 +265,7 @@ export const ThemeProvider = ({ children }) => {
     getCurrentThemeColors,
     getCurrentMapStyleConfig,
     getCurrentMapStyleArray,
+    getCurrentMapProvider,
     resetToDefaults,
     getNavigationTheme,
     

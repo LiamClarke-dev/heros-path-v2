@@ -61,15 +61,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getFallbackTheme } from '../styles/theme';
 import PingAnimation from './PingAnimation';
 
-// Ensure colors is defined at module scope so Hermes doesn't throw before components mount
-const colors = getFallbackTheme();
-
 const AnimationDemo = () => {
   const { getCurrentThemeColors } = useTheme();
   const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [activeAnimation, setActiveAnimation] = useState(null);
-  const [selectedType, setSelectedType] = useState('ripple');
+  const [selectedType, setSelectedType] = useState('lottie');
 
   // Create styles inside component to access colors
   const styles = StyleSheet.create({
@@ -165,6 +162,7 @@ const AnimationDemo = () => {
   });
 
   const animationTypes = [
+    { key: 'lottie', name: 'Lottie Animation', description: 'Smooth professional scanning effect' },
     { key: 'ripple', name: 'Ripple Effect', description: 'Expanding circles with rotation' },
     { key: 'pulse', name: 'Pulse Wave', description: 'Simple expanding pulse' },
     { key: 'radar', name: 'Radar Sweep', description: 'Rotating radar-like sweep' },

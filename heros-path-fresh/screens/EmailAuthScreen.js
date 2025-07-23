@@ -57,7 +57,7 @@
  * - Uses shared UI components for consistent interface design
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the authentication flow)
+ * - App.js (as part of the authentication stack navigation)
  * - Users who prefer email/password authentication
  * - SignInScreen.js (as an alternative authentication option)
  * - Users in regions or organizations where Google services are limited

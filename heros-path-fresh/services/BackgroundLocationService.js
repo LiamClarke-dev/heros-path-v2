@@ -125,10 +125,25 @@ class BackgroundLocationService {
     this.recentLocations = []; // For filtering and smoothing
     this.appState = AppState.currentState;
     this.backgroundStartTime = null;
+    this.appStateSubscription = null;
+    this.isInitialized = false;
     
-    // Bind app state change handler
+    // Initialize app state monitoring
+    this.initializeAppStateMonitoring();
+  }
+
+  // Initialize app state monitoring with proper subscription handling
+  initializeAppStateMonitoring() {
+    if (this.appStateSubscription) {
+      // Already initialized, don't create duplicate subscription
+      return;
+    }
+    
+    // Bind app state change handler and set up modern subscription
     this.handleAppStateChange = this.handleAppStateChange.bind(this);
-    AppState.addEventListener('change', this.handleAppStateChange);
+    this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
+    
+    Logger.debug('App state monitoring initialized');
   }
 
   // Handle app state changes for background/foreground transitions
@@ -234,43 +249,119 @@ class BackgroundLocationService {
     return true;
   }
 
+  // CRITICAL FIX: Validate coordinates to prevent smoothing towards origin (0,0)
+  // This prevents GPS errors from invalid coordinate fallbacks
+  isValidLocationCoordinates(location) {
+    return location.coords && 
+      typeof location.coords.latitude === 'number' && 
+      typeof location.coords.longitude === 'number' &&
+      !isNaN(location.coords.latitude) && 
+      !isNaN(location.coords.longitude) &&
+      Math.abs(location.coords.latitude) <= 90 &&
+      Math.abs(location.coords.longitude) <= 180;
+  }
+
   // Smooth location using recent points to reduce GPS noise
   smoothLocation(newLocation) {
-    // Add to recent locations
-    this.recentLocations.push(newLocation);
-    
-    // Keep only last 5 points for smoothing
-    if (this.recentLocations.length > 5) {
-      this.recentLocations.shift();
-    }
-    
-    // If we have enough points and the new location is very different, smooth it
-    if (this.recentLocations.length >= 3) {
-      const avgLat = this.recentLocations.reduce((sum, loc) => sum + loc.coords.latitude, 0) / this.recentLocations.length;
-      const avgLng = this.recentLocations.reduce((sum, loc) => sum + loc.coords.longitude, 0) / this.recentLocations.length;
+    try {
+      // Create a completely new deep copy of the location to avoid any mutation issues
+      let locationToReturn = {
+        timestamp: newLocation.timestamp || Date.now(),
+        coords: {
+          latitude: newLocation.coords.latitude,
+          longitude: newLocation.coords.longitude,
+          altitude: newLocation.coords.altitude,
+          accuracy: newLocation.coords.accuracy,
+          speed: newLocation.coords.speed,
+          heading: newLocation.coords.heading
+        }
+      };
       
-      const distance = this.calculateDistance(
-        newLocation.coords.latitude,
-        newLocation.coords.longitude,
-        avgLat,
-        avgLng
-      );
-      
-      // If the new point is very far from the average (> 20m), use smoothed coordinates
-      if (distance > 20 && newLocation.coords.accuracy > ACCURACY_THRESHOLDS.EXCELLENT) {
-        Logger.debug(`Smoothing location - distance from average: ${distance}m`);
-        return {
-          ...newLocation,
-          coords: {
-            ...newLocation.coords,
-            latitude: avgLat,
-            longitude: avgLng
-          }
-        };
+      // If we have enough points for smoothing, check if new location is an outlier
+      if (this.recentLocations.length >= 2) {
+        // CRITICAL FIX: Filter out invalid locations before calculating average
+        // Using || 0 would skew towards origin (0,0) causing massive GPS errors
+        const validLocations = this.recentLocations.filter(loc => this.isValidLocationCoordinates(loc));
+        
+        // Only proceed with smoothing if we have enough valid locations
+        if (validLocations.length >= 2) {
+          // Calculate average of VALID existing locations only (excluding the new one)
+          const avgLat = validLocations.reduce((sum, loc) => sum + loc.coords.latitude, 0) / validLocations.length;
+          const avgLng = validLocations.reduce((sum, loc) => sum + loc.coords.longitude, 0) / validLocations.length;
+        
+        const distance = this.calculateDistance(
+          newLocation.coords.latitude,
+          newLocation.coords.longitude,
+          avgLat,
+          avgLng
+        );
+        
+        // If the new point is very far from the average (> 20m) AND has poor accuracy, smooth it
+        if (distance > 20 && newLocation.coords.accuracy > ACCURACY_THRESHOLDS.EXCELLENT) {
+          Logger.debug(`Smoothing location - distance from average: ${distance}m, accuracy: ${newLocation.coords.accuracy}m`);
+          
+          // Use weighted smoothing: blend the new location with the average based on accuracy
+          const accuracyWeight = Math.max(0.1, Math.min(0.9, ACCURACY_THRESHOLDS.EXCELLENT / newLocation.coords.accuracy));
+          
+          // Create completely new object with smoothed coordinates
+          locationToReturn = {
+            timestamp: newLocation.timestamp || Date.now(),
+            coords: {
+              latitude: (newLocation.coords.latitude * accuracyWeight) + (avgLat * (1 - accuracyWeight)),
+              longitude: (newLocation.coords.longitude * accuracyWeight) + (avgLng * (1 - accuracyWeight)),
+              altitude: newLocation.coords.altitude,
+              accuracy: newLocation.coords.accuracy,
+              speed: newLocation.coords.speed,
+              heading: newLocation.coords.heading
+            }
+          };
+          
+          Logger.debug(`Applied weighted smoothing with accuracy weight: ${accuracyWeight.toFixed(2)}`);
+        }
+        } else {
+          Logger.debug('BackgroundLocationService: Not enough valid locations for smoothing', {
+            totalLocations: this.recentLocations.length,
+            validLocations: validLocations?.length || 0
+          });
+        }
       }
+      
+      // Use completely immutable array operations to prevent Hermes engine errors
+      // CRITICAL FIX: Validate location before adding to recent locations array
+      // This prevents accumulation of invalid coordinates that would skew future smoothing
+      if (this.isValidLocationCoordinates(locationToReturn)) {
+        // Create new array with spread operator, never mutate existing arrays
+        const newRecentLocations = [...this.recentLocations, locationToReturn];
+        
+        // Keep only last 5 points for smoothing using slice (immutable)
+        this.recentLocations = newRecentLocations.length > 5 
+          ? newRecentLocations.slice(-5) 
+          : newRecentLocations;
+      } else {
+        Logger.warn('BackgroundLocationService: Skipping invalid location for recent locations', {
+          lat: locationToReturn.coords?.latitude,
+          lng: locationToReturn.coords?.longitude
+        });
+      }
+      
+      return locationToReturn;
+      
+    } catch (error) {
+      Logger.error('BackgroundLocationService', 'Error in smoothLocation', { error: error.message });
+      
+      // Return a safe fallback copy if smoothing fails
+      return {
+        timestamp: newLocation.timestamp || Date.now(),
+        coords: {
+          latitude: newLocation.coords.latitude,
+          longitude: newLocation.coords.longitude,
+          altitude: newLocation.coords.altitude,
+          accuracy: newLocation.coords.accuracy,
+          speed: newLocation.coords.speed,
+          heading: newLocation.coords.heading
+        }
+      };
     }
-    
-    return newLocation;
   }
 
   // Calculate distance between two points
@@ -326,6 +417,9 @@ class BackgroundLocationService {
   // Initialize the service (simplified for Expo Go compatibility)
   async initialize() {
     try {
+      // Ensure app state monitoring is set up
+      this.initializeAppStateMonitoring();
+      
       // Check permissions
       let permissions = await this.checkPermissions();
       if (!permissions.foreground) {
@@ -338,9 +432,12 @@ class BackgroundLocationService {
         // Re-check permissions after requesting
         permissions = await this.checkPermissions();
       }
+      
+      this.isInitialized = true;
+      Logger.info('BackgroundLocationService initialized successfully');
       return true;
     } catch (error) {
-      console.error('Failed to initialize background location service:', error);
+      Logger.error('Failed to initialize background location service:', error);
       return false;
     }
   }
@@ -440,7 +537,7 @@ class BackgroundLocationService {
           foregroundService: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             killServiceOnDestroy: false, // Keep service alive
           },
           // iOS-specific optimizations
@@ -451,7 +548,7 @@ class BackgroundLocationService {
           android: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             notificationIcon: null, // Use app icon
             enableHighAccuracy: true,
           }
@@ -540,7 +637,8 @@ class BackgroundLocationService {
       if (this.currentJourney) {
         this.currentJourney.isActive = false;
         this.currentJourney.endTime = Date.now();
-        this.currentJourney.duration = this.currentJourney.endTime - this.currentJourney.startTime;
+        // Convert duration from milliseconds to seconds for consistent display
+        this.currentJourney.duration = (this.currentJourney.endTime - this.currentJourney.startTime) / 1000;
       }
 
       this.isTracking = false;
@@ -602,7 +700,7 @@ class BackgroundLocationService {
           foregroundService: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             killServiceOnDestroy: false,
           },
           activityType: Location.ActivityType.Fitness,
@@ -611,7 +709,7 @@ class BackgroundLocationService {
           android: {
             notificationTitle: "Hero's Path - Adventure in Progress",
             notificationBody: "Recording your journey. Tap to open app.",
-            notificationColor: "#1E1E1E",
+            notificationColor: "#007AFF", // Using primary theme color
             notificationIcon: null,
             enableHighAccuracy: true,
           }
@@ -633,8 +731,11 @@ class BackgroundLocationService {
 
   // Clean up resources and event listeners
   cleanup() {
-    // Remove app state listener
-    AppState.removeEventListener?.('change', this.handleAppStateChange);
+    // Remove app state listener using subscription object
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+      this.appStateSubscription = null;
+    }
     
     // Stop any active tracking
     if (this.isTracking) {
@@ -651,6 +752,7 @@ class BackgroundLocationService {
     this.backgroundStartTime = null;
     this.onLocationUpdate = null;
     this.onJourneyComplete = null;
+    this.isInitialized = false;
     
     Logger.info('BackgroundLocationService cleaned up');
   }

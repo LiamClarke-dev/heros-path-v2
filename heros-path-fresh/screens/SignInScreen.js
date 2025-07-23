@@ -58,7 +58,7 @@
  * - Enables all personalized features throughout the app
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the authentication flow)
+ * - App.js (as part of the authentication stack navigation)
  * - Users who need to sign in to access personalized features
  * - First-time users creating accounts
  * - Returning users who need to re-authenticate

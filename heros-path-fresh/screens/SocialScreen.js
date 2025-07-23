@@ -45,14 +45,14 @@
  * 
  * RELATIONSHIPS:
  * - Uses ThemeContext for consistent visual styling
- * - Integrated with AppNavigator as part of the bottom tab navigation
+ * - Integrated with App.js as part of the Drawer navigation
  * - Will connect to UserContext for profile and authentication features
  * - Will integrate with discovery and journey systems for content sharing
  * - Will use shared UI components for consistent interface design
  * - Future integration with push notifications for social interactions
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the main tab navigation)
+ * - App.js (as part of the main Drawer navigation)
  * - Users exploring the app interface and discovering available features
  * - Future social features that will be built on this foundation
  * - Marketing and user onboarding to communicate planned functionality

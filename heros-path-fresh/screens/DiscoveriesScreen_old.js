@@ -51,7 +51,7 @@
  * - Integrates with various UI components for consistent user experience
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the Discoveries tab navigation)
+ * - App.js (as part of the main Drawer navigation)
  * - Users spend significant time on this screen reviewing discoveries
  * - Journey completion workflows that direct users to review discoveries
  * - Onboarding flows that introduce the discovery system
@@ -119,7 +119,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { testAISummaries } from '../services/NewPlacesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Colors, Spacing, Typography, Layout } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout, getFallbackTheme } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -152,7 +152,7 @@ const ROUTES_KEY   = '@saved_routes';
 export default function DiscoveriesScreen({ navigation, route }) {
   const { user, migrationStatus } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
@@ -1396,7 +1396,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
       <SectionHeader title="Discoveries" />
       
       {/* Filter Controls */}
-      <View style={[styles.filterContainer, { borderBottomColor: colors.tabInactive + '20' }]}>
+      <View style={[styles.filterContainer, { borderBottomColor: colors.border }]}>
         {/* Route Selection */}
         <View style={styles.dropdownWrapper}>
           <TouchableOpacity
@@ -1546,7 +1546,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
@@ -1633,7 +1633,7 @@ const styles = StyleSheet.create({
   tabText: { ...Typography.body, color: Colors.text },
   tabTextActive: {
     color: Colors.background,
-    fontWeight: Typography.body.fontWeight,
+    fontWeight: '600',
   },
   listContainer: { flex: 1, backgroundColor: Colors.background },
   listContent: { paddingVertical: Spacing.sm },
@@ -1653,7 +1653,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
+  name: { ...Typography.body, fontWeight: '700' },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
@@ -1671,7 +1671,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs / 2,
   },
-  meta: { ...Typography.body, color: Colors.tabInactive },
+  meta: { ...Typography.body, color: colors.textSecondary },
   link: { ...Typography.body, color: Colors.primary, marginTop: Spacing.xs },
   action: {
     justifyContent: 'center',
@@ -1796,7 +1796,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   onboardingTitle: {
-    ...Typography.h1,
+    ...Typography.heroHeader,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -1853,7 +1853,7 @@ const styles = StyleSheet.create({
     margin: Spacing.lg,
   },
   dismissModalTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -1906,7 +1906,7 @@ const styles = StyleSheet.create({
     margin: Spacing.lg,
   },
   settingsModalTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
@@ -1966,7 +1966,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.tabInactive + '20',
   },
   manageHistoryTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     flex: 1,
   },
@@ -2101,7 +2101,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   completionTitle: {
-    ...Typography.h2,
+    ...Typography.sectionTitle,
     color: Colors.text,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,

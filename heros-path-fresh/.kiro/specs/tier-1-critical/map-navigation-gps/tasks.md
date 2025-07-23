@@ -1,26 +1,18 @@
 # Implementation Plan
 
 - [x] 1. Set up map infrastructure and basic location tracking
-
-
-
-
   - Create MapScreen component with Google Maps integration
   - Implement basic location permission handling
   - Set up initial map configuration with default styling
   - _Requirements: 1.1, 1.5, 4.1_
 
 - [x] 1.1 Implement map provider selection based on platform and style
-
-
   - Create helper function to determine appropriate map provider
   - Add platform-specific logic for iOS and Android
   - Test provider selection on both platforms
   - _Requirements: 1.6, 4.2_
 
 - [x] 1.2 Implement "locate me" functionality
-
-
   - Add UI button for centering map on current location
   - Create locateMe function with animation to current position
   - Add loading indicator during location acquisition

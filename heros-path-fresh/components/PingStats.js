@@ -79,14 +79,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import PingService from '../services/PingService';
 import { useUser } from '../contexts/UserContext';
+import { Colors, Spacing, Typography, Layout, getFallbackTheme } from '../styles/theme';
 import { useTheme } from '../contexts/ThemeContext';
-import { getFallbackTheme } from '../styles/theme';
 import Logger from '../utils/Logger';
 
 const PingStats = ({ style, onPingUsed }) => {
   const { user } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors() || getFallbackTheme();
+  const colors = (typeof getCurrentThemeColors === 'function' ? getCurrentThemeColors() : null) || getFallbackTheme();
   
   const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,7 +148,7 @@ const PingStats = ({ style, onPingUsed }) => {
     const percentage = (stats.creditsRemaining / stats.maxCreditsPerMonth) * 100;
     if (percentage <= 20) return colors.error;
     if (percentage <= 50) return colors.warning;
-    return colors.success;
+    return colors.progress;
   };
 
   const getCreditsIcon = () => {
@@ -158,6 +158,121 @@ const PingStats = ({ style, onPingUsed }) => {
     if (percentage <= 50) return 'alert-circle-outline';
     return 'checkmark-circle-outline';
   };
+
+  // Create styles inside component to access colors
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+    },
+    statsButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.backgroundSecondary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    statsText: {
+      fontSize: 12,
+      fontWeight: '600',
+      marginHorizontal: 4,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalContent: {
+      backgroundColor: colors.background,
+      borderRadius: 16,
+      width: '90%',
+      maxHeight: '80%',
+      shadowColor: colors.shadow,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    closeButton: {
+      padding: 4,
+    },
+    modalBody: {
+      padding: 20,
+    },
+    statRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    statLabel: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text,
+      marginLeft: 12,
+    },
+    statValue: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    infoSection: {
+      marginTop: 24,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    infoText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      lineHeight: 20,
+      marginBottom: 8,
+    },
+    modalFooter: {
+      padding: 20,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      alignItems: 'center',
+    },
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: colors.backgroundSecondary,
+    },
+    refreshButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+      marginLeft: 4,
+    },
+  });
 
   if (!stats) {
     return (
@@ -284,119 +399,5 @@ const PingStats = ({ style, onPingUsed }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-  },
-  statsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginHorizontal: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    width: '90%',
-    maxHeight: '80%',
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalBody: {
-    padding: 20,
-  },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  statLabel: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text,
-    marginLeft: 12,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  infoSection: {
-    marginTop: 24,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  modalFooter: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    alignItems: 'center',
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  refreshButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-    marginLeft: 4,
-  },
-});
 
 export default PingStats; 

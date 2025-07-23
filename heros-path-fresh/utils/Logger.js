@@ -97,15 +97,15 @@
 // TODO: REMOVE ALL DEBUG LOGS BEFORE PRODUCTION - Search for "🔍 DEBUG" to find all logs
 
 const Logger = {
-  debug: (...args) => __DEV__ && console.debug('[DEBUG]', ...args),
+  debug: (...args) => false, // Disabled for production
   info: (...args) => __DEV__ && console.info('[INFO]', ...args),
   warn: (...args) => console.warn('[WARN]', ...args),
   error: (...args) => console.error('[ERROR]', ...args),
-  performance: (...args) => __DEV__ && console.info('[PERF]', ...args),
-  log: (...args) => __DEV__ && console.log('[LOG]', ...args),
-  apiCall: (...args) => __DEV__ && console.debug('[API]', ...args),
-  discoveryAction: (...args) => __DEV__ && console.debug('[DISCOVERY]', ...args),
-  filter: (...args) => __DEV__ && console.debug('[FILTER]', ...args),
+  performance: (...args) => false, // Disabled for production
+  log: (...args) => false, // Disabled for production
+  apiCall: (...args) => false, // Disabled for production
+  discoveryAction: (...args) => false, // Disabled for production
+  filter: (...args) => false, // Disabled for production
 };
 
 export default Logger; 

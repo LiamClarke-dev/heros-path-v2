@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # Branch Cleanup Script for Hero's Path
 # This script safely cleans up merged and stale branches

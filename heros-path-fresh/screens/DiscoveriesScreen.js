@@ -51,7 +51,7 @@
  * - Integrates with various UI components for consistent user experience
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the Discoveries tab navigation)
+ * - App.js (as part of the main Drawer navigation)
  * - Users spend significant time on this screen reviewing discoveries
  * - Journey completion workflows that direct users to review discoveries
  * - Onboarding flows that introduce the discovery system
@@ -120,7 +120,7 @@ import Toast from 'react-native-root-toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSuggestionsForRoute, getPlaceDetailsWithSummaries, getUserDiscoveryPreferences } from '../services/DiscoveriesService';
 import { PLACE_TYPES } from '../constants/PlaceTypes';
-import { Colors, Spacing, Typography, Layout } from '../styles/theme';
+import { Colors, Spacing, Typography, Layout, getFallbackTheme } from '../styles/theme';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -154,7 +154,7 @@ const ONBOARDING_KEY = 'discoveries_onboarding_shown';
 export default function DiscoveriesScreen({ navigation, route }) {
   const { user, migrationStatus } = useUser();
   const { getCurrentThemeColors } = useTheme();
-  const colors = getCurrentThemeColors();
+  const colors = getCurrentThemeColors() || getFallbackTheme();
   
   const [savedRoutes, setSavedRoutes]             = useState([]);
   const [selectedRoute, setSelectedRoute]         = useState(null);
@@ -518,7 +518,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
-        if (route.params?.journeyId) {
+        if (route?.params?.journeyId) {
           // Find the journey by ID from the passed parameter
           const journey = journeys.find(j => j.id === route.params.journeyId);
           if (journey) {
@@ -529,7 +529,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
               setSelectedRoute(journeys[0]);
             }
           }
-        } else if (route.params?.selectedRoute) {
+        } else if (route?.params?.selectedRoute) {
           setSelectedRoute(route.params.selectedRoute);
         } else if (journeys.length > 0) {
           setSelectedRoute(journeys[0]);
@@ -554,7 +554,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
         setSavedRoutes(journeys);
         
         // Set selected route from navigation params or default to first journey
-        if (route.params?.journeyId) {
+        if (route?.params?.journeyId) {
           // Find the journey by ID from the passed parameter
           const journey = journeys.find(j => j.id === route.params.journeyId);
           if (journey) {
@@ -565,7 +565,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
               setSelectedRoute(journeys[0]);
             }
           }
-        } else if (route.params?.selectedRoute) {
+        } else if (route?.params?.selectedRoute) {
           setSelectedRoute(route.params.selectedRoute);
         } else if (journeys.length > 0) {
           setSelectedRoute(journeys[0]);
@@ -1435,7 +1435,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
 
           {/* AI Summary Section */}
           {aiSummaries[item.placeId] && !aiSummaries[item.placeId].noSummary && !aiSummaries[item.placeId].error ? (
-            <View style={[styles.summaryContainer, { backgroundColor: colors.primary + '10' }]}>
+            <View style={[styles.summaryContainer, { backgroundColor: colors.surface }]}>
               <Text style={[styles.summaryTitle, { color: colors.primary }]}>AI Summary</Text>
               <Text style={[styles.summaryText, { color: colors.text }]}>
                 {aiSummaries[item.placeId].historical || 
@@ -1458,7 +1458,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
             </View>
           ) : !aiSummaries[item.placeId] ? (
             <TouchableOpacity
-              style={[styles.summaryButton, { backgroundColor: colors.primary + '10' }]}
+              style={[styles.summaryButton, { backgroundColor: colors.surface }]}
               onPress={() => fetchAiSummary(item.placeId)}
             >
               <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
@@ -1468,7 +1468,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
             </TouchableOpacity>
           ) : aiSummaries[item.placeId].error ? (
             <TouchableOpacity
-              style={[styles.retryButton, { backgroundColor: colors.primary + '10' }]}
+              style={[styles.retryButton, { backgroundColor: colors.surface }]}
               onPress={() => {
                 setAiSummaries(prev => ({ ...prev, [item.placeId]: undefined }));
                 fetchAiSummary(item.placeId);
@@ -1493,7 +1493,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Enhanced Header with Stats and Management */}
-      <View style={[styles.headerRow, { backgroundColor: colors.background, borderBottomColor: colors.tabInactive + '20' }]}>
+      <View style={[styles.headerRow, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Discoveries</Text>
           <View style={styles.headerStats}>
@@ -1510,13 +1510,13 @@ export default function DiscoveriesScreen({ navigation, route }) {
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={[styles.helpButton, { backgroundColor: colors.primary + '10' }]}
+            style={[styles.helpButton, { backgroundColor: colors.surface }]}
             onPress={showOnboardingAgain}
           >
             <MaterialIcons name="help-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.gearButton, { backgroundColor: colors.primary + '10' }]}
+            style={[styles.gearButton, { backgroundColor: colors.surface }]}
             onPress={() => setShowSettingsModal(true)}
           >
             <MaterialIcons name="settings" size={20} color={colors.primary} />
@@ -1533,7 +1533,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
       </View>
       
       {/* Filter Controls */}
-      <View style={[styles.filterContainer, { borderBottomColor: colors.tabInactive + '20' }]}>
+      <View style={[styles.filterContainer, { borderBottomColor: colors.border }]}>
         {/* Route Selection */}
         <View style={styles.dropdownWrapper}>
           <TouchableOpacity
@@ -1782,7 +1782,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
                 style={[
                   styles.settingsOption,
                   dismissalPreference === 'ask' && styles.settingsOptionActive,
-                  { backgroundColor: dismissalPreference === 'ask' ? colors.primary + '20' : colors.surface }
+                  { backgroundColor: dismissalPreference === 'ask' ? colors.highlight : colors.surface }
                 ]}
                 onPress={() => setDismissalPreference('ask')}
               >
@@ -1799,7 +1799,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
                 style={[
                   styles.settingsOption,
                   dismissalPreference === '30days' && styles.settingsOptionActive,
-                  { backgroundColor: dismissalPreference === '30days' ? colors.primary + '20' : colors.surface }
+                  { backgroundColor: dismissalPreference === '30days' ? colors.highlight : colors.surface }
                 ]}
                 onPress={() => setDismissalPreference('30days')}
               >
@@ -1816,7 +1816,7 @@ export default function DiscoveriesScreen({ navigation, route }) {
                 style={[
                   styles.settingsOption,
                   dismissalPreference === 'forever' && styles.settingsOptionActive,
-                  { backgroundColor: dismissalPreference === 'forever' ? colors.primary + '20' : colors.surface }
+                  { backgroundColor: dismissalPreference === 'forever' ? colors.highlight : colors.surface }
                 ]}
                 onPress={() => setDismissalPreference('forever')}
               >
@@ -2044,7 +2044,7 @@ const styles = StyleSheet.create({
   tabText: { ...Typography.body, color: Colors.text },
   tabTextActive: {
     color: Colors.background,
-    fontWeight: Typography.body.fontWeight,
+    fontWeight: '600',
   },
   listContainer: { flex: 1, backgroundColor: Colors.background },
   listContent: { paddingVertical: Spacing.sm },
@@ -2063,7 +2063,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   info: { flex: 1 },
-  name: { ...Typography.body, fontWeight: Typography.h1.fontWeight },
+  name: { ...Typography.body, fontWeight: 'bold' },
   category: {
     ...Typography.body,
     fontStyle: 'italic',
@@ -2113,7 +2113,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   summaryContainer: {
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: Colors.surface,
     padding: Spacing.sm,
     borderRadius: Layout.borderRadius,
     marginVertical: Spacing.xs,

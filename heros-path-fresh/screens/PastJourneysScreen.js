@@ -48,7 +48,7 @@
  * - Uses shared UI components for modern, consistent interface
  * 
  * REFERENCED BY:
- * - AppNavigator.js (as part of the Map stack navigation)
+ * - App.js (as part of the main Drawer navigation)
  * - MapScreen.js (users access this to review past walks)
  * - Discovery completion workflows that update journey status
  * - User authentication flows that need journey history
