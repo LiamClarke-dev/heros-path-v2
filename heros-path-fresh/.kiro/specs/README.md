@@ -8,6 +8,7 @@
 - **✅ Migration Framework**: Data evolution support across all features
 - **✅ Developer Tools Integration**: Testing utilities and development support
 - **✅ Implementation Ready**: All specifications validated and development-ready
+- **🆕 MapScreen Modularization:** The main MapScreen has been refactored into modular components and hooks for improved maintainability and performance (2025).
 
 This directory contains **COMPLETE** specifications for all features in the Hero's Path application, organized by priority tiers. Each feature has its own directory with standardized documentation:
 
@@ -24,7 +25,7 @@ These features are essential for the app's basic functionality. The app cannot f
 | Feature                                                           | Status      | Description                                                | Extension Points                              |
 | ----------------------------------------------------------------- | ----------- | ---------------------------------------------------------- | --------------------------------------------- |
 | [User Authentication](./tier-1-critical/user-authentication/)     | ✅ **Complete with Extension Points** | Firebase-based sign-in/up system with account management   | ✅ Social profiles, Third-party auth             |
-| [Map Navigation & GPS](./tier-1-critical/map-navigation-gps/)     | ✅ **Complete with Extension Points** | Google Maps integration with real-time location tracking   | ✅ Custom overlays, Multiple visualization modes |
+| [Map Navigation & GPS](./tier-1-critical/map-navigation-gps/)     | ✅ **Complete with Extension Points** | Google Maps integration with real-time location tracking   | ✅ Custom overlays, Multiple visualization modes <br> **🆕 Modularized MapScreen for maintainability and performance** |
 | [Journey Tracking](./tier-1-critical/journey-tracking/)           | ✅ **Complete with Extension Points** | GPS route recording with distance and duration calculation | ✅ Metadata extensions, Social attributes        |
 | [Background Location](./tier-1-critical/background-location/)     | ✅ **Complete with Extension Points** | GPS tracking with app minimized/screen locked              | ✅ Multiple tracking modes, Accuracy levels      |
 | [Search Along Route (SAR)](./tier-1-critical/search-along-route/) | ✅ **Complete with Extension Points** | Automatic discovery along entire walking route             | ✅ Enhanced filtering, AI recommendations        |
@@ -174,3 +175,6 @@ These specifications align with and complement the steering files in `.kiro/stee
 - [Next Steps](./NEXT_STEPS.md) - Documentation roadmap
 - [Dependency Analysis](./analysis/DEPENDENCY_ANALYSIS.md) - Analysis of feature dependencies
 - [Reprioritization Assessment](./analysis/REPRIORITIZATION_ASSESSMENT.md) - Feature priority recommendations
+
+## Recent Improvements
+- **🆕 MapScreen Modularization & Optimization (2025):** The main map screen is now fully modular, with all logic and UI split into components and hooks for easier maintenance and future enhancements.

@@ -494,6 +494,106 @@ If maps show white screen with only Google logo:
 - Optimization hooks: Lazy loading for overlays and controls
 - Performance considerations: Efficient map rendering and location updates
 
+## Place Markers and Information Display
+
+### Google Place Icons Integration
+
+The app will use Google Place Icons to represent different types of places on the map. This provides users with familiar, standardized icons that indicate the type of place at a glance.
+
+```typescript
+// Place icon mapping
+const PLACE_ICON_MAPPING = {
+  restaurant: 'restaurant',
+  cafe: 'cafe',
+  park: 'park',
+  museum: 'museum',
+  // Additional mappings based on Google Place types
+  default: 'place'
+};
+
+// Function to get appropriate icon for a place
+function getPlaceIcon(place: Place): string {
+  const placeType = place.types?.[0] || 'default';
+  return PLACE_ICON_MAPPING[placeType] || PLACE_ICON_MAPPING.default;
+}
+```
+
+### Google Places UI Kit Integration
+
+When a user taps on a place marker, the app will display detailed information using Google Places UI Kit. This provides a rich, consistent experience with:
+
+1. Place photos
+2. Opening hours
+3. Ratings and reviews
+4. Contact information
+5. Action buttons (directions, save, share)
+
+```typescript
+interface PlaceDetailOptions {
+  placeId: string;
+  fields: string[];
+  sessionToken?: string;
+  theme?: 'light' | 'dark' | 'adventure';
+}
+
+function showPlaceDetails(options: PlaceDetailOptions): void {
+  // Implementation using Google Places UI Kit
+}
+```
+
+### Marker Clustering Implementation
+
+For areas with many saved places, the app will use Google's Marker Clustering to improve performance and reduce visual clutter:
+
+1. Markers within close proximity will be grouped into clusters
+2. Clusters will display the number of contained markers
+3. Zooming in will expand clusters into individual markers
+4. Clustering thresholds will be configurable based on device performance
+
+```typescript
+interface ClusteringOptions {
+  gridSize: number;
+  maxZoom: number;
+  minClusterSize: number;
+  styles: ClusterStyle[];
+}
+
+interface ClusterStyle {
+  textColor: string;
+  textSize: number;
+  backgroundImage: string;
+  height: number;
+  width: number;
+}
+```
+
+### Theme Integration
+
+Place markers and details will adapt to the app's theme:
+
+1. Light theme: Standard Google markers with light UI Kit theme
+2. Dark theme: Dark-styled markers with dark UI Kit theme
+3. Adventure theme: Custom-styled markers with themed UI Kit
+
+### Future Extensibility
+
+The design allows for future replacement of Google Place Icons with custom icons:
+
+```typescript
+interface CustomIconMapping {
+  [placeType: string]: {
+    light: ImageSource;
+    dark: ImageSource;
+    adventure: ImageSource;
+  }
+}
+
+// Can be implemented later to replace Google Place Icons
+const CUSTOM_ICON_MAPPING: CustomIconMapping = {
+  // Custom icon definitions
+};
+```
+
 ## Security and Privacy
 
 The Map Navigation & GPS feature is designed with privacy and security in mind:

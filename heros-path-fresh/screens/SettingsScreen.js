@@ -132,6 +132,7 @@ import JourneyService from '../services/JourneyService';
 import FirestoreDataViewer from '../utils/FirestoreDataViewer';
 import DiscoveryService from '../services/DiscoveryService';
 import AnimationDemo from '../components/AnimationDemo';
+import MapStylePreviewCard from '../components/ui/MapStylePreviewCard';
 import { Spacing, Typography, Layout, Shadows } from '../styles/theme';
 
 // --- New UI Components ---
@@ -1073,17 +1074,18 @@ export default function SettingsScreen() {
           </View>
           <View style={[styles.preferenceItem, { flexDirection: 'column', gap: 12 }]}> 
             <Text style={[styles.preferenceLabel, { color: colors.text }]}>Map Style</Text>
-            <View style={[styles.mapStyleOptions, { gap: 8 }]}> 
+            <Text style={[styles.preferenceSubtitle, { color: colors.textSecondary }]}>
+              Choose your preferred map appearance
+            </Text>
+            <View style={styles.mapStylePreviewGrid}> 
               {mapStyleOptions.map((mapStyle) => (
-                <SettingsButton
+                <MapStylePreviewCard
                   key={mapStyle.type}
-                  label={mapStyle.name}
-                  onPress={() => handleMapStyleChange(mapStyle.type)}
-                  icon={mapStyle.icon}
-                  color={currentMapStyle === mapStyle.type ? colors.buttonPrimary : colors.buttonSecondary}
-                  textColor={currentMapStyle === mapStyle.type ? colors.buttonText : colors.text}
-                  style={{ marginHorizontal: 2, marginBottom: 8 }}
-                  accessibilityLabel={`Map Style: ${mapStyle.name}`}
+                  styleKey={mapStyle.type}
+                  styleConfig={mapStyle}
+                  isSelected={currentMapStyle === mapStyle.type}
+                  onSelect={handleMapStyleChange}
+                  compact={true}
                 />
               ))}
             </View>
@@ -1920,5 +1922,17 @@ const styles = StyleSheet.create({
     color: (props) => props.theme.text,
     fontWeight: '600',
     marginLeft: Spacing.sm,
+  },
+  // New styles for enhanced map style selection
+  preferenceSubtitle: {
+    ...Typography.caption,
+    fontSize: 13,
+    marginBottom: Spacing.sm,
+  },
+  mapStylePreviewGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: Spacing.sm,
   },
 });

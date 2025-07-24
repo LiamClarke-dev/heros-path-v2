@@ -184,13 +184,3 @@ When working with AI agents on this repository:
 4. **Use conventional commit messages** for clarity
 5. **Reference issues** in commits and PRs
 6. **Clean up branches** after merging
-
-## Branch Management Automation
-
-The repository includes automated hooks for:
-- Branch naming validation
-- Stale branch detection
-- Commit message formatting
-- PR template enforcement
-
-See `.kiro/hooks/github-workflow.kiro.hook` for implementation details.

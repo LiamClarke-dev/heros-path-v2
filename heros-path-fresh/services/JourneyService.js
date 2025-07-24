@@ -532,10 +532,25 @@ class JourneyService {
         routeCoordsCount: routeCoords?.length || 0 
       });
 
+      // Validate route coordinates
+      if (!routeCoords || routeCoords.length === 0) {
+        Logger.warn('JOURNEY_SERVICE', 'No route coordinates provided for consolidation', { userId, journeyId });
+        return { success: false, error: 'No route coordinates provided' };
+      }
+
+      // Log sample coordinates for debugging
+      Logger.debug('JOURNEY_SERVICE', 'Sample route coordinates', {
+        first: routeCoords[0],
+        last: routeCoords[routeCoords.length - 1],
+        count: routeCoords.length
+      });
+
       // Get user preferences for discovery
+      const { getUserDiscoveryPreferences } = require('./DiscoveriesService');
       const preferences = await getUserDiscoveryPreferences();
       
       // Consolidate SAR and ping results
+      const DiscoveryConsolidationService = require('./DiscoveryConsolidationService').default;
       const result = await DiscoveryConsolidationService.consolidateJourneyDiscoveries(
         userId, 
         journeyId, 

@@ -185,7 +185,13 @@ class DiscoveryConsolidationService {
    */
   async getSARResults(routeCoords, preferences) {
     try {
-      const sarResults = await searchAlongRoute(routeCoords, preferences, 'en');
+      // Import the function directly to ensure it's available
+      const { getSuggestionsForRoute } = require('./DiscoveriesService');
+      
+      // Call getSuggestionsForRoute instead of searchAlongRoute
+      const sarResults = await getSuggestionsForRoute(routeCoords, preferences, 'en');
+      
+      Logger.debug('CONSOLIDATION_SERVICE', `Got ${sarResults.length} SAR results from DiscoveriesService`);
       
       // Add source metadata
       return sarResults.map(place => ({
@@ -225,16 +231,28 @@ class DiscoveryConsolidationService {
     pingResults.forEach(pingResult => {
       if (pingResult.places && Array.isArray(pingResult.places)) {
         pingResult.places.forEach(place => {
-          allPlaces.push({
+          // Ensure place has proper location format
+          const placeWithLocation = {
             ...place,
+            // Convert latitude/longitude to location object if needed
+            location: place.location || {
+              lat: place.latitude || 0,
+              lng: place.longitude || 0
+            },
+            // Ensure placeId exists
+            placeId: place.placeId || place.place_id || `ping-place-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            // Add source metadata
             source: 'ping',
             pingId: pingResult.id,
-            pingTimestamp: pingResult.timestamp
-          });
+            pingTimestamp: pingResult.timestamp || Date.now()
+          };
+          
+          allPlaces.push(placeWithLocation);
         });
       }
     });
 
+    Logger.debug('CONSOLIDATION_SERVICE', `Extracted ${allPlaces.length} places from ping results`);
     return allPlaces;
   }
 
@@ -248,10 +266,23 @@ class DiscoveryConsolidationService {
       return [];
     }
 
+    // Filter out places without valid placeId
+    const validPlaces = places.filter(place => {
+      if (!place.placeId) {
+        Logger.warn('CONSOLIDATION_SERVICE', 'Place missing placeId, generating one', {
+          name: place.name,
+          source: place.source
+        });
+        // Generate a placeId if missing
+        place.placeId = `generated-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      }
+      return true;
+    });
+
     // Group places by placeId
     const placeGroups = {};
     
-    places.forEach(place => {
+    validPlaces.forEach(place => {
       const placeId = place.placeId;
       if (!placeGroups[placeId]) {
         placeGroups[placeId] = [];
@@ -270,6 +301,7 @@ class DiscoveryConsolidationService {
       return (sourcePriority[a.primarySource] || 3) - (sourcePriority[b.primarySource] || 3);
     });
 
+    Logger.debug('CONSOLIDATION_SERVICE', `Deduplicated ${validPlaces.length} places into ${mergedPlaces.length} unique places`);
     return mergedPlaces;
   }
 
@@ -327,6 +359,43 @@ class DiscoveryConsolidationService {
       mergedPlace.formatted_address = bestAddress.formatted_address;
     }
 
+    // Ensure we have valid location data
+    if (!mergedPlace.location || (!mergedPlace.location.lat && !mergedPlace.location.lng)) {
+      // Try to find a place with valid location
+      const placeWithLocation = placeGroup.find(p => 
+        (p.location && (p.location.lat || p.location.lng)) || 
+        (p.latitude !== undefined && p.longitude !== undefined)
+      );
+      
+      if (placeWithLocation) {
+        if (placeWithLocation.location) {
+          mergedPlace.location = placeWithLocation.location;
+        } else if (placeWithLocation.latitude !== undefined && placeWithLocation.longitude !== undefined) {
+          mergedPlace.location = {
+            lat: placeWithLocation.latitude,
+            lng: placeWithLocation.longitude
+          };
+        }
+      }
+      
+      // If we still don't have a location, log a warning
+      if (!mergedPlace.location || (!mergedPlace.location.lat && !mergedPlace.location.lng)) {
+        Logger.warn('CONSOLIDATION_SERVICE', 'Failed to find valid location for merged place', {
+          placeId: mergedPlace.placeId,
+          name: mergedPlace.name
+        });
+        
+        // Set a default location to prevent errors
+        mergedPlace.location = { lat: 0, lng: 0 };
+      }
+    }
+    
+    // Add latitude and longitude properties for compatibility
+    if (mergedPlace.location) {
+      mergedPlace.latitude = mergedPlace.location.lat;
+      mergedPlace.longitude = mergedPlace.location.lng;
+    }
+
     return mergedPlace;
   }
 
@@ -339,11 +408,44 @@ class DiscoveryConsolidationService {
    */
   async saveConsolidatedDiscoveries(userId, journeyId, places) {
     try {
-      const batch = writeBatch(db);
       let savedCount = 0;
+
+      // Log the places we're about to save
+      Logger.debug('CONSOLIDATION_SERVICE', `Saving ${places.length} consolidated discoveries`, {
+        samplePlace: places[0] ? {
+          placeId: places[0].placeId,
+          name: places[0].name,
+          location: places[0].location,
+          latitude: places[0].latitude,
+          longitude: places[0].longitude
+        } : 'no places'
+      });
 
       for (const place of places) {
         try {
+          // Ensure we have valid location data
+          let location = { lat: 0, lng: 0 };
+          
+          // Try to get location from different possible formats
+          if (place.location && typeof place.location === 'object') {
+            // Standard location object
+            location = place.location;
+          } else if (place.latitude !== undefined && place.longitude !== undefined) {
+            // Separate latitude/longitude properties
+            location = { lat: place.latitude, lng: place.longitude };
+          }
+          
+          // Ensure we have valid coordinates
+          if (!location.lat && !location.lng) {
+            Logger.warn('CONSOLIDATION_SERVICE', 'Place has invalid location, skipping', {
+              placeId: place.placeId,
+              name: place.name,
+              location
+            });
+            continue;
+          }
+          
+          // Create discovery data with proper location format
           const discoveryData = {
             placeId: place.placeId,
             placeName: place.name,
@@ -354,11 +456,14 @@ class DiscoveryConsolidationService {
               primaryType: place.primaryType || place.types?.[0] || 'unknown',
               rating: place.rating || null,
               userRatingsTotal: place.userRatingsTotal || 0,
-              location: place.location || { lat: 0, lng: 0 },
+              location: location,
               formatted_address: place.formatted_address || '',
               photos: place.photos || []
             },
-            location: place.location || { lat: 0, lng: 0 },
+            // Store location in both formats for compatibility
+            location: location,
+            latitude: location.lat,
+            longitude: location.lng,
             journeyId: journeyId,
             source: place.primarySource || 'consolidated',
             allSources: place.allSources || [place.source || 'unknown'],
@@ -374,10 +479,16 @@ class DiscoveryConsolidationService {
           const result = await DiscoveryService.createDiscovery(userId, discoveryData);
           if (result.success) {
             savedCount++;
+            Logger.debug('CONSOLIDATION_SERVICE', 'Successfully saved discovery', {
+              placeId: place.placeId,
+              name: place.name,
+              location: location
+            });
           }
         } catch (placeError) {
           Logger.warn('CONSOLIDATION_SERVICE', 'Failed to save individual place', { 
             placeId: place.placeId, 
+            name: place.name,
             error: placeError.message 
           });
         }

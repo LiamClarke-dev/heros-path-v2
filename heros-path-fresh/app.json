@@ -3,6 +3,9 @@
     "name": "heros-path-fresh",
     "slug": "heros-path-fresh",
     "version": "1.0.0",
+    "assetBundlePatterns": [
+      "assets/**/*.gif"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
