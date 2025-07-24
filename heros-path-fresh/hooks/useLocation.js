@@ -56,35 +56,58 @@ export default function useLocation({
   useEffect(() => {
     const initializeLocation = async () => {
       try {
-        Logger.debug('Initializing location services');
-        await BackgroundLocationService.cleanup();
-        const initialized = await BackgroundLocationService.initialize();
-        if (!initialized) {
-          Logger.warn('Location setup failed');
-          Alert.alert('Location Setup Failed', 'Please enable location permissions in your device settings.');
-          return;
-        }
+        Logger.debug('useLocation: Initializing location services');
         
-        Logger.debug('Setting up location update callback');
+        // Clean up any existing service state
+        await BackgroundLocationService.cleanup();
+        
+        // Set up the location update callback BEFORE initializing
+        // This ensures the callback is registered before any location updates occur
+        Logger.debug('useLocation: Setting up location update callback');
         BackgroundLocationService.setLocationUpdateCallback((coords, journey) => {
-          Logger.debug('Location update received', {
+          if (!coords || !coords.latitude || !coords.longitude) {
+            Logger.warn('useLocation: Received invalid coordinates in callback', coords);
+            return;
+          }
+          
+          Logger.debug('useLocation: Location update received', {
             lat: coords.latitude.toFixed(6),
             lng: coords.longitude.toFixed(6),
-            accuracy: coords.accuracy
+            accuracy: coords.accuracy,
+            hasJourney: !!journey,
+            journeyCoordinates: journey?.coordinates?.length || 0
           });
           
+          // Update current position
           setCurrPosition({
             latitude: coords.latitude,
             longitude: coords.longitude,
             timestamp: coords.timestamp,
           });
+          
+          // Update accuracy
           setLocAccuracy(coords.accuracy);
-          if (setPathToRender) setPathToRender(journey.coordinates);
+          
+          // Update path to render if callback provided and journey exists
+          if (setPathToRender && journey && journey.coordinates) {
+            setPathToRender(journey.coordinates);
+          }
         });
         
+        // Now initialize the service
+        const initialized = await BackgroundLocationService.initialize();
+        if (!initialized) {
+          Logger.warn('useLocation: Location setup failed');
+          Alert.alert('Location Setup Failed', 'Please enable location permissions in your device settings.');
+          setLocError(true);
+          return;
+        }
+        
+        // Get initial location
         try {
-          Logger.debug('Getting initial location');
+          Logger.debug('useLocation: Getting initial location');
           const coords = await BackgroundLocationService.getCurrentLocation();
+          
           if (coords && coords.latitude && coords.longitude) {
             const initialPosition = {
               latitude: coords.latitude,
@@ -93,13 +116,14 @@ export default function useLocation({
             };
             setCurrPosition(initialPosition);
             setLocAccuracy(coords.accuracy);
-            Logger.debug('Initial position set', initialPosition);
+            Logger.debug('useLocation: Initial position set', initialPosition);
           } else {
-            Logger.warn('Invalid coordinates received');
+            Logger.warn('useLocation: Invalid coordinates received');
             throw new Error('Invalid coordinates');
           }
         } catch (error) {
-          Logger.warn('Error getting initial location, trying fallback', error);
+          Logger.warn('useLocation: Error getting initial location, trying fallback', error);
+          
           try {
             const { status } = await Location.getForegroundPermissionsAsync();
             if (status === 'granted') {
@@ -107,6 +131,7 @@ export default function useLocation({
                 accuracy: Location.Accuracy.Balanced,
                 maximumAge: 10000,
               });
+              
               if (fallbackLocation?.coords) {
                 const fallbackPosition = {
                   latitude: fallbackLocation.coords.latitude,
@@ -115,28 +140,38 @@ export default function useLocation({
                 };
                 setCurrPosition(fallbackPosition);
                 setLocAccuracy(fallbackLocation.coords.accuracy);
-                Logger.debug('Fallback position set', fallbackPosition);
+                Logger.debug('useLocation: Fallback position set', fallbackPosition);
+              } else {
+                throw new Error('Invalid fallback coordinates');
               }
+            } else {
+              throw new Error('Location permission not granted');
             }
           } catch (fallbackError) {
-            Logger.error('Fallback location failed', fallbackError);
+            Logger.error('useLocation: Fallback location failed', fallbackError);
             setLocError(true);
           }
         }
       } catch (error) {
-        Logger.error('Error initializing location services:', error);
+        Logger.error('useLocation: Error initializing location services:', error);
         Alert.alert('Location Error', 'Failed to initialize location services. Please check your permissions.');
         setLocError(true);
       }
     };
     
+    // Initialize location services
     initializeLocation();
+    
+    // Load saved routes and places if callbacks provided
     if (loadSavedRoutes) loadSavedRoutes();
     if (loadSavedPlaces) loadSavedPlaces();
+    
+    // Check background permissions
     checkBackgroundPermissions();
     
+    // Clean up on unmount
     return () => {
-      Logger.debug('Cleaning up location services');
+      Logger.debug('useLocation: Cleaning up location services');
       BackgroundLocationService.setLocationUpdateCallback(null);
     };
   }, []);

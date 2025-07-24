@@ -71,13 +71,41 @@ export default function useJourneyTracking({
       if (tracking) {
         // Start GPS tracking with current journey ID
         if (user && currentJourneyId) {
-          await BackgroundLocationService.startTracking(currentJourneyId);
+          Logger.debug('useJourneyTracking: Starting GPS tracking', { 
+            userId: user.uid, 
+            journeyId: currentJourneyId 
+          });
+          
+          // Initialize the service first to ensure permissions are set up
+          await BackgroundLocationService.initialize();
+          
+          // Then start tracking with the journey ID
+          const success = await BackgroundLocationService.startTracking(currentJourneyId);
+          
+          if (!success) {
+            Logger.error('useJourneyTracking: Failed to start GPS tracking');
+            // If tracking fails, reset the tracking state
+            setTracking(false);
+            Alert.alert(
+              'GPS Tracking Error',
+              'Failed to start location tracking. Please check your location permissions and try again.'
+            );
+          } else {
+            Logger.debug('useJourneyTracking: GPS tracking started successfully');
+          }
+        } else {
+          Logger.warn('useJourneyTracking: Cannot start tracking - missing user or journeyId', {
+            hasUser: !!user,
+            journeyId: currentJourneyId
+          });
         }
-      } else {
-        // Stop GPS tracking
+      } else if (currentJourneyId) {
+        // Stop GPS tracking only if we have a journey ID (meaning tracking was active)
+        Logger.debug('useJourneyTracking: Stopping GPS tracking', { journeyId: currentJourneyId });
         await BackgroundLocationService.stopTracking();
       }
     };
+    
     manageTracking();
     // Only run when tracking or currentJourneyId changes
   }, [tracking, currentJourneyId, user]);
@@ -165,11 +193,27 @@ export default function useJourneyTracking({
       
       if (result.success) {
         try {
+          Logger.debug('useJourneyTracking: Starting discovery consolidation', {
+            journeyId: result.journey.id,
+            routeLength: journeyData.route.length
+          });
+          
+          // Log sample route data for debugging
+          if (journeyData.route.length > 0) {
+            Logger.debug('useJourneyTracking: Sample route data', {
+              first: journeyData.route[0],
+              last: journeyData.route[journeyData.route.length - 1],
+              count: journeyData.route.length
+            });
+          }
+          
           await JourneyService.consolidateJourneyDiscoveries(
             user.uid,
             result.journey.id,
             journeyData.route
           );
+          
+          Logger.debug('useJourneyTracking: Discovery consolidation completed');
         } catch (discoveryError) {
           Logger.error('Error consolidating discoveries:', discoveryError);
         }
