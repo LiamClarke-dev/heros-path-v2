@@ -112,6 +112,21 @@ const WARMUP_CONFIG = {
   MAX_ATTEMPTS: 10     // Maximum attempts during warm-up
 };
 
+// Permission monitoring configuration
+const PERMISSION_MONITOR_CONFIG = {
+  CHECK_INTERVAL: 120000, // Check permissions every 2 minutes during tracking (less frequent)
+  INITIAL_DELAY: 60000,   // Wait 1 minute before first check (let user settle in)
+  MAX_RETRIES: 3,         // Maximum retries before showing error
+  RETRY_DELAY: 5000       // Delay between retries
+};
+
+// Location service monitoring configuration
+const LOCATION_SERVICE_MONITOR_CONFIG = {
+  GPS_TIMEOUT: 30000,     // Consider GPS signal lost after 30 seconds without updates
+  RECOVERY_ATTEMPTS: 5,   // Maximum recovery attempts
+  RECOVERY_DELAY: 10000   // Delay between recovery attempts
+};
+
 class BackgroundLocationService {
   constructor() {
     this.isTracking = false;
@@ -119,6 +134,11 @@ class BackgroundLocationService {
     this.currentJourney = null;
     this.locationSubscriber = null;
     this.warmupSubscriber = null;
+    this.permissionMonitorInterval = null;
+    this.gpsTimeoutTimer = null;
+    this.lastLocationTime = null;
+    this.recoveryAttempts = 0;
+    this.isRecovering = false;
     this.onLocationUpdate = null;
     this.onJourneyComplete = null;
     this.lastKnownLocation = null;
@@ -276,6 +296,214 @@ class BackgroundLocationService {
     if (this.warmupSubscriber) {
       this.warmupSubscriber.remove();
       this.warmupSubscriber = null;
+    }
+  }
+
+  // Start monitoring permissions during active tracking
+  startPermissionMonitoring() {
+    if (this.permissionMonitorInterval) {
+      Logger.debug('Permission monitoring already active');
+      return;
+    }
+
+    Logger.info('Starting permission monitoring during tracking (2-minute intervals after 1-minute delay)');
+    
+    // Start monitoring after initial delay to let user settle into tracking
+    setTimeout(() => {
+      if (!this.isTracking) {
+        Logger.debug('Tracking stopped before permission monitoring started');
+        return;
+      }
+      
+      this.permissionMonitorInterval = setInterval(async () => {
+        try {
+          const permissions = await this.checkPermissions();
+          
+          // Check if permissions have been revoked during tracking
+          if (this.isTracking && (!permissions.foreground || !permissions.background)) {
+            Logger.warn('Permissions revoked during tracking', permissions);
+            await this.handlePermissionRevocation(permissions);
+          }
+        } catch (error) {
+          Logger.error('Error checking permissions during monitoring:', error);
+        }
+      }, PERMISSION_MONITOR_CONFIG.CHECK_INTERVAL);
+    }, PERMISSION_MONITOR_CONFIG.INITIAL_DELAY);
+  }
+
+  // Stop permission monitoring
+  stopPermissionMonitoring() {
+    if (this.permissionMonitorInterval) {
+      clearInterval(this.permissionMonitorInterval);
+      this.permissionMonitorInterval = null;
+      Logger.info('Permission monitoring stopped');
+    }
+  }
+
+  // Handle permission revocation during active tracking
+  async handlePermissionRevocation(permissions) {
+    Logger.error('Permissions revoked during tracking', permissions);
+    
+    // Stop tracking immediately to prevent errors
+    if (this.locationSubscriber) {
+      this.locationSubscriber.remove();
+      this.locationSubscriber = null;
+    }
+
+    // Stop permission monitoring
+    this.stopPermissionMonitoring();
+
+    // Determine which permissions were revoked
+    const revokedPermissions = [];
+    if (!permissions.foreground) revokedPermissions.push('foreground location');
+    if (!permissions.background) revokedPermissions.push('background location');
+
+    const { Platform } = require('react-native');
+    const permissionText = revokedPermissions.join(' and ');
+    
+    const platformInstructions = Platform.OS === 'ios'
+      ? 'Go to Settings > Privacy & Security > Location Services > Hero\'s Path and re-enable location access.'
+      : 'Go to Settings > Apps > Hero\'s Path > Permissions > Location and re-enable location access.';
+
+    // Show user notification with recovery instructions
+    Alert.alert(
+      'Location Permission Revoked',
+      `Your ${permissionText} permission has been revoked during tracking. Your journey has been paused to prevent data loss.\n\n` +
+      '🔧 To continue tracking:\n' +
+      `• ${platformInstructions}\n` +
+      '• Return to the app and start tracking again\n\n' +
+      '📍 Your journey data up to this point has been preserved.',
+      [
+        { 
+          text: 'Open Settings', 
+          onPress: () => this.openDeviceSettings(),
+          style: 'default'
+        },
+        { 
+          text: 'OK', 
+          style: 'cancel' 
+        }
+      ]
+    );
+
+    // Mark journey as paused due to permission revocation
+    if (this.currentJourney) {
+      this.currentJourney.isPaused = true;
+      this.currentJourney.pauseReason = 'permission_revoked';
+      this.currentJourney.pauseTime = Date.now();
+    }
+
+    // Set tracking to false but preserve journey data for potential recovery
+    this.isTracking = false;
+    
+    // Notify UI through callback if available
+    if (this.onLocationUpdate) {
+      this.onLocationUpdate(null, { 
+        ...this.currentJourney, 
+        error: 'permission_revoked',
+        message: 'Location permissions were revoked during tracking'
+      });
+    }
+  }
+
+  // Attempt to recover tracking after permission revocation
+  async attemptTrackingRecovery() {
+    if (!this.currentJourney || !this.currentJourney.isPaused || this.currentJourney.pauseReason !== 'permission_revoked') {
+      Logger.warn('No paused journey due to permission revocation found');
+      return false;
+    }
+
+    try {
+      // Check if permissions have been restored
+      const permissions = await this.checkPermissions();
+      
+      if (!permissions.foreground || !permissions.background) {
+        Logger.warn('Permissions still not granted, cannot recover tracking');
+        return false;
+      }
+
+      Logger.info('Attempting to recover tracking after permission restoration');
+
+      // Resume the existing journey
+      this.currentJourney.isPaused = false;
+      this.currentJourney.pauseReason = null;
+      this.currentJourney.resumeTime = Date.now();
+      
+      // Add a recovery marker to the journey
+      if (!this.currentJourney.recoveryEvents) {
+        this.currentJourney.recoveryEvents = [];
+      }
+      
+      this.currentJourney.recoveryEvents.push({
+        type: 'permission_recovery',
+        timestamp: Date.now(),
+        pauseDuration: Date.now() - this.currentJourney.pauseTime
+      });
+
+      // Restart GPS warm-up for better accuracy after recovery
+      await this.startGPSWarmup();
+
+      // Restart location tracking with the same configuration
+      const notificationConfig = {
+        notificationTitle: "Hero's Path - Adventure in Progress",
+        notificationBody: "Recording your journey. Tap to open app.",
+        notificationColor: "#007AFF",
+      };
+
+      this.locationSubscriber = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 1000,
+          distanceInterval: 2,
+          
+          foregroundService: {
+            ...notificationConfig,
+            killServiceOnDestroy: false,
+          },
+          
+          activityType: Location.ActivityType.Fitness,
+          showsBackgroundLocationIndicator: true,
+          pausesLocationUpdatesAutomatically: false,
+          
+          android: {
+            ...notificationConfig,
+            notificationIcon: null,
+            enableHighAccuracy: true,
+            sticky: true,
+            foregroundServiceType: ['location'],
+          }
+        },
+        (location) => {
+          const isBackgroundUpdate = this.appState.match(/inactive|background/);
+          if (isBackgroundUpdate && this.backgroundStartTime) {
+            location.isBackgroundUpdate = true;
+            location.backgroundDuration = Date.now() - this.backgroundStartTime;
+            
+            if (!this.currentJourney.backgroundSegments) {
+              this.currentJourney.backgroundSegments = [];
+            }
+            
+            this.currentJourney.backgroundSegments.push({
+              timestamp: Date.now(),
+              duration: location.backgroundDuration
+            });
+          }
+          
+          this.handleLocationUpdate(location);
+        }
+      );
+
+      this.isTracking = true;
+      
+      // Restart permission monitoring
+      this.startPermissionMonitoring();
+
+      Logger.info('Tracking recovery successful after permission restoration');
+      return true;
+
+    } catch (error) {
+      Logger.error('Failed to recover tracking after permission restoration:', error);
+      return false;
     }
   }
 
@@ -443,16 +671,27 @@ class BackgroundLocationService {
   // Open device settings (platform-specific)
   async openDeviceSettings() {
     try {
-      // For iOS, we can use Linking to open settings
-      const { Linking } = require('react-native');
-      await Linking.openSettings();
+      const { Linking, Platform } = require('react-native');
+      
+      if (Platform.OS === 'ios') {
+        // For iOS, open app-specific settings
+        await Linking.openSettings();
+      } else if (Platform.OS === 'android') {
+        // For Android, open app-specific settings
+        await Linking.openSettings();
+      } else {
+        throw new Error('Platform not supported');
+      }
     } catch (error) {
       console.error('Failed to open device settings:', error);
-      // Fallback: just show instructions
-      Alert.alert(
-        'Open Settings',
-        'Please go to Settings > Privacy & Security > Location Services > Hero\'s Path and select "While Using App".'
-      );
+      
+      // Platform-specific fallback instructions
+      const { Platform } = require('react-native');
+      const instructions = Platform.OS === 'ios' 
+        ? 'Please go to Settings > Privacy & Security > Location Services > Hero\'s Path and select "While Using App".'
+        : 'Please go to Settings > Apps > Hero\'s Path > Permissions > Location and enable location access.';
+      
+      Alert.alert('Open Settings', instructions);
     }
   }
 
@@ -534,23 +773,37 @@ class BackgroundLocationService {
     }
 
     try {
-      // Request permissions with enhanced error handling
+      // Platform-specific permission request workflow
+      const { Platform } = require('react-native');
+      
+      // Request foreground permissions first (required on both platforms)
       const foregroundStatus = await Location.requestForegroundPermissionsAsync();
-      const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
       
       if (foregroundStatus.status !== 'granted') {
         this.showPermissionDeniedAlert();
         throw new Error('Foreground location permission denied');
       }
       
+      // Request background permissions with platform-specific handling
+      const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+      
       if (backgroundStatus.status !== 'granted') {
+        const platformMessage = Platform.OS === 'ios' 
+          ? 'Hero\'s Path needs "Always" location access to track your walks even when the screen is locked or the app is in the background.'
+          : 'Hero\'s Path needs location access "All the time" to track your walks even when the app is in the background.';
+          
+        const platformInstructions = Platform.OS === 'ios'
+          ? 'Go to Settings > Privacy & Security > Location Services > Hero\'s Path > "Always"'
+          : 'Go to Settings > Apps > Hero\'s Path > Permissions > Location > "Allow all the time"';
+        
         Alert.alert(
           'Background Permission Required',
-          'Hero\'s Path needs "Always" location access to track your walks even when the screen is locked or the app is in the background. This ensures your journey is recorded accurately.\n\n' +
+          `${platformMessage} This ensures your journey is recorded accurately.\n\n` +
           '🔒 Privacy Promise:\n' +
           '• Location tracking only during active walks\n' +
           '• Tracking stops immediately when walk ends\n' +
-          '• Your location is never shared without your consent',
+          '• Your location is never shared without your consent\n\n' +
+          `To enable: ${platformInstructions}`,
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Open Settings', onPress: () => this.openDeviceSettings() }
@@ -632,6 +885,12 @@ class BackgroundLocationService {
       this.isTracking = true;
       this.lastKnownLocation = null; // Reset for new tracking session
       
+      // Start monitoring permissions during tracking
+      this.startPermissionMonitoring();
+      
+      // Start GPS signal monitoring
+      this.startGPSSignalMonitoring();
+      
       Logger.info('Location tracking started with enhanced accuracy and background support', {
         journeyId,
         permissions: { foreground: foregroundStatus.status, background: backgroundStatus.status }
@@ -650,6 +909,7 @@ class BackgroundLocationService {
         this.locationSubscriber = null;
       }
       this.completeGPSWarmup();
+      this.stopPermissionMonitoring();
       
       return false;
     }
@@ -659,6 +919,16 @@ class BackgroundLocationService {
   handleLocationUpdate(location) {
     if (!this.currentJourney || !this.currentJourney.isActive) {
       return;
+    }
+
+    // Update GPS signal monitoring - we received a location update
+    this.startGPSSignalMonitoring();
+    
+    // If we were recovering from GPS loss, mark as recovered
+    if (this.isRecovering) {
+      Logger.info('GPS signal recovered during location update');
+      this.isRecovering = false;
+      this.recoveryAttempts = 0;
     }
 
     // Filter and smooth the location
@@ -703,6 +973,12 @@ class BackgroundLocationService {
 
       // Stop GPS warm-up if still running
       this.completeGPSWarmup();
+
+      // Stop permission monitoring
+      this.stopPermissionMonitoring();
+
+      // Stop GPS signal monitoring
+      this.stopGPSSignalMonitoring();
 
       // Mark journey as complete
       if (this.currentJourney) {
@@ -847,6 +1123,12 @@ class BackgroundLocationService {
     // Clean up warm-up
     this.completeGPSWarmup();
     
+    // Stop permission monitoring
+    this.stopPermissionMonitoring();
+    
+    // Stop GPS signal monitoring
+    this.stopGPSSignalMonitoring();
+    
     // Reset all state
     this.currentJourney = null;
     this.lastKnownLocation = null;
@@ -915,6 +1197,237 @@ class BackgroundLocationService {
     } catch (error) {
       console.error('Failed to get current location:', error);
       throw error;
+    }
+  }
+
+  // Start GPS signal monitoring
+  startGPSSignalMonitoring() {
+    if (this.gpsTimeoutTimer) {
+      clearTimeout(this.gpsTimeoutTimer);
+    }
+
+    this.lastLocationTime = Date.now();
+    
+    // Set timeout to detect GPS signal loss
+    this.gpsTimeoutTimer = setTimeout(() => {
+      if (this.isTracking && !this.isRecovering) {
+        Logger.warn('GPS signal timeout detected');
+        this.handleGPSSignalLoss();
+      }
+    }, LOCATION_SERVICE_MONITOR_CONFIG.GPS_TIMEOUT);
+  }
+
+  // Stop GPS signal monitoring
+  stopGPSSignalMonitoring() {
+    if (this.gpsTimeoutTimer) {
+      clearTimeout(this.gpsTimeoutTimer);
+      this.gpsTimeoutTimer = null;
+    }
+    this.lastLocationTime = null;
+    this.recoveryAttempts = 0;
+    this.isRecovering = false;
+  }
+
+  // Handle GPS signal loss
+  async handleGPSSignalLoss() {
+    if (this.isRecovering) {
+      Logger.debug('Already attempting GPS recovery');
+      return;
+    }
+
+    Logger.warn('GPS signal lost, attempting recovery');
+    this.isRecovering = true;
+    this.recoveryAttempts = 0;
+
+    // Notify user about GPS signal loss
+    Alert.alert(
+      'GPS Signal Lost',
+      'GPS signal has been temporarily lost. The app is attempting to recover the signal automatically.\n\n' +
+      '📍 Tips to improve GPS signal:\n' +
+      '• Move to an area with clear sky view\n' +
+      '• Avoid areas with tall buildings or dense trees\n' +
+      '• Ensure location services are enabled\n\n' +
+      'Your journey will continue once the signal is restored.',
+      [{ text: 'OK', style: 'default' }]
+    );
+
+    // Attempt to recover GPS signal
+    await this.attemptGPSRecovery();
+  }
+
+  // Attempt to recover GPS signal
+  async attemptGPSRecovery() {
+    if (this.recoveryAttempts >= LOCATION_SERVICE_MONITOR_CONFIG.RECOVERY_ATTEMPTS) {
+      Logger.error('GPS recovery failed after maximum attempts');
+      await this.handleGPSRecoveryFailure();
+      return;
+    }
+
+    this.recoveryAttempts++;
+    Logger.info(`GPS recovery attempt ${this.recoveryAttempts}/${LOCATION_SERVICE_MONITOR_CONFIG.RECOVERY_ATTEMPTS}`);
+
+    try {
+      // Check if location services are still available
+      const serviceStatus = await Location.hasServicesEnabledAsync();
+      if (!serviceStatus) {
+        Logger.error('Location services are disabled');
+        await this.handleLocationServicesDisabled();
+        return;
+      }
+
+      // Try to get a fresh location to test GPS
+      const testLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 5000,
+        distanceInterval: 10
+      });
+
+      if (testLocation && this.isValidLocationCoordinates(testLocation)) {
+        Logger.info('GPS signal recovered successfully');
+        this.isRecovering = false;
+        this.recoveryAttempts = 0;
+        
+        // Restart GPS signal monitoring
+        this.startGPSSignalMonitoring();
+        
+        // Restart GPS warm-up for better accuracy
+        await this.startGPSWarmup();
+        
+        // Notify user of recovery
+        Alert.alert(
+          'GPS Signal Restored',
+          'GPS signal has been restored. Your journey tracking will continue normally.',
+          [{ text: 'OK', style: 'default' }]
+        );
+        
+        return;
+      }
+    } catch (error) {
+      Logger.error(`GPS recovery attempt ${this.recoveryAttempts} failed:`, error);
+    }
+
+    // Schedule next recovery attempt
+    setTimeout(() => {
+      if (this.isTracking && this.isRecovering) {
+        this.attemptGPSRecovery();
+      }
+    }, LOCATION_SERVICE_MONITOR_CONFIG.RECOVERY_DELAY);
+  }
+
+  // Handle location services being disabled
+  async handleLocationServicesDisabled() {
+    Logger.error('Location services are disabled');
+    this.isRecovering = false;
+
+    Alert.alert(
+      'Location Services Disabled',
+      'Location services have been disabled on your device. Please enable them to continue tracking your journey.\n\n' +
+      '⚙️ To enable location services:\n' +
+      '• Go to your device Settings\n' +
+      '• Find Location or Privacy settings\n' +
+      '• Enable Location Services\n' +
+      '• Return to Hero\'s Path to continue',
+      [
+        { text: 'Open Settings', onPress: () => this.openDeviceSettings() },
+        { text: 'OK', style: 'cancel' }
+      ]
+    );
+
+    // Pause tracking but preserve journey data
+    if (this.currentJourney) {
+      this.currentJourney.isPaused = true;
+      this.currentJourney.pauseReason = 'location_services_disabled';
+      this.currentJourney.pauseTime = Date.now();
+    }
+
+    // Stop location subscriber but keep journey data
+    if (this.locationSubscriber) {
+      this.locationSubscriber.remove();
+      this.locationSubscriber = null;
+    }
+
+    this.isTracking = false;
+  }
+
+  // Handle GPS recovery failure
+  async handleGPSRecoveryFailure() {
+    Logger.error('GPS recovery failed after all attempts');
+    this.isRecovering = false;
+
+    Alert.alert(
+      'GPS Recovery Failed',
+      'Unable to restore GPS signal after multiple attempts. Your journey has been paused to prevent data loss.\n\n' +
+      '🔧 Troubleshooting steps:\n' +
+      '• Move to an open area with clear sky view\n' +
+      '• Restart the app\n' +
+      '• Check device location settings\n' +
+      '• Restart your device if needed\n\n' +
+      'Your journey data has been preserved and you can resume tracking when GPS is available.',
+      [
+        { text: 'Restart Tracking', onPress: () => this.attemptTrackingRestart() },
+        { text: 'OK', style: 'cancel' }
+      ]
+    );
+
+    // Pause tracking but preserve journey data
+    if (this.currentJourney) {
+      this.currentJourney.isPaused = true;
+      this.currentJourney.pauseReason = 'gps_recovery_failed';
+      this.currentJourney.pauseTime = Date.now();
+    }
+
+    this.isTracking = false;
+  }
+
+  // Attempt to restart tracking after GPS failure
+  async attemptTrackingRestart() {
+    Logger.info('Attempting to restart tracking after GPS failure');
+    
+    try {
+      // Check location services availability
+      const serviceStatus = await Location.hasServicesEnabledAsync();
+      if (!serviceStatus) {
+        await this.handleLocationServicesDisabled();
+        return;
+      }
+
+      // Check permissions
+      const permissions = await this.checkPermissions();
+      if (!permissions.foreground || !permissions.background) {
+        await this.handlePermissionRevocation(permissions);
+        return;
+      }
+
+      // Try to get a test location
+      const testLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 5000,
+        distanceInterval: 10
+      });
+
+      if (!testLocation || !this.isValidLocationCoordinates(testLocation)) {
+        throw new Error('Unable to get valid location');
+      }
+
+      // If we have a paused journey, attempt recovery
+      if (this.currentJourney && this.currentJourney.isPaused) {
+        const recovered = await this.attemptTrackingRecovery();
+        if (recovered) {
+          Alert.alert(
+            'Tracking Restarted',
+            'GPS signal is working again. Your journey tracking has been resumed.',
+            [{ text: 'OK', style: 'default' }]
+          );
+        }
+      }
+
+    } catch (error) {
+      Logger.error('Failed to restart tracking:', error);
+      Alert.alert(
+        'Restart Failed',
+        'Unable to restart tracking. Please check your location settings and try again.',
+        [{ text: 'OK', style: 'cancel' }]
+      );
     }
   }
 }
